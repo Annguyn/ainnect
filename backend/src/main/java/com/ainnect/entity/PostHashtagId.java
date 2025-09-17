@@ -23,3 +23,4 @@ public class PostHashtagId implements Serializable {
 	@Column(name = "hashtag_id")
 	private Long hashtagId;
 }
+

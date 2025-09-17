@@ -30,19 +30,21 @@ public class Comment {
 	@JoinColumn(name = "parent_id")
 	private Comment parent;
 
-	@Lob
-	@Column(name = "content", nullable = false)
+	@Column(name = "content", nullable = false, columnDefinition = "TEXT")
 	private String content;
 
 	@Column(name = "reaction_count", nullable = false)
 	private Integer reactionCount = 0;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
+	@org.hibernate.annotations.CreationTimestamp
 	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at", nullable = false)
+	@org.hibernate.annotations.UpdateTimestamp
 	private LocalDateTime updatedAt;
 
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
 }
+

@@ -19,3 +19,4 @@ public class Hashtag {
 	@Column(name = "tag", length = 100, nullable = false, unique = true)
 	private String tag;
 }
+

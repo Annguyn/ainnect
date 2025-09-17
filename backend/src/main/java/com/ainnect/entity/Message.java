@@ -27,8 +27,7 @@ public class Message {
 	@JoinColumn(name = "sender_id", nullable = false)
 	private User sender;
 
-	@Lob
-	@Column(name = "content")
+	@Column(name = "content", columnDefinition = "TEXT")
 	private String content;
 
 	@Enumerated(EnumType.STRING)
@@ -41,3 +40,4 @@ public class Message {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
 }
+

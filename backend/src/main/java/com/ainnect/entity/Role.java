@@ -16,7 +16,7 @@ import java.util.Set;
 public class Role {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
+	@Column(name = "id", columnDefinition = "SMALLINT")
 	private Short id;
 
 	@Column(name = "code", length = 30, nullable = false, unique = true)

@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class Post {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
+	@Column(name = "id", columnDefinition = "BIGINT")
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -27,8 +27,7 @@ public class Post {
 	@JoinColumn(name = "group_id")
 	private Community group;
 
-	@Lob
-	@Column(name = "content")
+	@Column(name = "content", columnDefinition = "TEXT")
 	private String content;
 
 	@Enumerated(EnumType.STRING)
@@ -44,12 +43,15 @@ public class Post {
 	@Column(name = "share_count", nullable = false)
 	private Integer shareCount = 0;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
+	@org.hibernate.annotations.CreationTimestamp
 	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at", nullable = false)
+	@org.hibernate.annotations.UpdateTimestamp
 	private LocalDateTime updatedAt;
 
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
 }
+

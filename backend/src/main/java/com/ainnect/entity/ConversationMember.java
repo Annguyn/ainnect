@@ -37,3 +37,4 @@ public class ConversationMember {
 	@Column(name = "last_read_message_id")
 	private Long lastReadMessageId;
 }
+

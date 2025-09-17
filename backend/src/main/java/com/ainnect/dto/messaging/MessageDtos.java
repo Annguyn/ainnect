@@ -28,3 +28,4 @@ public class MessageDtos {
 		private MessageType messageType;
 	}
 }
+

@@ -46,6 +46,42 @@ public class UserDtos {
 	}
 
 	@Getter
+	@Setter
+	public static class UpdateRequest {
+		@Size(max = 100, message = "Tên hiển thị không được quá 100 ký tự")
+		private String displayName;
+
+		@Size(max = 20, message = "Số điện thoại không được quá 20 ký tự")
+		private String phone;
+
+		@Size(max = 500, message = "URL avatar không được quá 500 ký tự")
+		private String avatarUrl;
+
+		@Size(max = 500, message = "Bio không được quá 500 ký tự")
+		private String bio;
+
+		private Gender gender;
+		private LocalDate birthday;
+
+		@Size(max = 255, message = "Địa chỉ không được quá 255 ký tự")
+		private String location;
+	}
+
+	@Getter
+	@Setter
+	public static class ChangePasswordRequest {
+		@NotBlank(message = "Mật khẩu cũ không được để trống")
+		private String oldPassword;
+
+		@NotBlank(message = "Mật khẩu mới không được để trống")
+		@Size(min = 6, max = 255, message = "Mật khẩu mới phải từ 6-255 ký tự")
+		private String newPassword;
+
+		@NotBlank(message = "Xác nhận mật khẩu không được để trống")
+		private String confirmPassword;
+	}
+
+	@Getter
 	@Builder
 	@AllArgsConstructor
 	public static class Response {

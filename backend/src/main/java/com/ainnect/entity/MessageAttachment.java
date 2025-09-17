@@ -37,3 +37,4 @@ public class MessageAttachment {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 }
+

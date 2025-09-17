@@ -24,3 +24,4 @@ public class PostHashtag {
 	@JoinColumn(name = "hashtag_id", nullable = false)
 	private Hashtag hashtag;
 }
+

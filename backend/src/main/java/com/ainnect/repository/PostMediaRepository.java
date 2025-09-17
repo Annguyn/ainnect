@@ -8,3 +8,4 @@ import java.util.List;
 public interface PostMediaRepository extends JpaRepository<PostMedia, Long> {
 	List<PostMedia> findByPost_Id(Long postId);
 }
+

@@ -17,9 +17,9 @@ import java.io.Serializable;
 @EqualsAndHashCode
 @Embeddable
 public class UserRoleId implements Serializable {
-	@Column(name = "user_id")
+	@Column(name = "user_id", columnDefinition = "BIGINT")
 	private Long userId;
 
-	@Column(name = "role_id")
+	@Column(name = "role_id", columnDefinition = "SMALLINT")
 	private Short roleId;
 }

@@ -34,3 +34,4 @@ public class GroupMember {
 	@Column(name = "joined_at", nullable = false)
 	private LocalDateTime joinedAt;
 }
+

@@ -5,7 +5,7 @@ spring:
     password: annguyen199
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -22,3 +22,9 @@ logging:
   level:
     org.hibernate.SQL: info
     org.hibernate.orm.jdbc.bind: info
+
+# JWT Configuration
+jwt:
+  secret: mySecretKeyForAinnectApplicationThatIsVerySecureAndLong
+  expiration: 86400000 # 24 hours in milliseconds
+  refresh-expiration: 604800000 # 7 days in milliseconds

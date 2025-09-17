@@ -9,3 +9,4 @@ import java.util.List;
 public interface PostHashtagRepository extends JpaRepository<PostHashtag, PostHashtagId> {
 	List<PostHashtag> findByPost_Id(Long postId);
 }
+

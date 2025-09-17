@@ -19,7 +19,7 @@ import java.util.Set;
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
+	@Column(name = "id", columnDefinition = "BIGINT")
 	private Long id;
 
 	@Column(name = "username", length = 50, nullable = false, unique = true)
@@ -56,10 +56,12 @@ public class User {
 	@Column(name = "is_active", nullable = false)
 	private Boolean isActive = true;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
+	@org.hibernate.annotations.CreationTimestamp
 	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at", nullable = false)
+	@org.hibernate.annotations.UpdateTimestamp
 	private LocalDateTime updatedAt;
 
 	@Column(name = "deleted_at")

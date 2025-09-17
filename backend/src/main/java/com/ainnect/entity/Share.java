@@ -26,10 +26,10 @@ public class Share {
 	@JoinColumn(name = "by_user_id", nullable = false)
 	private User byUser;
 
-	@Lob
-	@Column(name = "comment")
+	@Column(name = "comment", columnDefinition = "TEXT")
 	private String comment;
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 }
+
