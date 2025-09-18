@@ -1,0 +1,351 @@
+/* Authentication Page Animations */
+
+/* Floating animation for background elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* Gradient animation for text */
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Slide in from bottom animation */
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide in from top animation */
+@keyframes slideInFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in animation */
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for buttons */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.4);
+  }
+  70% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(233, 30, 99, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(233, 30, 99, 0);
+  }
+}
+
+/* Shake animation for error states */
+@keyframes shake {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(0);
+  }
+  10% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(10px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  90% {
+    transform: translateX(5px);
+  }
+}
+
+/* Bounce animation for success states */
+@keyframes bounce {
+  0%, 20%, 60%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  80% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Morphing background animation */
+@keyframes morphingBackground {
+  0% {
+    border-radius: 50% 50% 50% 50%;
+    transform: rotate(0deg);
+  }
+  25% {
+    border-radius: 40% 60% 70% 30%;
+    transform: rotate(90deg);
+  }
+  50% {
+    border-radius: 70% 30% 30% 70%;
+    transform: rotate(180deg);
+  }
+  75% {
+    border-radius: 30% 70% 60% 40%;
+    transform: rotate(270deg);
+  }
+  100% {
+    border-radius: 50% 50% 50% 50%;
+    transform: rotate(360deg);
+  }
+}
+
+/* Auth page specific classes */
+.auth-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card {
+  animation: slideInFromBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.auth-logo {
+  background: linear-gradient(135deg, #E91E63, #9C27B0);
+  background-size: 200% 200%;
+  animation: gradientFlow 3s ease infinite;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-form-field {
+  animation: slideInFromTop 0.6s ease-out;
+  animation-fill-mode: backwards;
+}
+
+.auth-form-field:nth-child(1) { animation-delay: 0.1s; }
+.auth-form-field:nth-child(2) { animation-delay: 0.2s; }
+.auth-form-field:nth-child(3) { animation-delay: 0.3s; }
+.auth-form-field:nth-child(4) { animation-delay: 0.4s; }
+.auth-form-field:nth-child(5) { animation-delay: 0.5s; }
+
+.auth-submit-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-submit-button:hover {
+  animation: pulse 1.5s infinite;
+}
+
+.auth-submit-button:active {
+  transform: scale(0.98);
+}
+
+.auth-social-button {
+  transition: all 0.3s ease;
+}
+
+.auth-social-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.auth-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+.auth-success {
+  animation: bounce 0.6s ease-in-out;
+}
+
+.floating-bg-element {
+  animation: float 6s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+.floating-bg-element:nth-child(even) {
+  animation-direction: reverse;
+  animation-duration: 8s;
+}
+
+.morphing-bg {
+  animation: morphingBackground 20s ease-in-out infinite;
+}
+
+/* Loading state animations */
+.auth-loading-overlay {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.auth-loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Password strength indicator animations */
+.password-strength-bar {
+  transition: all 0.3s ease;
+  animation: slideInFromBottom 0.4s ease-out;
+}
+
+.password-strength-weak {
+  background: linear-gradient(90deg, #f44336, #ff5722);
+}
+
+.password-strength-medium {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+
+.password-strength-strong {
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+}
+
+/* Checkbox animation */
+.auth-checkbox {
+  transition: all 0.2s ease;
+}
+
+.auth-checkbox:checked {
+  animation: bounce 0.3s ease-in-out;
+}
+
+/* Link hover effects */
+.auth-link {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.auth-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #E91E63, #9C27B0);
+  transition: width 0.3s ease;
+}
+
+.auth-link:hover::after {
+  width: 100%;
+}
+
+/* Responsive animations */
+@media (max-width: 768px) {
+  .auth-card {
+    animation-duration: 0.6s;
+  }
+  
+  .floating-bg-element {
+    animation-duration: 4s;
+  }
+  
+  .auth-form-field {
+    animation-duration: 0.4s;
+  }
+}
+
+/* Accessibility - Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .floating-bg-element,
+  .morphing-bg,
+  .auth-logo {
+    animation: none !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .auth-logo {
+    background: linear-gradient(135deg, #ff4081, #ab47bc);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .auth-card {
+    border: 2px solid;
+  }
+  
+  .auth-submit-button {
+    border: 2px solid;
+  }
+}
+
+/* Print styles */
+@media print {
+  .floating-bg-element,
+  .morphing-bg {
+    display: none !important;
+  }
+  
+  .auth-card {
+    box-shadow: none !important;
+    animation: none !important;
+  }
+}
