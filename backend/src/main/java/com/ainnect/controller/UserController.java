@@ -49,7 +49,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Xem thông tin user theo ID")
-    public ResponseEntity<UserDtos.Response> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserDtos.Response> getUserById(@PathVariable("id") Long id) {
         try {
             User user = userService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + id));
@@ -117,14 +117,14 @@ public class UserController {
 
     @GetMapping("/check-username/{username}")
     @Operation(summary = "Kiểm tra username có tồn tại không")
-    public ResponseEntity<Boolean> checkUsernameExists(@PathVariable String username) {
+    public ResponseEntity<Boolean> checkUsernameExists(@PathVariable("username") String username) {
         boolean exists = userService.existsByUsername(username);
         return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/check-email/{email}")
     @Operation(summary = "Kiểm tra email có tồn tại không")
-    public ResponseEntity<Boolean> checkEmailExists(@PathVariable String email) {
+    public ResponseEntity<Boolean> checkEmailExists(@PathVariable("email") String email) {
         boolean exists = userService.existsByEmail(email);
         return ResponseEntity.ok(exists);
     }

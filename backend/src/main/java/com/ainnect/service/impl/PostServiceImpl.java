@@ -25,13 +25,16 @@ public class PostServiceImpl implements PostService {
 	private final ShareRepository shareRepository;
 
 	@Override
-	public PostDtos.Response create(PostDtos.CreateRequest request) {
-		User author = userRepository.findById(request.getAuthorId())
+	public PostDtos.Response create(PostDtos.CreateRequest request, Long authorId) {
+		User author = userRepository.findById(authorId)
 				.orElseThrow(() -> new IllegalArgumentException("Author not found"));
 		Post post = Post.builder()
 				.author(author)
 				.content(request.getContent())
 				.visibility(request.getVisibility())
+				.commentCount(0)
+				.reactionCount(0)
+				.shareCount(0)
 				.build();
 		if (request.getGroupId() != null) {
 			// group optional; resolve if provided
@@ -69,6 +72,13 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public Page<PostDtos.Response> getFeed(Pageable pageable) {
+		Page<Post> posts = postRepository.findAllActivePosts(pageable);
+		return posts.map(this::toResponse);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public Page<PostDtos.Response> listByAuthor(Long authorId, Pageable pageable) {
 		List<Post> posts = postRepository.findByAuthor_Id(authorId);
 		int start = (int) pageable.getOffset();
@@ -78,10 +88,10 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Long addComment(Long postId, PostDtos.CommentCreateRequest request) {
+	public Long addComment(Long postId, PostDtos.CommentCreateRequest request, Long authorId) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
-		User author = userRepository.findById(request.getAuthorId())
+		User author = userRepository.findById(authorId)
 				.orElseThrow(() -> new IllegalArgumentException("Author not found"));
 		Comment parent = null;
 		if (request.getParentId() != null) {
@@ -93,6 +103,7 @@ public class PostServiceImpl implements PostService {
 				.author(author)
 				.parent(parent)
 				.content(request.getContent())
+				.reactionCount(0)
 				.build();
 		Comment saved = commentRepository.save(comment);
 		post.setCommentCount(post.getCommentCount() + 1);
@@ -110,10 +121,10 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public void reactToPost(Long postId, PostDtos.ReactionRequest request) {
+	public void reactToPost(Long postId, PostDtos.ReactionRequest request, Long userId) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
-		User user = userRepository.findById(request.getUserId())
+		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User not found"));
 		boolean exists = reactionRepository.existsByTargetTypeAndTargetIdAndUser_IdAndType(
 				ReactionTargetType.POST, post.getId(), user.getId(), request.getType());
@@ -148,10 +159,10 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Long sharePost(Long postId, PostDtos.ShareRequest request) {
+	public Long sharePost(Long postId, PostDtos.ShareRequest request, Long userId) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
-		User user = userRepository.findById(request.getByUserId())
+		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User not found"));
 		Share share = Share.builder()
 				.post(post)

@@ -42,16 +42,17 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public Long replyToComment(Long commentId, CommentDtos.ReplyRequest request) {
+	public Long replyToComment(Long commentId, CommentDtos.ReplyRequest request, Long authorId) {
 		Comment parent = commentRepository.findById(commentId)
 				.orElseThrow(() -> new IllegalArgumentException("Comment not found"));
-		User author = userRepository.findById(request.getAuthorId())
+		User author = userRepository.findById(authorId)
 				.orElseThrow(() -> new IllegalArgumentException("Author not found"));
 		Comment reply = Comment.builder()
 				.post(parent.getPost())
 				.author(author)
 				.parent(parent)
 				.content(request.getContent())
+				.reactionCount(0)
 				.build();
 		Comment saved = commentRepository.save(reply);
 		Post post = parent.getPost();
@@ -61,10 +62,10 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public void reactToComment(Long commentId, CommentDtos.ReactionRequest request) {
+	public void reactToComment(Long commentId, CommentDtos.ReactionRequest request, Long userId) {
 		Comment comment = commentRepository.findById(commentId)
 				.orElseThrow(() -> new IllegalArgumentException("Comment not found"));
-		User user = userRepository.findById(request.getUserId())
+		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User not found"));
 		boolean exists = reactionRepository.existsByTargetTypeAndTargetIdAndUser_IdAndType(
 				ReactionTargetType.COMMENT, comment.getId(), user.getId(), request.getType());

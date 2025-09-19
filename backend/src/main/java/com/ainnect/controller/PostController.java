@@ -1,5 +1,6 @@
 package com.ainnect.controller;
 
+import com.ainnect.config.JwtUtil;
 import com.ainnect.dto.post.PostDtos;
 import com.ainnect.entity.Comment;
 import com.ainnect.service.PostService;
@@ -16,63 +17,91 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class PostController {
 	private final PostService postService;
+	private final JwtUtil jwtUtil;
 
 	@PostMapping
-	public ResponseEntity<PostDtos.Response> create(@Valid @RequestBody PostDtos.CreateRequest request) {
-		return new ResponseEntity<>(postService.create(request), HttpStatus.CREATED);
+	public ResponseEntity<PostDtos.Response> create(@Valid @RequestBody PostDtos.CreateRequest request,
+			@RequestHeader("Authorization") String authHeader) {
+		Long authorId = extractUserIdFromToken(authHeader);
+		return new ResponseEntity<>(postService.create(request, authorId), HttpStatus.CREATED);
 	}
 
 	@PutMapping("/{postId}")
-	public ResponseEntity<PostDtos.Response> update(@PathVariable Long postId,
+	public ResponseEntity<PostDtos.Response> update(@PathVariable("postId") Long postId,
 			@Valid @RequestBody PostDtos.UpdateRequest request) {
 		return ResponseEntity.ok(postService.update(postId, request));
 	}
 
 	@DeleteMapping("/{postId}")
-	public ResponseEntity<Void> delete(@PathVariable Long postId) {
+	public ResponseEntity<Void> delete(@PathVariable("postId") Long postId) {
 		postService.delete(postId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/{postId}")
-	public ResponseEntity<PostDtos.Response> get(@PathVariable Long postId) {
+	public ResponseEntity<PostDtos.Response> get(@PathVariable("postId") Long postId) {
 		return ResponseEntity.ok(postService.getById(postId));
 	}
 
-	@GetMapping
-	public ResponseEntity<Page<PostDtos.Response>> listByAuthor(@RequestParam Long authorId, Pageable pageable) {
-		return ResponseEntity.ok(postService.listByAuthor(authorId, pageable));
+	@GetMapping("/feed")
+	public ResponseEntity<Page<PostDtos.Response>> getFeed(Pageable pageable) {
+		return ResponseEntity.ok(postService.getFeed(pageable));
 	}
 
-	// Comments
+	@GetMapping
+	public ResponseEntity<Page<PostDtos.Response>> listByAuthor(@RequestParam(value = "authorId", required = false) Long authorId, Pageable pageable) {
+		if (authorId != null) {
+			return ResponseEntity.ok(postService.listByAuthor(authorId, pageable));
+		} else {
+			return ResponseEntity.ok(postService.getFeed(pageable));
+		}
+	}
+
 	@PostMapping("/{postId}/comments")
-	public ResponseEntity<Long> addComment(@PathVariable Long postId,
-			@Valid @RequestBody PostDtos.CommentCreateRequest request) {
-		return new ResponseEntity<>(postService.addComment(postId, request), HttpStatus.CREATED);
+	public ResponseEntity<Long> addComment(@PathVariable("postId") Long postId,
+			@Valid @RequestBody PostDtos.CommentCreateRequest request,
+			@RequestHeader("Authorization") String authHeader) {
+		Long authorId = extractUserIdFromToken(authHeader);
+		return new ResponseEntity<>(postService.addComment(postId, request, authorId), HttpStatus.CREATED);
 	}
 
 	@GetMapping("/{postId}/comments")
-	public ResponseEntity<Page<Comment>> listComments(@PathVariable Long postId, Pageable pageable) {
+	public ResponseEntity<Page<Comment>> listComments(@PathVariable("postId") Long postId, Pageable pageable) {
 		return ResponseEntity.ok(postService.listComments(postId, pageable));
 	}
 
-	// Reactions
 	@PostMapping("/{postId}/reactions")
-	public ResponseEntity<Void> react(@PathVariable Long postId, @Valid @RequestBody PostDtos.ReactionRequest request) {
-		postService.reactToPost(postId, request);
+	public ResponseEntity<Void> react(@PathVariable("postId") Long postId, 
+			@Valid @RequestBody PostDtos.ReactionRequest request,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
+		postService.reactToPost(postId, request, userId);
 		return ResponseEntity.ok().build();
 	}
 
 	@DeleteMapping("/{postId}/reactions")
-	public ResponseEntity<Void> unreact(@PathVariable Long postId, @RequestParam Long userId) {
+	public ResponseEntity<Void> unreact(@PathVariable("postId") Long postId,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
 		postService.unreactToPost(postId, userId);
 		return ResponseEntity.noContent().build();
 	}
 
 	// Share
 	@PostMapping("/{postId}/shares")
-	public ResponseEntity<Long> share(@PathVariable Long postId, @Valid @RequestBody PostDtos.ShareRequest request) {
-		return new ResponseEntity<>(postService.sharePost(postId, request), HttpStatus.CREATED);
+	public ResponseEntity<Long> share(@PathVariable("postId") Long postId, 
+			@Valid @RequestBody PostDtos.ShareRequest request,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
+		return new ResponseEntity<>(postService.sharePost(postId, request, userId), HttpStatus.CREATED);
+	}
+
+	private Long extractUserIdFromToken(String authHeader) {
+		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+			String token = authHeader.substring(7);
+			return jwtUtil.extractUserId(token);
+		}
+		throw new RuntimeException("Token không hợp lệ");
 	}
 }
 

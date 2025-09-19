@@ -12,8 +12,6 @@ import lombok.Getter;
 public class PostDtos {
     @Getter
     public static class CreateRequest {
-        @NotNull
-        private Long authorId;
         private Long groupId;
         @NotBlank
         @Size(max = 10000)
@@ -47,8 +45,6 @@ public class PostDtos {
 
     @Getter
     public static class CommentCreateRequest {
-        @NotNull
-        private Long authorId;
         private Long parentId;
         @NotBlank
         @Size(max = 5000)
@@ -58,15 +54,11 @@ public class PostDtos {
     @Getter
     public static class ReactionRequest {
         @NotNull
-        private Long userId;
-        @NotNull
         private ReactionType type;
     }
 
     @Getter
     public static class ShareRequest {
-        @NotNull
-        private Long byUserId;
         @Size(max = 10000)
         private String comment;
     }

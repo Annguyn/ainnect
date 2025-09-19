@@ -30,7 +30,8 @@ public class PostMedia {
 	@Column(name = "media_type", nullable = false)
 	private MediaType mediaType;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
+	@org.hibernate.annotations.CreationTimestamp
 	private LocalDateTime createdAt;
 }
 

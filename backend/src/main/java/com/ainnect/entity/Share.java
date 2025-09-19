@@ -29,7 +29,8 @@ public class Share {
 	@Column(name = "comment", columnDefinition = "TEXT")
 	private String comment;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
+	@org.hibernate.annotations.CreationTimestamp
 	private LocalDateTime createdAt;
 }
 

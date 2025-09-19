@@ -9,8 +9,6 @@ import lombok.Getter;
 public class CommentDtos {
 	@Getter
 	public static class ReplyRequest {
-		@NotNull
-		private Long authorId;
 		@NotBlank
 		@Size(max = 5000)
 		private String content;
@@ -18,8 +16,6 @@ public class CommentDtos {
 
 	@Getter
 	public static class ReactionRequest {
-		@NotNull
-		private Long userId;
 		@NotNull
 		private ReactionType type;
 	}

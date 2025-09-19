@@ -42,7 +42,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthIdentityDtos.AuthResponse> refreshToken(
-            @RequestParam String refreshToken) {
+            @RequestParam("refreshToken") String refreshToken) {
         try {
             AuthIdentityDtos.AuthResponse response = authService.refreshToken(refreshToken);
             return ResponseEntity.ok(response);

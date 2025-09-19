@@ -10,9 +10,9 @@ public interface CommentService {
 
 	Page<Comment> listReplies(Long commentId, Pageable pageable);
 
-	Long replyToComment(Long commentId, CommentDtos.ReplyRequest request);
+	Long replyToComment(Long commentId, CommentDtos.ReplyRequest request, Long authorId);
 
-	void reactToComment(Long commentId, CommentDtos.ReactionRequest request);
+	void reactToComment(Long commentId, CommentDtos.ReactionRequest request, Long userId);
 
 	void unreactToComment(Long commentId, Long userId);
 }

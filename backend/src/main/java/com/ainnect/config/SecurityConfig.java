@@ -38,13 +38,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Cho phép truy cập không cần xác thực
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/users/check-username/**").permitAll()
                 .requestMatchers("/api/users/check-email/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-                // Các endpoint khác cần xác thực
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
