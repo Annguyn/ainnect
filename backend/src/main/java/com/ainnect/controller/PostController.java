@@ -1,9 +1,12 @@
 package com.ainnect.controller;
 
+import com.ainnect.common.enums.PostVisibility;
 import com.ainnect.config.JwtUtil;
+import com.ainnect.dto.comment.CommentDtos;
 import com.ainnect.dto.post.PostDtos;
-import com.ainnect.entity.Comment;
+import com.ainnect.dto.reaction.ReactionDtos;
 import com.ainnect.service.PostService;
+import com.ainnect.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -18,18 +25,144 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 	private final PostService postService;
 	private final JwtUtil jwtUtil;
+	private final FileStorageService fileStorageService;
 
-	@PostMapping
-	public ResponseEntity<PostDtos.Response> create(@Valid @RequestBody PostDtos.CreateRequest request,
+	@PostMapping(consumes = "multipart/form-data")
+	public ResponseEntity<PostDtos.Response> create(
+			@RequestParam("content") String content,
+			@RequestParam(value = "groupId", required = false) Long groupId,
+			@RequestParam(value = "visibility", defaultValue = "public_") String visibility,
+			@RequestParam(value = "mediaFiles", required = false) MultipartFile[] mediaFiles,
 			@RequestHeader("Authorization") String authHeader) {
-		Long authorId = extractUserIdFromToken(authHeader);
-		return new ResponseEntity<>(postService.create(request, authorId), HttpStatus.CREATED);
+		try {
+			Long authorId = extractUserIdFromToken(authHeader);
+			
+			// Create post request
+			PostDtos.CreateRequest request = new PostDtos.CreateRequest();
+			request.setContent(content);
+			request.setGroupId(groupId);
+			request.setVisibility(PostVisibility.valueOf(visibility));
+			
+			// Handle media files if provided
+			if (mediaFiles != null && mediaFiles.length > 0) {
+				List<String> mediaUrls = new ArrayList<>();
+				for (MultipartFile file : mediaFiles) {
+					if (!file.isEmpty()) {
+						String mediaUrl = fileStorageService.storeFile(file, "posts");
+						mediaUrls.add(mediaUrl);
+					}
+				}
+				request.setMediaUrls(mediaUrls);
+			}
+			
+			PostDtos.Response response = postService.create(request, authorId);
+			return new ResponseEntity<>(response, HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace(); // Log the exception for debugging
+			return ResponseEntity.badRequest().build();
+		}
 	}
 
-	@PutMapping("/{postId}")
-	public ResponseEntity<PostDtos.Response> update(@PathVariable("postId") Long postId,
-			@Valid @RequestBody PostDtos.UpdateRequest request) {
-		return ResponseEntity.ok(postService.update(postId, request));
+	@PostMapping(value = "/with-media", consumes = "multipart/form-data")
+	public ResponseEntity<PostDtos.Response> createWithMedia(
+			@RequestParam("content") String content,
+			@RequestParam(value = "groupId", required = false) Long groupId,
+			@RequestParam(value = "visibility", defaultValue = "public_") String visibility,
+			@RequestParam(value = "mediaFiles", required = false) MultipartFile[] mediaFiles,
+			@RequestHeader("Authorization") String authHeader) {
+		try {
+			Long authorId = extractUserIdFromToken(authHeader);
+			
+			// Create post request
+			PostDtos.CreateRequest request = new PostDtos.CreateRequest();
+			request.setContent(content);
+			request.setGroupId(groupId);
+			request.setVisibility(PostVisibility.valueOf(visibility));
+			
+			// Handle media files if provided
+			if (mediaFiles != null && mediaFiles.length > 0) {
+				List<String> mediaUrls = new ArrayList<>();
+				for (MultipartFile file : mediaFiles) {
+					if (!file.isEmpty()) {
+						String mediaUrl = fileStorageService.storeFile(file, "posts");
+						mediaUrls.add(mediaUrl);
+					}
+				}
+				request.setMediaUrls(mediaUrls);
+			}
+			
+			PostDtos.Response response = postService.create(request, authorId);
+			return new ResponseEntity<>(response, HttpStatus.CREATED);
+		} catch (Exception e) {
+			e.printStackTrace(); // Log the exception for debugging
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
+	@PutMapping(value = "/{postId}", consumes = "multipart/form-data")
+	public ResponseEntity<PostDtos.Response> update(
+			@PathVariable("postId") Long postId,
+			@RequestParam("content") String content,
+			@RequestParam(value = "visibility", defaultValue = "public_") String visibility,
+			@RequestParam(value = "mediaFiles", required = false) MultipartFile[] mediaFiles,
+			@RequestHeader("Authorization") String authHeader) {
+		try {
+			extractUserIdFromToken(authHeader);
+			
+			PostDtos.UpdateRequest request = new PostDtos.UpdateRequest();
+			request.setContent(content);
+			request.setVisibility(PostVisibility.valueOf(visibility));
+			
+			if (mediaFiles != null && mediaFiles.length > 0) {
+				List<String> mediaUrls = new ArrayList<>();
+				for (MultipartFile file : mediaFiles) {
+					if (!file.isEmpty()) {
+						String mediaUrl = fileStorageService.storeFile(file, "posts");
+						mediaUrls.add(mediaUrl);
+					}
+				}
+				request.setMediaUrls(mediaUrls);
+			}
+			
+			PostDtos.Response response = postService.update(postId, request);
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
+	@PutMapping(value = "/{postId}/with-media", consumes = "multipart/form-data")
+	public ResponseEntity<PostDtos.Response> updateWithMedia(
+			@PathVariable("postId") Long postId,
+			@RequestParam("content") String content,
+			@RequestParam(value = "visibility", defaultValue = "public_") String visibility,
+			@RequestParam(value = "mediaFiles", required = false) MultipartFile[] mediaFiles,
+			@RequestHeader("Authorization") String authHeader) {
+		try {
+			extractUserIdFromToken(authHeader);
+			
+			PostDtos.UpdateRequest request = new PostDtos.UpdateRequest();
+			request.setContent(content);
+			request.setVisibility(PostVisibility.valueOf(visibility));
+			
+			if (mediaFiles != null && mediaFiles.length > 0) {
+				List<String> mediaUrls = new ArrayList<>();
+				for (MultipartFile file : mediaFiles) {
+					if (!file.isEmpty()) {
+						String mediaUrl = fileStorageService.storeFile(file, "posts");
+						mediaUrls.add(mediaUrl);
+					}
+				}
+				request.setMediaUrls(mediaUrls);
+			}
+			
+			PostDtos.Response response = postService.update(postId, request);
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.badRequest().build();
+		}
 	}
 
 	@DeleteMapping("/{postId}")
@@ -48,6 +181,13 @@ public class PostController {
 		return ResponseEntity.ok(postService.getFeed(pageable));
 	}
 
+	@GetMapping("/feed/user")
+	public ResponseEntity<Page<PostDtos.Response>> getFeedForUser(Pageable pageable,
+			@RequestHeader("Authorization") String authHeader) {
+		Long currentUserId = extractUserIdFromToken(authHeader);
+		return ResponseEntity.ok(postService.getFeedForUser(currentUserId, pageable));
+	}
+
 	@GetMapping
 	public ResponseEntity<Page<PostDtos.Response>> listByAuthor(@RequestParam(value = "authorId", required = false) Long authorId, Pageable pageable) {
 		if (authorId != null) {
@@ -55,6 +195,13 @@ public class PostController {
 		} else {
 			return ResponseEntity.ok(postService.getFeed(pageable));
 		}
+	}
+
+	@GetMapping("/author/{authorId}")
+	public ResponseEntity<Page<PostDtos.Response>> listByAuthorForUser(@PathVariable("authorId") Long authorId, 
+			Pageable pageable, @RequestHeader("Authorization") String authHeader) {
+		Long currentUserId = extractUserIdFromToken(authHeader);
+		return ResponseEntity.ok(postService.listByAuthorForUser(authorId, currentUserId, pageable));
 	}
 
 	@PostMapping("/{postId}/comments")
@@ -66,8 +213,10 @@ public class PostController {
 	}
 
 	@GetMapping("/{postId}/comments")
-	public ResponseEntity<Page<Comment>> listComments(@PathVariable("postId") Long postId, Pageable pageable) {
-		return ResponseEntity.ok(postService.listComments(postId, pageable));
+	public ResponseEntity<CommentDtos.PaginatedResponse> listComments(@PathVariable("postId") Long postId,
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "size", defaultValue = "10") int size) {
+		return ResponseEntity.ok(postService.listCommentsWithPagination(postId, page, size));
 	}
 
 	@PostMapping("/{postId}/reactions")
@@ -85,6 +234,12 @@ public class PostController {
 		Long userId = extractUserIdFromToken(authHeader);
 		postService.unreactToPost(postId, userId);
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/{postId}/reactions")
+	public ResponseEntity<Page<ReactionDtos.ReactionResponse>> getReactions(@PathVariable("postId") Long postId, 
+			Pageable pageable) {
+		return ResponseEntity.ok(postService.getPostReactions(postId, pageable));
 	}
 
 	// Share

@@ -13,7 +13,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "reactions")
+@Table(name = "reactions", 
+	   uniqueConstraints = @UniqueConstraint(
+		   columnNames = {"target_type", "target_id", "user_id"},
+		   name = "uk_reaction_target_user"
+	   ))
 public class Reaction {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

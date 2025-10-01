@@ -34,4 +34,7 @@ public interface UserBlockRepository extends JpaRepository<UserBlock, Long> {
 	// Lấy danh sách ID của những người đã block user này
 	@Query("SELECT ub.blocker.id FROM UserBlock ub WHERE ub.blocked = :blocked")
 	List<Long> findBlockerUserIdsByBlocked(@Param("blocked") User blocked);
+	
+	// Kiểm tra xem user A có block user B không (by ID)
+	boolean existsByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
 }

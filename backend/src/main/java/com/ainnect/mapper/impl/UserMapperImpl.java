@@ -20,6 +20,7 @@ public class UserMapperImpl implements UserMapper {
                 .passwordHash(passwordEncoder.encode(getPassword(request)))
                 .displayName(getDisplayName(request))
                 .avatarUrl(getAvatarUrl(request))
+                .coverUrl(getCoverUrl(request))
                 .bio(getBio(request))
                 .gender(getGender(request))
                 .birthday(getBirthday(request))
@@ -37,6 +38,7 @@ public class UserMapperImpl implements UserMapper {
                 .phone(user.getPhone())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
+                .coverUrl(user.getCoverUrl())
                 .bio(user.getBio())
                 .gender(user.getGender())
                 .birthday(user.getBirthday())
@@ -55,6 +57,9 @@ public class UserMapperImpl implements UserMapper {
         }
         if (getAvatarUrlFromUpdate(request) != null) {
             user.setAvatarUrl(getAvatarUrlFromUpdate(request));
+        }
+        if (getCoverUrlFromUpdate(request) != null) {
+            user.setCoverUrl(getCoverUrlFromUpdate(request));
         }
         if (getBioFromUpdate(request) != null) {
             user.setBio(getBioFromUpdate(request));
@@ -131,6 +136,16 @@ public class UserMapperImpl implements UserMapper {
         }
     }
     
+    private String getCoverUrl(UserDtos.CreateRequest request) {
+        try {
+            java.lang.reflect.Field field = request.getClass().getDeclaredField("coverUrl");
+            field.setAccessible(true);
+            return (String) field.get(request);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
     private String getBio(UserDtos.CreateRequest request) {
         try {
             java.lang.reflect.Field field = request.getClass().getDeclaredField("bio");
@@ -195,6 +210,16 @@ public class UserMapperImpl implements UserMapper {
     private String getAvatarUrlFromUpdate(UserDtos.UpdateRequest request) {
         try {
             java.lang.reflect.Field field = request.getClass().getDeclaredField("avatarUrl");
+            field.setAccessible(true);
+            return (String) field.get(request);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String getCoverUrlFromUpdate(UserDtos.UpdateRequest request) {
+        try {
+            java.lang.reflect.Field field = request.getClass().getDeclaredField("coverUrl");
             field.setAccessible(true);
             return (String) field.get(request);
         } catch (Exception e) {

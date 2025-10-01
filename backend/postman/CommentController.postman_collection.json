@@ -1,0 +1,225 @@
+{
+	"info": {
+		"_postman_id": "comment-controller-collection",
+		"name": "CommentController API",
+		"description": "Professional Postman collection for Comment Controller APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Comment Management",
+			"item": [
+				{
+					"name": "List Comments by Post",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/by-post/{{postId}}?page=0&size=4",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"by-post",
+								"{{postId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "4"
+								}
+							]
+						},
+						"description": "Get paginated comments for a specific post"
+					},
+					"response": []
+				},
+				{
+					"name": "List Comment Replies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/{{commentId}}/replies?page=0&size=5",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"{{commentId}}",
+								"replies"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								}
+							]
+						},
+						"description": "Get paginated replies for a specific comment"
+					},
+					"response": []
+				},
+				{
+					"name": "Reply to Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a reply to the comment\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/{{commentId}}/replies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"{{commentId}}",
+								"replies"
+							]
+						},
+						"description": "Create a reply to a specific comment"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/{{commentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"{{commentId}}"
+							]
+						},
+						"description": "Delete a comment (only by comment author)"
+					},
+					"response": []
+				}
+			],
+			"description": "Comment management endpoints"
+		},
+		{
+			"name": "Comment Reactions",
+			"item": [
+				{
+					"name": "React to Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reactionType\": \"LIKE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/{{commentId}}/reactions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"{{commentId}}",
+								"reactions"
+							]
+						},
+						"description": "Add a reaction to a comment"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Reaction from Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/{{commentId}}/reactions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								"{{commentId}}",
+								"reactions"
+							]
+						},
+						"description": "Remove user's reaction from a comment"
+					},
+					"response": []
+				}
+			],
+			"description": "Comment reaction endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "postId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "commentId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

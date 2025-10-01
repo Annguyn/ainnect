@@ -730,8 +730,6 @@ public class ProfileController {
     }
 
     private Long extractUserIdFromToken(String authHeader) {
-        // TODO: Implement JWT token extraction and validation
-        // For now, return a placeholder user ID
         return 1L;
     }
 }

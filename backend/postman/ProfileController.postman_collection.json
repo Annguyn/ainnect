@@ -1,0 +1,1010 @@
+{
+	"info": {
+		"_postman_id": "profile-controller-collection",
+		"name": "ProfileController API - Fixed",
+		"description": "Professional Postman collection for Profile Management Controller APIs - Updated with improved blocked user handling",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Profile Information",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get user profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}/posts?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get user's posts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Followers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}/followers?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}",
+								"followers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get user's followers"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Following",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}/following?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}",
+								"following"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get users that this user is following"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Friends",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}/friends?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}",
+								"friends"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get user's friends"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Social Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{userId}}/social-stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{userId}}",
+								"social-stats"
+							]
+						},
+						"description": "Get user's social statistics"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile information endpoints"
+		},
+		{
+			"name": "Education Management",
+			"item": [
+				{
+					"name": "Create Education",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "schoolName",
+									"value": "University of Technology",
+									"type": "text"
+								},
+								{
+									"key": "degree",
+									"value": "Bachelor of Science",
+									"type": "text"
+								},
+								{
+									"key": "fieldOfStudy",
+									"value": "Computer Science",
+									"type": "text"
+								},
+								{
+									"key": "startDate",
+									"value": "2018-09-01",
+									"type": "text"
+								},
+								{
+									"key": "endDate",
+									"value": "2022-06-30",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "false",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Studied computer science with focus on software engineering",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/education",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"education"
+							]
+						},
+						"description": "Create education record"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Education",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "schoolName",
+									"value": "Updated University Name",
+									"type": "text"
+								},
+								{
+									"key": "degree",
+									"value": "Master of Science",
+									"type": "text"
+								},
+								{
+									"key": "fieldOfStudy",
+									"value": "Data Science",
+									"type": "text"
+								},
+								{
+									"key": "startDate",
+									"value": "2022-09-01",
+									"type": "text"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-06-30",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Currently pursuing master's degree",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/education/{{educationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"education",
+								"{{educationId}}"
+							]
+						},
+						"description": "Update education record"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Education",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/education/{{educationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"education",
+								"{{educationId}}"
+							]
+						},
+						"description": "Delete education record"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Educations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/education",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"education"
+							]
+						},
+						"description": "Get all education records for current user"
+					},
+					"response": []
+				}
+			],
+			"description": "Education management endpoints"
+		},
+		{
+			"name": "Work Experience Management",
+			"item": [
+				{
+					"name": "Create Work Experience",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "companyName",
+									"value": "Tech Company Inc.",
+									"type": "text"
+								},
+								{
+									"key": "position",
+									"value": "Software Engineer",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "San Francisco, CA",
+									"type": "text"
+								},
+								{
+									"key": "startDate",
+									"value": "2022-07-01",
+									"type": "text"
+								},
+								{
+									"key": "endDate",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Developing web applications using Java and Spring Boot",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/work-experience",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"work-experience"
+							]
+						},
+						"description": "Create work experience record"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Work Experience",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "companyName",
+									"value": "Updated Company Name",
+									"type": "text"
+								},
+								{
+									"key": "position",
+									"value": "Senior Software Engineer",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "New York, NY",
+									"type": "text"
+								},
+								{
+									"key": "startDate",
+									"value": "2022-07-01",
+									"type": "text"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "false",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Led development of microservices architecture",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/work-experience/{{workExperienceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"work-experience",
+								"{{workExperienceId}}"
+							]
+						},
+						"description": "Update work experience record"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Work Experience",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/work-experience/{{workExperienceId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"work-experience",
+								"{{workExperienceId}}"
+							]
+						},
+						"description": "Delete work experience record"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Work Experiences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/work-experience",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"work-experience"
+							]
+						},
+						"description": "Get all work experience records for current user"
+					},
+					"response": []
+				}
+			],
+			"description": "Work experience management endpoints"
+		},
+		{
+			"name": "Interest Management",
+			"item": [
+				{
+					"name": "Create Interest",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Photography",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Hobby",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Love capturing moments and landscapes",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/interest",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"interest"
+							]
+						},
+						"description": "Create interest record"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Interest",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Digital Photography",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Professional Hobby",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Professional digital photography and editing",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/interest/{{interestId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"interest",
+								"{{interestId}}"
+							]
+						},
+						"description": "Update interest record"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Interest",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/interest/{{interestId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"interest",
+								"{{interestId}}"
+							]
+						},
+						"description": "Delete interest record"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Interests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/interest",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"interest"
+							]
+						},
+						"description": "Get all interest records for current user"
+					},
+					"response": []
+				}
+			],
+			"description": "Interest management endpoints"
+		},
+		{
+			"name": "Location Management",
+			"item": [
+				{
+					"name": "Create Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "locationName",
+									"value": "San Francisco",
+									"type": "text"
+								},
+								{
+									"key": "locationType",
+									"value": "City",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "123 Main St, San Francisco, CA 94102",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "37.7749",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "-122.4194",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Current residence",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/location",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"location"
+							]
+						},
+						"description": "Create location record"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Location",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "locationName",
+									"value": "New York City",
+									"type": "text"
+								},
+								{
+									"key": "locationType",
+									"value": "City",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "456 Broadway, New York, NY 10013",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "40.7128",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "-74.0060",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "New residence",
+									"type": "text"
+								},
+								{
+									"key": "isCurrent",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/location/{{locationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"location",
+								"{{locationId}}"
+							]
+						},
+						"description": "Update location record"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Location",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/location/{{locationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"location",
+								"{{locationId}}"
+							]
+						},
+						"description": "Delete location record"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/location",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"location"
+							]
+						},
+						"description": "Get all location records for current user"
+					},
+					"response": []
+				}
+			],
+			"description": "Location management endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "educationId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "workExperienceId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "interestId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "locationId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

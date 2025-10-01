@@ -1,9 +1,11 @@
 package com.ainnect.controller;
 
+import com.ainnect.common.ApiResponse;
 import com.ainnect.config.JwtUtil;
 import com.ainnect.dto.user.UserDtos;
 import com.ainnect.entity.User;
 import com.ainnect.mapper.UserMapper;
+import com.ainnect.service.FileStorageService;
 import com.ainnect.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,11 +27,13 @@ public class UserController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final UserMapper userMapper;
+    private final FileStorageService fileStorageService;
 
-    public UserController(UserService userService, JwtUtil jwtUtil, UserMapper userMapper) {
+    public UserController(UserService userService, JwtUtil jwtUtil, UserMapper userMapper, FileStorageService fileStorageService) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.userMapper = userMapper;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping("/profile")
@@ -61,17 +66,54 @@ public class UserController {
         }
     }
 
-    @PutMapping("/profile")
-    @Operation(summary = "Cập nhật thông tin cá nhân")
-    public ResponseEntity<UserDtos.Response> updateProfile(
+    @PutMapping(value = "/profile", consumes = "multipart/form-data")
+    @Operation(summary = "Cập nhật thông tin cá nhân với form data")
+    public ResponseEntity<ApiResponse<UserDtos.Response>> updateProfile(
             @RequestHeader("Authorization") String authHeader,
-            @Valid @RequestBody UserDtos.UpdateRequest request) {
+            @RequestParam(value = "displayName", required = false) String displayName,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "gender", required = false) String gender,
+            @RequestParam(value = "birthday", required = false) String birthday,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar,
+            @RequestParam(value = "cover", required = false) MultipartFile cover) {
         try {
             Long userId = extractUserIdFromToken(authHeader);
+            
+            UserDtos.UpdateRequest request = new UserDtos.UpdateRequest();
+            request.setDisplayName(displayName);
+            request.setPhone(phone);
+            request.setBio(bio);
+            if (gender != null && !gender.isEmpty()) {
+                request.setGender(com.ainnect.common.enums.Gender.valueOf(gender));
+            }
+            if (birthday != null && !birthday.isEmpty()) {
+                request.setBirthday(java.time.LocalDate.parse(birthday));
+            }
+            request.setLocation(location);
+            
+            // Handle avatar upload if provided
+            if (avatar != null && !avatar.isEmpty()) {
+                String avatarUrl = fileStorageService.storeAvatarFile(avatar, userId);
+                request.setAvatarUrl(avatarUrl);
+            }
+            
+            // Handle cover image upload if provided
+            if (cover != null && !cover.isEmpty()) {
+                String coverUrl = fileStorageService.storeCoverFile(cover, userId);
+                request.setCoverUrl(coverUrl);
+            }
+            
             UserDtos.Response response = userService.updateUser(userId, request);
-            return ResponseEntity.ok(response);
+            ApiResponse<UserDtos.Response> apiResponse = new ApiResponse<>("SUCCESS", "Cập nhật thông tin thành công", response);
+            return ResponseEntity.ok(apiResponse);
+        } catch (IllegalArgumentException e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
-            throw new RuntimeException("Cập nhật thông tin thất bại: " + e.getMessage());
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", "Cập nhật thông tin thất bại: " + e.getMessage(), null);
+            return ResponseEntity.status(500).body(response);
         }
     }
 
@@ -127,6 +169,111 @@ public class UserController {
     public ResponseEntity<Boolean> checkEmailExists(@PathVariable("email") String email) {
         boolean exists = userService.existsByEmail(email);
         return ResponseEntity.ok(exists);
+    }
+
+    @PostMapping("/upload-avatar")
+    @Operation(summary = "Upload avatar")
+    public ResponseEntity<ApiResponse<UserDtos.Response>> uploadAvatar(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam("avatar") MultipartFile file) {
+        try {
+            Long userId = extractUserIdFromToken(authHeader);
+            
+            // Upload file và lấy URL
+            String avatarUrl = fileStorageService.storeAvatarFile(file, userId);
+            
+            // Cập nhật avatar URL trong database
+            UserDtos.UpdateRequest updateRequest = new UserDtos.UpdateRequest();
+            updateRequest.setAvatarUrl(avatarUrl);
+            UserDtos.Response response = userService.updateUser(userId, updateRequest);
+            
+            ApiResponse<UserDtos.Response> apiResponse = new ApiResponse<>("SUCCESS", "Upload avatar thành công", response);
+            return ResponseEntity.ok(apiResponse);
+        } catch (IllegalArgumentException e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", "Upload avatar thất bại: " + e.getMessage(), null);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/upload-cover")
+    @Operation(summary = "Upload cover image")
+    public ResponseEntity<ApiResponse<UserDtos.Response>> uploadCover(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam("cover") MultipartFile file) {
+        try {
+            Long userId = extractUserIdFromToken(authHeader);
+            
+            // Upload file và lấy URL
+            String coverUrl = fileStorageService.storeCoverFile(file, userId);
+            
+            // Cập nhật cover URL trong database
+            UserDtos.UpdateRequest updateRequest = new UserDtos.UpdateRequest();
+            updateRequest.setCoverUrl(coverUrl);
+            UserDtos.Response response = userService.updateUser(userId, updateRequest);
+            
+            ApiResponse<UserDtos.Response> apiResponse = new ApiResponse<>("SUCCESS", "Upload cover thành công", response);
+            return ResponseEntity.ok(apiResponse);
+        } catch (IllegalArgumentException e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", "Upload cover thất bại: " + e.getMessage(), null);
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping(value = "/profile", consumes = "multipart/form-data")
+    @Operation(summary = "Tạo profile với form data")
+    public ResponseEntity<ApiResponse<UserDtos.Response>> createProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(value = "displayName", required = false) String displayName,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "gender", required = false) String gender,
+            @RequestParam(value = "birthday", required = false) String birthday,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar,
+            @RequestParam(value = "cover", required = false) MultipartFile cover) {
+        try {
+            Long userId = extractUserIdFromToken(authHeader);
+            
+            UserDtos.UpdateRequest request = new UserDtos.UpdateRequest();
+            request.setDisplayName(displayName);
+            request.setPhone(phone);
+            request.setBio(bio);
+            if (gender != null && !gender.isEmpty()) {
+                request.setGender(com.ainnect.common.enums.Gender.valueOf(gender));
+            }
+            if (birthday != null && !birthday.isEmpty()) {
+                request.setBirthday(java.time.LocalDate.parse(birthday));
+            }
+            request.setLocation(location);
+            
+            // Handle avatar upload if provided
+            if (avatar != null && !avatar.isEmpty()) {
+                String avatarUrl = fileStorageService.storeAvatarFile(avatar, userId);
+                request.setAvatarUrl(avatarUrl);
+            }
+            
+            // Handle cover image upload if provided
+            if (cover != null && !cover.isEmpty()) {
+                String coverUrl = fileStorageService.storeCoverFile(cover, userId);
+                request.setCoverUrl(coverUrl);
+            }
+            
+            UserDtos.Response response = userService.updateUser(userId, request);
+            ApiResponse<UserDtos.Response> apiResponse = new ApiResponse<>("SUCCESS", "Tạo profile thành công", response);
+            return ResponseEntity.ok(apiResponse);
+        } catch (IllegalArgumentException e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", e.getMessage(), null);
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            ApiResponse<UserDtos.Response> response = new ApiResponse<>("ERROR", "Tạo profile thất bại: " + e.getMessage(), null);
+            return ResponseEntity.status(500).body(response);
+        }
     }
 
     private Long extractUserIdFromToken(String authHeader) {

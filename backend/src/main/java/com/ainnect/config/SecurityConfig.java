@@ -41,6 +41,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/users/check-username/**").permitAll()
                 .requestMatchers("/api/users/check-email/**").permitAll()
+                .requestMatchers("/api/files/**").permitAll() // Allow file access
+                .requestMatchers("/api/profile/suggestions/**").permitAll() // Allow public suggestions
+                .requestMatchers("/api/social/stats/**").permitAll() // Allow public social stats
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()

@@ -35,6 +35,9 @@ public class UserDtos {
 		private String avatarUrl;
 
 		@Size(max = 500)
+		private String coverUrl;
+
+		@Size(max = 500)
 		private String bio;
 
 		private Gender gender;
@@ -55,7 +58,12 @@ public class UserDtos {
 		private String phone;
 
 		@Size(max = 500, message = "URL avatar không được quá 500 ký tự")
+		// NOTE: Khuyến nghị sử dụng POST /api/users/upload-avatar thay vì gửi URL
 		private String avatarUrl;
+
+		@Size(max = 500, message = "URL cover không được quá 500 ký tự")
+		// NOTE: Khuyến nghị sử dụng POST /api/users/upload-cover thay vì gửi URL
+		private String coverUrl;
 
 		@Size(max = 500, message = "Bio không được quá 500 ký tự")
 		private String bio;
@@ -91,6 +99,7 @@ public class UserDtos {
 		private String phone;
 		private String displayName;
 		private String avatarUrl;
+		private String coverUrl;
 		private String bio;
 		private Gender gender;
 		private LocalDate birthday;

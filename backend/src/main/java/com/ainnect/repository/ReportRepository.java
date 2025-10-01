@@ -50,4 +50,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 	// Thống kê report theo reason
 	@Query("SELECT r.reason, COUNT(r) FROM Report r GROUP BY r.reason")
 	List<Object[]> getReportStatsByReason();
+	
+	// Lấy danh sách report theo reporter ID
+	List<Report> findByReporterIdOrderByCreatedAtDesc(Long reporterId);
+	
+	// Lấy tất cả report theo thứ tự tạo mới nhất
+	List<Report> findAllByOrderByCreatedAtDesc();
 }

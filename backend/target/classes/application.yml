@@ -14,6 +14,13 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
 
 server:
   port: 8080
@@ -28,3 +35,9 @@ jwt:
   secret: mySecretKeyForAinnectApplicationThatIsVerySecureAndLong
   expiration: 86400000 # 24 hours in milliseconds
   refresh-expiration: 604800000 # 7 days in milliseconds
+
+# File Upload Configuration
+app:
+  file:
+    upload-dir: uploads
+    base-url: http://localhost:8080

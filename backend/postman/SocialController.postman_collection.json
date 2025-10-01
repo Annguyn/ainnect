@@ -1,0 +1,1272 @@
+{
+	"info": {
+		"_postman_id": "social-controller-collection",
+		"name": "SocialController API - Fixed",
+		"description": "Professional Postman collection for Social Features Controller APIs - Updated with bug fixes for follow, friend requests, and block functionality",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Follow Management",
+			"item": [
+				{
+					"name": "Follow User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"followeeId\": {{followeeId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/follow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"follow"
+							]
+						},
+						"description": "Follow another user"
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/follow/{{followeeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"follow",
+								"{{followeeId}}"
+							]
+						},
+						"description": "Unfollow a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Followers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/followers/{{userId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"followers",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get user's followers list"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Following",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/following/{{userId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"following",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get users that this user is following"
+					},
+					"response": []
+				},
+				{
+					"name": "Check if Following",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/is-following/{{followeeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"is-following",
+								"{{followeeId}}"
+							]
+						},
+						"description": "Check if current user is following another user"
+					},
+					"response": []
+				}
+			],
+			"description": "Follow/unfollow functionality"
+		},
+		{
+			"name": "Friendship Management",
+			"item": [
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": {{friendId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend-request",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request"
+							]
+						},
+						"description": "Send a friend request to another user"
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"otherUserId\": {{otherUserId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend-request/accept",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request",
+								"accept"
+							]
+						},
+						"description": "Accept a friend request"
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"otherUserId\": {{otherUserId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend-request/reject",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request",
+								"reject"
+							]
+						},
+						"description": "Reject a friend request"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Friend",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend/{{friendId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend",
+								"{{friendId}}"
+							]
+						},
+						"description": "Remove a friend"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friends",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friends/{{userId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friends",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get user's friends list"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friend Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend-requests?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-requests"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get incoming friend requests"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sent Friend Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/sent-friend-requests?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"sent-friend-requests"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get sent friend requests"
+					},
+					"response": []
+				},
+				{
+					"name": "Check if Friend",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/is-friend/{{friendId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"is-friend",
+								"{{friendId}}"
+							]
+						},
+						"description": "Check if current user is friends with another user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Common Friends",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/common-friends/{{otherUserId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"common-friends",
+								"{{otherUserId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get common friends between current user and other user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Common Friends Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/common-friends/{{otherUserId}}/count",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"common-friends",
+								"{{otherUserId}}",
+								"count"
+							]
+						},
+						"description": "Get count of common friends between current user and other user"
+					},
+					"response": []
+				}
+			],
+			"description": "Friendship management functionality"
+		},
+		{
+			"name": "Block Management",
+			"item": [
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockedUserId\": {{blockedUserId}},\n  \"reason\": \"Inappropriate behavior\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/block",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"block"
+							]
+						},
+						"description": "Block a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/block/{{blockedUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"block",
+								"{{blockedUserId}}"
+							]
+						},
+						"description": "Unblock a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Blocked Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/blocked-users?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"blocked-users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get list of blocked users"
+					},
+					"response": []
+				},
+				{
+					"name": "Check if Blocked",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/is-blocked/{{blockedId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"is-blocked",
+								"{{blockedId}}"
+							]
+						},
+						"description": "Check if current user has blocked another user"
+					},
+					"response": []
+				}
+			],
+			"description": "User blocking functionality"
+		},
+		{
+			"name": "Post Sharing",
+			"item": [
+				{
+					"name": "Share Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"postId\": {{postId}},\n  \"comment\": \"Great post! Sharing this with my network.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/share",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"share"
+							]
+						},
+						"description": "Share a post with optional comment"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Share",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/share/{{shareId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"share",
+								"{{shareId}}"
+							]
+						},
+						"description": "Delete a shared post"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post Shares",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/shares/post/{{postId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"shares",
+								"post",
+								"{{postId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get shares for a specific post"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Shares",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/shares/user/{{userId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"shares",
+								"user",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get shares by a specific user"
+					},
+					"response": []
+				}
+			],
+			"description": "Post sharing functionality"
+		},
+		{
+			"name": "Reporting System",
+			"item": [
+				{
+					"name": "Report User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetId\": {{targetId}},\n  \"reason\": \"SPAM\",\n  \"description\": \"User is posting spam content repeatedly\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/report/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"report",
+								"user"
+							]
+						},
+						"description": "Report a user for inappropriate behavior"
+					},
+					"response": []
+				},
+				{
+					"name": "Report Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetId\": {{postId}},\n  \"reason\": \"INAPPROPRIATE_CONTENT\",\n  \"description\": \"This post contains inappropriate content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/report/post",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"report",
+								"post"
+							]
+						},
+						"description": "Report a post for inappropriate content"
+					},
+					"response": []
+				},
+				{
+					"name": "Report Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetId\": {{commentId}},\n  \"reason\": \"HARASSMENT\",\n  \"description\": \"This comment contains harassing content\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/report/comment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"report",
+								"comment"
+							]
+						},
+						"description": "Report a comment for inappropriate content"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Reports",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/reports/my?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"reports",
+								"my"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get reports made by current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Reports (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/reports?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all reports (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Report by ID (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/reports/{{reportId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"reports",
+								"{{reportId}}"
+							]
+						},
+						"description": "Get specific report details (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Report Status (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"RESOLVED\",\n  \"adminNote\": \"Report has been reviewed and appropriate action taken\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/reports/{{reportId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"reports",
+								"{{reportId}}",
+								"status"
+							]
+						},
+						"description": "Update report status (Admin only)"
+					},
+					"response": []
+				}
+			],
+			"description": "Content reporting and moderation system"
+		},
+		{
+			"name": "Social Statistics",
+			"item": [
+				{
+					"name": "Get Social Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/stats/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"stats",
+								"{{userId}}"
+							]
+						},
+						"description": "Get user's social statistics (followers, following, friends count)"
+					},
+					"response": []
+				}
+			],
+			"description": "Social statistics and analytics"
+		},
+		{
+			"name": "Debug & Error Testing",
+			"item": [
+				{
+					"name": "Test Follow Blocked User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"followeeId\": {{blockedUserId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/follow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"follow"
+							]
+						},
+						"description": "Test following a blocked user - should return error message"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Friend Request to Blocked User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": {{blockedUserId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/friend-request",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"friend-request"
+							]
+						},
+						"description": "Test sending friend request to blocked user - should return error message"
+					},
+					"response": []
+				},
+				{
+					"name": "Test View Blocked User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profiles/{{blockedUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"{{blockedUserId}}"
+							]
+						},
+						"description": "Test viewing profile of user who blocked you - should return 403 Forbidden"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Can Send Friend Request",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/stats/{{targetUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"stats",
+								"{{targetUserId}}"
+							]
+						},
+						"description": "Check if can send friend request - check canSendFriendRequest field in response"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"blockedUserId\": {{targetUserId}},\n  \"reason\": \"Inappropriate behavior\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/social/block",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"block"
+							]
+						},
+						"description": "Block a user - this will remove any existing follow/friend relationships"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/social/block/{{blockedUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"social",
+								"block",
+								"{{blockedUserId}}"
+							]
+						},
+						"description": "Unblock a user"
+					},
+					"response": []
+				}
+			],
+			"description": "Debug and error testing scenarios for social features"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "followeeId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "friendId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "otherUserId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "friendshipId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "blockedUserId",
+			"value": "3",
+			"type": "string"
+		},
+		{
+			"key": "blockedId",
+			"value": "3",
+			"type": "string"
+		},
+		{
+			"key": "targetUserId",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "postId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "shareId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "targetId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "commentId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "reportId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

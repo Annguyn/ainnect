@@ -1,0 +1,586 @@
+{
+	"info": {
+		"_postman_id": "user-controller-enhanced-collection",
+		"name": "UserController Enhanced API",
+		"description": "Professional Postman collection for Enhanced User Management Controller APIs with Avatar and Cover Image support",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "User Profile Management",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Get current user's profile information including avatar and cover image"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Get user information by user ID including avatar and cover image"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile information endpoints"
+		},
+		{
+			"name": "Profile Creation and Updates",
+			"item": [
+				{
+					"name": "Create Profile with Form Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "displayName",
+									"value": "John Doe",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "+1234567890",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Software Developer passionate about technology",
+									"type": "text"
+								},
+								{
+									"key": "gender",
+									"value": "MALE",
+									"type": "text",
+									"description": "MALE, FEMALE, OTHER"
+								},
+								{
+									"key": "birthday",
+									"value": "1990-01-01",
+									"type": "text",
+									"description": "Format: YYYY-MM-DD"
+								},
+								{
+									"key": "location",
+									"value": "New York, USA",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": [],
+									"description": "Avatar image file (JPEG, PNG, GIF, WebP)"
+								},
+								{
+									"key": "cover",
+									"type": "file",
+									"src": [],
+									"description": "Cover image file (JPEG, PNG, GIF, WebP)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Create user profile with form data including avatar and cover image"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile with Form Data",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "displayName",
+									"value": "Updated Display Name",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "+1234567890",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Updated bio information",
+									"type": "text"
+								},
+								{
+									"key": "gender",
+									"value": "FEMALE",
+									"type": "text"
+								},
+								{
+									"key": "birthday",
+									"value": "1995-05-15",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "San Francisco, CA",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": [],
+									"description": "New avatar image (optional)"
+								},
+								{
+									"key": "cover",
+									"type": "file",
+									"src": [],
+									"description": "New cover image (optional)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Update user profile with form data including avatar and cover image"
+					},
+					"response": []
+				}
+			],
+			"description": "Profile creation and update endpoints with form data support"
+		},
+		{
+			"name": "Image Upload Endpoints",
+			"item": [
+				{
+					"name": "Upload Avatar Only",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": [],
+									"description": "Avatar image file (JPEG, PNG, GIF, WebP)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/upload-avatar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"upload-avatar"
+							]
+						},
+						"description": "Upload only avatar image"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Cover Image Only",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "cover",
+									"type": "file",
+									"src": [],
+									"description": "Cover image file (JPEG, PNG, GIF, WebP)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/upload-cover",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"upload-cover"
+							]
+						},
+						"description": "Upload only cover image"
+					},
+					"response": []
+				}
+			],
+			"description": "Individual image upload endpoints"
+		},
+		{
+			"name": "Account Management",
+			"item": [
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"change-password"
+							]
+						},
+						"description": "Change user password"
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Account",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"deactivate"
+							]
+						},
+						"description": "Deactivate user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Account",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/activate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"activate"
+							]
+						},
+						"description": "Activate user account"
+					},
+					"response": []
+				}
+			],
+			"description": "Account management endpoints"
+		},
+		{
+			"name": "Validation Endpoints",
+			"item": [
+				{
+					"name": "Check Username Exists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/check-username/{{username}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"check-username",
+								"{{username}}"
+							]
+						},
+						"description": "Check if username already exists"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Email Exists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/check-email/{{email}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"check-email",
+								"{{email}}"
+							]
+						},
+						"description": "Check if email already exists"
+					},
+					"response": []
+				}
+			],
+			"description": "User validation endpoints"
+		},
+		{
+			"name": "Example Requests",
+			"item": [
+				{
+					"name": "Create Complete Profile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "displayName",
+									"value": "Jane Smith",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "+1-555-0123",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Full-stack developer with 5 years of experience in Java and React",
+									"type": "text"
+								},
+								{
+									"key": "gender",
+									"value": "FEMALE",
+									"type": "text"
+								},
+								{
+									"key": "birthday",
+									"value": "1992-03-15",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "Seattle, Washington",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "cover",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Example: Create a complete profile with all fields and images"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile with New Images",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "displayName",
+									"value": "Jane Smith - Senior Developer",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Senior Full-stack developer with 7 years of experience. Passionate about clean code and team collaboration.",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "San Francisco, California",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "cover",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"profile"
+							]
+						},
+						"description": "Example: Update profile with new avatar and cover images"
+					},
+					"response": []
+				}
+			],
+			"description": "Example requests for testing profile functionality"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "username",
+			"value": "testuser",
+			"type": "string"
+		},
+		{
+			"key": "email",
+			"value": "test@example.com",
+			"type": "string"
+		}
+	]
+}

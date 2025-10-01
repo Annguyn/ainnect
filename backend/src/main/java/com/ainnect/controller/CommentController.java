@@ -2,12 +2,9 @@ package com.ainnect.controller;
 
 import com.ainnect.config.JwtUtil;
 import com.ainnect.dto.comment.CommentDtos;
-import com.ainnect.entity.Comment;
 import com.ainnect.service.CommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +17,17 @@ public class CommentController {
 	private final JwtUtil jwtUtil;
 
 	@GetMapping("/by-post/{postId}")
-	public ResponseEntity<Page<Comment>> listByPost(@PathVariable("postId") Long postId, Pageable pageable) {
-		return ResponseEntity.ok(commentService.listByPost(postId, pageable));
+	public ResponseEntity<CommentDtos.PaginatedResponse> listByPost(@PathVariable("postId") Long postId, 
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "size", defaultValue = "4") int size) {
+		return ResponseEntity.ok(commentService.listByPostWithPagination(postId, page, size));
 	}
 
 	@GetMapping("/{commentId}/replies")
-	public ResponseEntity<Page<Comment>> listReplies(@PathVariable("commentId") Long commentId, Pageable pageable) {
-		return ResponseEntity.ok(commentService.listReplies(commentId, pageable));
+	public ResponseEntity<CommentDtos.PaginatedResponse> listReplies(@PathVariable("commentId") Long commentId,
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "size", defaultValue = "5") int size) {
+		return ResponseEntity.ok(commentService.listRepliesWithPagination(commentId, page, size));
 	}
 
 	@PostMapping("/{commentId}/replies")
@@ -51,6 +52,14 @@ public class CommentController {
 			@RequestHeader("Authorization") String authHeader) {
 		Long userId = extractUserIdFromToken(authHeader);
 		commentService.unreactToComment(commentId, userId);
+		return ResponseEntity.noContent().build();
+	}
+
+	@DeleteMapping("/{commentId}")
+	public ResponseEntity<Void> deleteComment(@PathVariable("commentId") Long commentId,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
+		commentService.deleteComment(commentId, userId);
 		return ResponseEntity.noContent().build();
 	}
 

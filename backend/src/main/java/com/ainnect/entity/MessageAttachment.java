@@ -22,8 +22,8 @@ public class MessageAttachment {
 	@JoinColumn(name = "message_id", nullable = false)
 	private Message message;
 
-	@Column(name = "url", length = 500, nullable = false)
-	private String url;
+	@Column(name = "file_url", length = 500, nullable = false)
+	private String fileUrl;
 
 	@Column(name = "file_name", length = 255)
 	private String fileName;
@@ -31,8 +31,8 @@ public class MessageAttachment {
 	@Column(name = "file_size")
 	private Long fileSize;
 
-	@Column(name = "mime_type", length = 100)
-	private String mimeType;
+	@Column(name = "file_type", length = 100)
+	private String fileType;
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;

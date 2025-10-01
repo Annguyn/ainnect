@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -32,15 +33,19 @@ public class Post {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "visibility", nullable = false)
+	@Builder.Default
 	private PostVisibility visibility = PostVisibility.public_;
 
 	@Column(name = "comment_count", nullable = false)
+	@Builder.Default
 	private Integer commentCount = 0;
 
 	@Column(name = "reaction_count", nullable = false)
+	@Builder.Default
 	private Integer reactionCount = 0;
 
 	@Column(name = "share_count", nullable = false)
+	@Builder.Default
 	private Integer shareCount = 0;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
@@ -53,5 +58,8 @@ public class Post {
 
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
+
+	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<PostMedia> media;
 }
 
