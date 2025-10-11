@@ -1,43 +1,95 @@
-import axios from 'axios';
+import { apiClient } from './apiClient';
+import {
+  AuthResponse,
+  User,
+  RegisterRequest,
+  LoginRequest,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+} from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
-
-// Tạo axios instance với cấu hình mặc định
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor để thêm token vào header
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor để xử lý lỗi chung
-apiClient.interceptors.response.use(
-  (response) => {
+export const authService = {
+  async register(data: RegisterRequest): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
+    apiClient.setTokens(response.accessToken, response.refreshToken);
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Xử lý khi token hết hạn
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
-export default apiClient;
+  async login(data: LoginRequest): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/api/auth/login', data);
+    apiClient.setTokens(response.accessToken, response.refreshToken);
+    return response;
+  },
+
+  async logout(): Promise<string> {
+    const response = await apiClient.post<string>('/api/auth/logout');
+    apiClient.clearTokens();
+    return response;
+  },
+
+  async validateToken(): Promise<boolean> {
+    return await apiClient.get<boolean>('/api/auth/validate');
+  },
+
+  async getCurrentUser(): Promise<User> {
+    return await apiClient.get<User>('/api/auth/me');
+  },
+
+  async refreshToken(refreshToken: string): Promise<AuthResponse> {
+    return await apiClient.post<AuthResponse>(`/api/auth/refresh?refreshToken=${refreshToken}`);
+  },
+};
+
+export const userService = {
+  async getProfile(): Promise<User> {
+    return await apiClient.get<User>('/api/users/profile');
+  },
+
+  async getUserById(id: number): Promise<User> {
+    return await apiClient.get<User>(`/api/users/${id}`);
+  },
+
+  async updateProfile(data: UpdateProfileRequest): Promise<User> {
+    return await apiClient.put<User>('/api/users/profile', data);
+  },
+
+  async changePassword(data: ChangePasswordRequest): Promise<string> {
+    return await apiClient.put<string>('/api/users/change-password', data);
+  },
+
+  async deactivateAccount(): Promise<string> {
+    return await apiClient.put<string>('/api/users/deactivate');
+  },
+
+  async activateAccount(): Promise<string> {
+    return await apiClient.put<string>('/api/users/activate');
+  },
+
+  async checkUsernameExists(username: string): Promise<boolean> {
+    return await apiClient.get<boolean>(`/api/users/check-username/${encodeURIComponent(username)}`);
+  },
+
+  async checkEmailExists(email: string): Promise<boolean> {
+    return await apiClient.get<boolean>(`/api/users/check-email/${encodeURIComponent(email)}`);
+  },
+};
+
+export const {
+  register,
+  login,
+  logout,
+  validateToken,
+  getCurrentUser,
+  refreshToken,
+} = authService;
+
+export const {
+  getProfile,
+  getUserById,
+  updateProfile,
+  changePassword,
+  deactivateAccount,
+  activateAccount,
+  checkUsernameExists,
+  checkEmailExists,
+} = userService;

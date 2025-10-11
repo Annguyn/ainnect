@@ -1,12 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   LoginFormData, 
   RegisterFormData, 
   AuthState, 
   ValidationErrors, 
-  User,
-  AuthResponse 
+  LoginRequest,
+  RegisterRequest
 } from '../types';
+import { authService } from '../services/authService';
 
 // Validation utilities
 export const validateEmail = (email: string): string | null => {
@@ -40,132 +41,89 @@ export const validateConfirmPassword = (password: string, confirmPassword: strin
   return null;
 };
 
-// Mock API functions (replace with real API calls)
-const mockLogin = async (credentials: LoginFormData): Promise<AuthResponse> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (credentials.email === 'test@ainnect.com' && credentials.password === 'Password123') {
-        const user: User = {
-          id: '1',
-          email: credentials.email,
-          firstName: 'John',
-          lastName: 'Doe',
-          avatar: 'https://i.pravatar.cc/150',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        resolve({
-          user,
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-        });
-      } else {
-        reject(new Error('Email hoặc mật khẩu không chính xác'));
-      }
-    }, 1500);
-  });
+export const validateUsername = (username: string): string | null => {
+  if (!username) return 'Tên đăng nhập là bắt buộc';
+  if (username.length < 3) return 'Tên đăng nhập phải có ít nhất 3 ký tự';
+  if (username.length > 50) return 'Tên đăng nhập không được quá 50 ký tự';
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới';
+  return null;
 };
 
-const mockRegister = async (userData: RegisterFormData): Promise<AuthResponse> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (userData.email === 'existing@ainnect.com') {
-        reject(new Error('Email này đã được sử dụng'));
-      } else {
-        const user: User = {
-          id: '2',
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          avatar: 'https://i.pravatar.cc/150',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        resolve({
-          user,
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-        });
-      }
-    }, 2000);
-  });
+export const validatePhone = (phone: string): string | null => {
+  if (!phone) return 'Số điện thoại là bắt buộc';
+  const phoneRegex = /^\+84[0-9]{9,10}$/;
+  if (!phoneRegex.test(phone)) return 'Số điện thoại không hợp lệ (định dạng: +84xxxxxxxxx)';
+  return null;
+};
+
+export const validateDisplayName = (displayName: string): string | null => {
+  if (!displayName || displayName.trim().length === 0) return 'Tên hiển thị là bắt buộc';
+  if (displayName.trim().length > 65) return 'Tên hiển thị không được quá 65 ký tự';
+  return null;
 };
 
 // Main authentication hook
 export const useAuth = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    isLoading: false,
-    error: null,
-  });
+  const [authState, setAuthState] = useState<AuthState>(authService.getState());
+
+  useEffect(() => {
+    const unsubscribe = authService.subscribe(setAuthState);
+    return unsubscribe;
+  }, []);
 
   const login = useCallback(async (credentials: LoginFormData) => {
-    setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-    
     try {
-      const response = await mockLogin(credentials);
-      setAuthState({
-        isAuthenticated: true,
-        user: response.user,
-        isLoading: false,
-        error: null,
-      });
+      const loginRequest: LoginRequest = {
+        usernameOrEmail: credentials.usernameOrEmail,
+        password: credentials.password,
+      };
       
-      // Store tokens (in a real app, use secure storage)
-      if (credentials.rememberMe) {
-        localStorage.setItem('ainnect_tokens', JSON.stringify({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-        }));
-      }
-      
-      return { success: true, user: response.user };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Đăng nhập thất bại';
-      setAuthState(prev => ({ ...prev, isLoading: false, error: errorMessage }));
+      await authService.login(loginRequest);
+      return { success: true, user: authService.getCurrentUser() };
+    } catch (error: any) {
+      const errorMessage = error.message || 'Đăng nhập thất bại';
       return { success: false, error: errorMessage };
     }
   }, []);
 
   const register = useCallback(async (userData: RegisterFormData) => {
-    setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-    
     try {
-      const response = await mockRegister(userData);
-      setAuthState({
-        isAuthenticated: true,
-        user: response.user,
-        isLoading: false,
-        error: null,
-      });
+      const registerRequest: RegisterRequest = {
+        username: userData.username,
+        email: userData.email,
+        phone: userData.phone,
+        password: userData.password,
+        displayName: userData.displayName,
+      };
       
-      // Store tokens
-      localStorage.setItem('ainnect_tokens', JSON.stringify({
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-      }));
-      
-      return { success: true, user: response.user };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Đăng ký thất bại';
-      setAuthState(prev => ({ ...prev, isLoading: false, error: errorMessage }));
+      await authService.register(registerRequest);
+      return { success: true, user: authService.getCurrentUser() };
+    } catch (error: any) {
+      const errorMessage = error.message || 'Đăng ký thất bại';
       return { success: false, error: errorMessage };
     }
   }, []);
 
-  const logout = useCallback(() => {
-    setAuthState({
-      isAuthenticated: false,
-      user: null,
-      isLoading: false,
-      error: null,
-    });
-    localStorage.removeItem('ainnect_tokens');
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }, []);
+
+  const updateProfile = useCallback(async (profileData: any) => {
+    try {
+      const updatedUser = await authService.updateProfile(profileData);
+      return { success: true, user: updatedUser };
+    } catch (error: any) {
+      const errorMessage = error.message || 'Cập nhật hồ sơ thất bại';
+      return { success: false, error: errorMessage };
+    }
   }, []);
 
   const clearError = useCallback(() => {
-    setAuthState(prev => ({ ...prev, error: null }));
+    authService.clearError();
   }, []);
 
   return {
@@ -173,6 +131,7 @@ export const useAuth = () => {
     login,
     register,
     logout,
+    updateProfile,
     clearError,
   };
 };

@@ -1,0 +1,228 @@
+---
+description: React TypeScript with TailwindCSS - Clean, Reusable, Scalable Code Rules
+globs: ["src/**/*.{ts,tsx,js,jsx}"]
+alwaysApply: true
+---
+
+# React TypeScript + TailwindCSS Development Rules
+
+## Core Principles
+- Write clean, readable, and maintainable code
+- Prioritize reusability and scalability
+- Use TailwindCSS for all styling - avoid custom CSS unless absolutely necessary
+- Follow TypeScript best practices with strict typing
+- Implement proper component composition patterns
+
+## TailwindCSS Guidelines
+
+### Styling Best Practices
+- **Always use TailwindCSS classes** - avoid inline styles or custom CSS
+- **Use semantic color tokens** from the custom theme (primary, secondary, tertiary, accent)
+- **Responsive design first** - use responsive prefixes (sm:, md:, lg:, xl:, 2xl:)
+- **Dark mode support** - use dark: prefix when implementing dark mode
+- **Consistent spacing** - use the Tailwind spacing scale (4, 8, 12, 16, etc.)
+
+### Class Organization
+```tsx
+// ✅ Good: Organized by category
+<div className={cn(
+  // Layout
+  "flex items-center justify-between",
+  // Spacing
+  "p-4 m-2",
+  // Colors
+  "bg-primary-500 text-white",
+  // Responsive
+  "md:p-6 lg:p-8"
+)}>
+```
+
+### Component Variants Pattern
+```tsx
+// Use cva (class-variance-authority) pattern for component variants
+const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-md font-medium transition-colors",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary-500 text-white hover:bg-primary-600",
+        secondary: "bg-secondary-500 text-white hover:bg-secondary-600",
+        outline: "border border-primary-500 text-primary-500 hover:bg-primary-50"
+      },
+      size: {
+        sm: "h-8 px-3 text-sm",
+        md: "h-10 px-4",
+        lg: "h-12 px-6 text-lg"
+      }
+    }
+  }
+)
+```
+
+## Component Architecture
+
+### File Structure
+- Use PascalCase for component files
+- Co-locate related files (Component.tsx, Component.types.ts, Component.test.tsx)
+- Create index.ts files for clean imports
+
+### Component Patterns
+```tsx
+// ✅ Preferred component structure
+interface ComponentProps {
+  // Props with clear types
+  title: string
+  variant?: 'primary' | 'secondary'
+  size?: 'sm' | 'md' | 'lg'
+  children?: React.ReactNode
+  className?: string
+  onClick?: () => void
+}
+
+export const Component: React.FC<ComponentProps> = ({
+  title,
+  variant = 'primary',
+  size = 'md',
+  children,
+  className,
+  onClick
+}) => {
+  return (
+    <div 
+      className={cn(
+        baseStyles,
+        variantStyles[variant],
+        sizeStyles[size],
+        className
+      )}
+      onClick={onClick}
+    >
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {children}
+    </div>
+  )
+}
+```
+
+### Reusable Patterns
+- Create compound components for complex UI patterns
+- Use render props pattern for flexible components
+- Implement forwarded refs for better component composition
+- Use custom hooks for shared logic
+
+## TypeScript Standards
+
+### Type Definitions
+- Define interfaces for all props and data structures
+- Use strict typing - avoid `any`
+- Create shared types in `types/` directory
+- Use generic types for reusable components
+
+### Import/Export Patterns
+```tsx
+// ✅ Named exports preferred
+export { Button } from './Button'
+export type { ButtonProps } from './Button.types'
+
+// ✅ Barrel exports for clean imports
+export * from './components'
+export * from './hooks'
+export * from './utils'
+```
+
+## Performance & Optimization
+
+### React Best Practices
+- Use React.memo for expensive components
+- Implement useMemo and useCallback when appropriate
+- Avoid inline functions in render
+- Use proper key props for lists
+
+### Code Splitting
+- Lazy load pages and heavy components
+- Use dynamic imports for non-critical features
+- Implement proper loading states
+
+## Accessibility (a11y)
+
+### ARIA and Semantic HTML
+- Use semantic HTML elements
+- Implement proper ARIA labels and roles
+- Ensure keyboard navigation support
+- Maintain proper focus management
+
+### TailwindCSS Accessibility
+```tsx
+// ✅ Include focus states and screen reader support
+<button className={cn(
+  "px-4 py-2 bg-primary-500 text-white rounded-md",
+  "hover:bg-primary-600 focus:ring-2 focus:ring-primary-300",
+  "transition-colors duration-200",
+  "sr-only:not-sr-only" // For screen readers when needed
+)}>
+```
+
+## Error Handling & Validation
+
+### Error Boundaries
+- Implement error boundaries for component trees
+- Use proper error states with user-friendly messages
+- Log errors appropriately for debugging
+
+### Form Validation
+- Use proper form validation libraries (react-hook-form, zod)
+- Implement real-time validation feedback
+- Show clear error messages with TailwindCSS styling
+
+## Testing Guidelines
+
+### Component Testing
+- Test component behavior, not implementation
+- Use React Testing Library best practices
+- Test accessibility features
+- Mock external dependencies properly
+
+## Code Quality Rules
+
+### Naming Conventions
+- Use descriptive, semantic names
+- PascalCase for components and types
+- camelCase for functions and variables
+- UPPER_SNAKE_CASE for constants
+
+### Code Organization
+- Group related functionality together
+- Keep components small and focused
+- Extract custom hooks for shared logic
+- Use proper separation of concerns
+
+### Comments and Documentation
+- Write self-documenting code
+- Add JSDoc comments for complex functions
+- Document component props and usage examples
+- Explain business logic and complex algorithms
+
+## Specific Project Patterns
+
+### Custom Theme Usage
+- Always use the custom color palette (primary, secondary, tertiary, accent)
+- Leverage the custom font family (Inter, Poppins)
+- Use the brand gradient for hero sections and highlights
+
+### API Integration
+- Use the existing services structure
+- Implement proper loading and error states
+- Type all API responses
+- Handle authentication consistently
+
+### Routing
+- Use React Router DOM properly
+- Implement route guards for protected pages
+- Use proper navigation patterns
+
+Remember: Every component should be reusable, every style should use TailwindCSS, and every piece of code should be clean and scalable.
+
+
+### Attention: No comment on code
+
+### Implemnent code base on json format response , request API which user send and do UI/UX/API Calling base on that.

@@ -1,36 +1,51 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import Layout from './components/Layout';
-import Home from './pages/Home';
+import HomePage from './pages/HomePage';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import Profile from './pages/Profile';
-import Auth from './pages/Auth';
-import { authTheme } from './theme/authTheme';
+import ProfilePage from './pages/ProfilePage';
+import AuthPage from './pages/AuthPage';
+import SearchPage from './pages/SearchPage';
+import FriendRequestsPage from './pages/FriendRequestsPage';
+import FollowersPage from './pages/FollowersPage';
+import FollowingPage from './pages/FollowingPage';
+import FriendsPage from './pages/FriendsPage';
+import BlockedUsersPage from './pages/BlockedUsersPage';
+import ReportsPage from './pages/ReportsPage';
+import { GroupsPage } from './pages/GroupsPage';
+import { GroupPage } from './pages/GroupPage';
 import './App.css';
 
 function App() {
   return (
-    <ThemeProvider theme={authTheme}>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          {/* All routes now include Layout with Header */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="about" element={<About />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="auth" element={<Auth />} />
-            {/* Legacy routes for backward compatibility */}
-            <Route path="login" element={<Auth />} />
-            <Route path="register" element={<Auth />} />
-          </Route>
-        </Routes>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Routes>
+        {/* Main application routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/search" element={<SearchPage />} />
+        
+        {/* Social features routes */}
+        <Route path="/friend-requests" element={<FriendRequestsPage />} />
+        <Route path="/followers" element={<FollowersPage />} />
+        <Route path="/followers/:userId" element={<FollowersPage />} />
+        <Route path="/following" element={<FollowingPage />} />
+        <Route path="/following/:userId" element={<FollowingPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friends/:userId" element={<FriendsPage />} />
+        <Route path="/blocked-users" element={<BlockedUsersPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+
+        {/* Groups routes */}
+        <Route path="/groups" element={<GroupsPage />} />
+        <Route path="/groups/:groupId" element={<GroupPage />} />
+      </Routes>
+    </Router>
   );
 }
 
