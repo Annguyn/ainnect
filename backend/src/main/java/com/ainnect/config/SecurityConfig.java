@@ -3,6 +3,7 @@ package com.ainnect.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -41,11 +42,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/users/check-username/**").permitAll()
                 .requestMatchers("/api/users/check-email/**").permitAll()
-                .requestMatchers("/api/files/**").permitAll() // Allow file access
-                .requestMatchers("/api/profile/suggestions/**").permitAll() // Allow public suggestions
-                .requestMatchers("/api/social/stats/**").permitAll() // Allow public social stats
+                .requestMatchers("/api/files/**").permitAll() 
+                .requestMatchers("/api/profile/suggestions/**").permitAll() 
+                .requestMatchers("/api/social/stats/**").permitAll() 
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/feed", "/api/posts/*", "/api/posts/*/comments", "/api/posts/*/reactions").permitAll()
+                .requestMatchers("/api/notifications/**").authenticated()
                 .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
@@ -57,10 +60,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
+        
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        
         configuration.setAllowCredentials(true);
+        
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

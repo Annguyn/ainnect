@@ -88,6 +88,22 @@ public class JwtUtil {
         String tokenType = extractClaim(token, claims -> claims.get("type", String.class));
         return "refresh".equals(tokenType);
     }
+    
+    public Long getUserIdFromToken(jakarta.servlet.http.HttpServletRequest request) {
+        String token = extractTokenFromRequest(request);
+        if (token != null) {
+            return extractUserId(token);
+        }
+        return null;
+    }
+    
+    private String extractTokenFromRequest(jakarta.servlet.http.HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
 }
 
 
