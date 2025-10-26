@@ -4,7 +4,8 @@ import { Header } from '../components/Header';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui';
 import { EmptyState } from '../components/EmptyState';
-import { socialService, User } from '../services/socialService';
+import { socialService } from '../services/socialService';
+import { User } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { debugLogger } from '../utils/debugLogger';
 

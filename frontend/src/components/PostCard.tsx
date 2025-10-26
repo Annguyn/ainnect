@@ -86,6 +86,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const userAvatarRef = useRef<HTMLDivElement>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
 
   // Load comment count and preview comments immediately when component mounts
   useEffect(() => {
@@ -160,6 +161,38 @@ export const PostCard: React.FC<PostCardProps> = ({
     return response.content || [];
   };
 
+  const AnimatedIcon = ({ children }: { children: React.ReactNode }) => (
+    <div className="transition-transform duration-300 hover:scale-110">{children}</div>
+  );
+
+  const safeActualCommentCount = actualCommentCount !== null ? actualCommentCount : 0;
+
+  // Add hover functionality to display reactions and persist until clicking outside
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [reactionPickerPosition, setReactionPickerPosition] = useState({ top: 0, left: 0 });
+
+  const handleReactionHover = (event: React.MouseEvent) => {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    setReactionPickerPosition({
+      top: rect.top + window.scrollY + rect.height,
+      left: rect.left + window.scrollX + rect.width / 2,
+    });
+    setShowReactionPicker(true);
+  };
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
+      setShowReactionPicker(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 mb-6 max-w-2xl mx-auto ${className}`}>
       <div className="p-4 flex items-center space-x-3">
@@ -189,12 +222,56 @@ export const PostCard: React.FC<PostCardProps> = ({
               </svg>
             )}
           </div>
-          <p className="text-sm text-gray-500">
-            @{post.authorUsername || post.author?.username || `user${post.authorId}`} · {new Date(post.createdAt).toLocaleDateString('vi-VN')}
-          </p>
+          <div className="flex items-center space-x-2">
+            <p className="text-sm text-gray-500">
+              @{post.authorUsername || post.author?.username || `user${post.authorId}`} · {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+            </p>
+            {/* Visibility indicator */}
+            <div className="flex items-center space-x-1">
+              {/* Debug: Log visibility value */}
+              {(() => {
+                console.log('PostCard visibility:', post.visibility, 'for post:', post.id);
+                return null;
+              })()}
+              {post.visibility === 'public_' && (
+                <div className="flex items-center space-x-1 text-xs text-gray-500">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Công khai</span>
+                </div>
+              )}
+              {post.visibility === 'friends' && (
+                <div className="flex items-center space-x-1 text-xs text-blue-500">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                  </svg>
+                  <span>Bạn bè</span>
+                </div>
+              )}
+              {post.visibility === 'private' && (
+                <div className="flex items-center space-x-1 text-xs text-orange-500">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Riêng tư</span>
+                </div>
+              )}
+              {/* Fallback for unknown visibility values */}
+              {post.visibility && !['public_', 'friends', 'private'].includes(post.visibility) && (
+                <div className="flex items-center space-x-1 text-xs text-gray-400">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span>{post.visibility}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+        {/* Enhance header icons for better visibility and aesthetics */}
         <div className="flex items-center space-x-1">
-          {/* Delete button - only show for post author */}
           {currentUser && currentUser.id === post.authorId && onDelete && (
             <button 
               onClick={() => {
@@ -202,23 +279,22 @@ export const PostCard: React.FC<PostCardProps> = ({
                   onDelete(post.id);
                 }
               }}
-              className="p-2 hover:bg-red-50 rounded-full group"
+              className="p-2 hover:bg-red-100 rounded-full group transition-all duration-300"
               title="Xóa bài viết"
             >
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-6 h-6 text-red-500 group-hover:text-red-700" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             </button>
           )}
-          
-          {/* Report button - only show for non-authors */}
+
           {(!currentUser || currentUser.id !== post.authorId) && (
             <button 
               onClick={() => setShowReportModal(true)}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-2 hover:bg-gray-100 rounded-full transition-all duration-300"
               title="Báo cáo bài viết"
             >
-              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-6 h-6 text-gray-500 hover:text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
               </svg>
             </button>
@@ -233,7 +309,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               className="text-gray-900 leading-relaxed break-words whitespace-pre-wrap line-clamp-3"
               ref={(el) => {
                 if (el) {
-                  // Check if content height is greater than 3 lines
                   const isOverflowing = el.scrollHeight > el.clientHeight;
                   el.nextElementSibling?.classList.toggle('hidden', !isOverflowing);
                 }
@@ -315,7 +390,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             className={`hover:text-blue-600 transition-colors ${getReactionCount(post) > 0 ? 'cursor-pointer hover:underline' : 'cursor-default'}`}
             disabled={getReactionCount(post) === 0}
           >
-{getReactionCount(post) > 0 ? `${getReactionCount(post)} lượt thích` : 'Chưa có lượt thích'}
+            {getReactionCount(post) > 0 ? `${getReactionCount(post)} lượt thích` : 'Chưa có lượt thích'}
           </button>
           <span>
             {isLoadingCommentCount ? (
@@ -325,8 +400,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                 const count =
                   typeof post.commentCount === 'number'
                     ? post.commentCount
-                    : (actualCommentCount !== null ? actualCommentCount : getCommentCount(post));
-                return `${count} bình luận`;
+                    : safeActualCommentCount !== null
+                    ? safeActualCommentCount
+                    : getCommentCount(post);
+                return count > 0 ? `${count} bình luận` : 'Không có bình luận nào';
               })()
             )}
           </span>
@@ -335,13 +412,26 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       <div className="px-4 py-3 flex items-center justify-between">
-        <ReactionButton
-          currentReaction={post.userReaction as ReactionType}
-          onReaction={(reaction) => onReaction(post.id, reaction)}
-          onUnreact={() => onUnreact(post.id)}
-          reactionCount={getReactionCount(post)}
-          reactions={post.reactions}
-        />
+        <div
+          ref={reactionPickerRef}
+          onMouseEnter={handleReactionHover}
+          className="relative"
+        >
+          <ReactionButton
+            currentReaction={post.userReaction as ReactionType}
+            onReaction={(reaction) => onReaction(post.id, reaction)}
+            onUnreact={() => onUnreact(post.id)}
+            reactionCount={getReactionCount(post)}
+            reactions={post.reactions}
+          />
+          {showReactionPicker && (
+            <div
+              className="absolute bg-white shadow-lg rounded-lg p-2"
+              style={{ top: reactionPickerPosition.top, left: reactionPickerPosition.left }}
+            >
+            </div>
+          )}
+        </div>
         
         <button
           onClick={() => {
@@ -374,13 +464,14 @@ export const PostCard: React.FC<PostCardProps> = ({
         </button>
       </div>
 
-      {!showComments && actualCommentCount && actualCommentCount > 0 && (
+      {/* Handle case when there are no comments */}
+      {!showComments && actualCommentCount !== null && (
         <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
           {isLoadingPreviewComments ? (
             <div className="text-center text-gray-500 text-sm py-2">
               <div className="animate-pulse">Đang tải bình luận...</div>
             </div>
-          ) : (
+          ) : actualCommentCount > 0 ? (
             <div className="space-y-3">
               {previewComments.slice(0, 3).map((comment) => (
                 <div key={comment.id} className="flex items-start space-x-3">
@@ -409,8 +500,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </div>
                 </div>
               ))}
-              
-              {/* Show "View all comments" button if there are more than 3 comments */}
               {actualCommentCount > 3 && (
                 <div className="pt-2">
                   <button
@@ -421,8 +510,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </button>
                 </div>
               )}
-              
-              {/* Show "View comments" button if there are 3 or fewer comments */}
               {actualCommentCount <= 3 && actualCommentCount > 0 && (
                 <div className="pt-2">
                   <button
@@ -433,6 +520,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </button>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 text-sm py-2">
+              Chưa có bình luận nào, hãy là người đầu tiên bình luận.
             </div>
           )}
         </div>

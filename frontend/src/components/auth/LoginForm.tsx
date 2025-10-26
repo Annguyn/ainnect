@@ -66,10 +66,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto animate-fadeIn">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h2>
-        <p className="text-gray-600">Chào mừng bạn trở lại với Ainnect</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2 animate-slideInDown">Đăng nhập</h2>
+        <p className="text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Chào mừng bạn trở lại với Ainnect</p>
       </div>
 
       {(error || showAlert) && (
@@ -86,65 +86,71 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Input
-          type="text"
-          label="Email hoặc tên đăng nhập"
-          placeholder="Nhập email hoặc tên đăng nhập"
-          value={values.usernameOrEmail}
-          onChange={(e) => handleChange('usernameOrEmail', e.target.value)}
-          onBlur={() => handleBlur('usernameOrEmail')}
-          error={touched.usernameOrEmail ? errors.usernameOrEmail : undefined}
-          required
-        />
+        <div className="animate-slideInLeft" style={{ animationDelay: '0.2s' }}>
+          <Input
+            type="text"
+            label="Email hoặc tên đăng nhập"
+            placeholder="Nhập email hoặc tên đăng nhập"
+            value={values.usernameOrEmail}
+            onChange={(e) => handleChange('usernameOrEmail', e.target.value)}
+            onBlur={() => handleBlur('usernameOrEmail')}
+            error={touched.usernameOrEmail ? errors.usernameOrEmail : undefined}
+            required
+          />
+        </div>
 
-        <Input
-          type="password"
-          label="Mật khẩu"
-          placeholder="Nhập mật khẩu"
-          value={values.password}
-          onChange={(e) => handleChange('password', e.target.value)}
-          onBlur={() => handleBlur('password')}
-          error={touched.password ? errors.password : undefined}
-          required
-        />
+        <div className="animate-slideInRight" style={{ animationDelay: '0.3s' }}>
+          <Input
+            type="password"
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu"
+            value={values.password}
+            onChange={(e) => handleChange('password', e.target.value)}
+            onBlur={() => handleBlur('password')}
+            error={touched.password ? errors.password : undefined}
+            required
+          />
+        </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           <label className="flex items-center">
             <input
               type="checkbox"
               checked={values.rememberMe}
               onChange={(e) => handleChange('rememberMe', e.target.checked)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded transition-colors"
             />
             <span className="ml-2 text-sm text-gray-600">Ghi nhớ đăng nhập</span>
           </label>
 
           <button
             type="button"
-            className="text-sm text-primary-600 hover:text-primary-500"
+            className="text-sm text-primary-600 hover:text-primary-500 transition-colors"
           >
             Quên mật khẩu?
           </button>
         </div>
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          isLoading={isLoading}
-          disabled={isLoading}
-          className="w-full"
-        >
-          Đăng nhập
-        </Button>
+        <div className="animate-slideInUp" style={{ animationDelay: '0.5s' }}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isLoading}
+            disabled={isLoading}
+            className="w-full transform hover:scale-105 transition-transform"
+          >
+            Đăng nhập
+          </Button>
+        </div>
 
-        <div className="text-center">
+        <div className="text-center animate-fadeIn" style={{ animationDelay: '0.6s' }}>
           <p className="text-sm text-gray-600">
             Chưa có tài khoản?{' '}
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="text-primary-600 hover:text-primary-500 font-medium"
+              className="text-primary-600 hover:text-primary-500 font-medium transition-colors hover:underline"
             >
               Đăng ký ngay
             </button>

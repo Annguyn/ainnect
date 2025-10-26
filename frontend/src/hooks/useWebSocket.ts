@@ -1,127 +1,275 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { websocketService, WebSocketCallbacks } from '../services/websocketService';
+import { WebSocketMessage, TypingRequest, SendMessageRequest, MarkAsReadRequest } from '../types/messaging';
+import { useAuth } from './useAuth';
+import { debugLogger } from '../utils/debugLogger';
 
-interface WebSocketMessage {
-  type: string
-  data: any
+export interface UseWebSocketOptions {
+  conversationId?: number;
+  autoConnect?: boolean;
+  onMessage?: (message: WebSocketMessage) => void;
+  onTyping?: (typingData: TypingRequest) => void;
+  onError?: (error: any) => void;
 }
 
-interface UseWebSocketOptions {
-  url: string
-  token?: string
-  onMessage?: (message: WebSocketMessage) => void
-  onConnect?: () => void
-  onDisconnect?: () => void
-  onError?: (error: Event) => void
-  reconnectInterval?: number
-  maxReconnectAttempts?: number
-}
+export const useWebSocket = (options: UseWebSocketOptions = {}) => {
+  const { user } = useAuth();
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<Map<number, TypingRequest>>(new Map());
+  
+  const callbacksRef = useRef<WebSocketCallbacks>({});
+  const typingTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
-export const useWebSocket = ({
-  url,
-  token,
-  onMessage,
-  onConnect,
-  onDisconnect,
-  onError,
-  reconnectInterval = 5000,
-  maxReconnectAttempts = 5
-}: UseWebSocketOptions) => {
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const reconnectAttemptsRef = useRef(0)
-  const isConnectingRef = useRef(false)
+  const {
+    conversationId,
+    autoConnect = true,
+    onMessage,
+    onTyping,
+    onError
+  } = options;
 
-  const connect = useCallback(() => {
-    if (isConnectingRef.current || (wsRef.current && wsRef.current.readyState === WebSocket.OPEN)) {
-      return
+  // Update callbacks when they change
+  useEffect(() => {
+    callbacksRef.current = {
+      onMessage: (message: WebSocketMessage) => {
+        debugLogger.log('useWebSocket', 'Message received:', message);
+        onMessage?.(message);
+      },
+      onTyping: (typingData: TypingRequest) => {
+        debugLogger.log('useWebSocket', 'Typing indicator received:', typingData);
+        
+        // Update typing users
+        setTypingUsers(prev => {
+          const newMap = new Map(prev);
+          if (typingData.isTyping) {
+            newMap.set(typingData.userId, typingData);
+          } else {
+            newMap.delete(typingData.userId);
+          }
+          return newMap;
+        });
+
+        // Clear existing timeout for this user
+        const existingTimeout = typingTimeoutRef.current.get(typingData.userId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+
+        // Set timeout to remove typing indicator after 3 seconds
+        if (typingData.isTyping) {
+          const timeout = setTimeout(() => {
+            setTypingUsers(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(typingData.userId);
+              return newMap;
+            });
+            typingTimeoutRef.current.delete(typingData.userId);
+          }, 3000);
+
+          typingTimeoutRef.current.set(typingData.userId, timeout);
+        }
+
+        onTyping?.(typingData);
+      },
+      onError: (error: any) => {
+        debugLogger.log('useWebSocket', 'Error received:', error);
+        setConnectionError(error.message || 'WebSocket error occurred');
+        onError?.(error);
+      },
+      onConnected: () => {
+        debugLogger.log('useWebSocket', 'WebSocket connected');
+        setIsConnected(true);
+        setConnectionError(null);
+        setReconnectAttempts(0);
+      },
+      onDisconnected: () => {
+        debugLogger.log('useWebSocket', 'WebSocket disconnected');
+        setIsConnected(false);
+        setReconnectAttempts(websocketService.getReconnectAttempts());
+      }
+    };
+  }, [onMessage, onTyping, onError]);
+
+  // Connect to WebSocket
+  const connect = useCallback(async () => {
+    console.log('🔌 useWebSocket connect called:', { user: user?.id });
+    
+    if (!user) {
+      console.log('❌ No user found, cannot connect');
+      debugLogger.log('useWebSocket', 'No user found, cannot connect');
+      return;
     }
-
-    isConnectingRef.current = true
 
     try {
-      const wsUrl = token ? `${url}?token=${token}` : url
-      const ws = new WebSocket(wsUrl)
-
-      ws.onopen = () => {
-        console.log('WebSocket connected')
-        isConnectingRef.current = false
-        reconnectAttemptsRef.current = 0
-        onConnect?.()
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data)
-          onMessage?.(message)
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
-        }
-      }
-
-      ws.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason)
-        isConnectingRef.current = false
-        onDisconnect?.()
-
-        // Attempt to reconnect if not a normal closure
-        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
-          reconnectAttemptsRef.current++
-          console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`)
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect()
-          }, reconnectInterval)
-        }
-      }
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        isConnectingRef.current = false
-        onError?.(error)
-      }
-
-      wsRef.current = ws
-    } catch (error) {
-      console.error('Failed to create WebSocket connection:', error)
-      isConnectingRef.current = false
+      console.log('🔌 Attempting to connect to WebSocket...');
+      setConnectionError(null);
+      await websocketService.connect(callbacksRef.current);
+      setIsConnected(true);
+      console.log('✅ WebSocket connected successfully');
+      debugLogger.log('useWebSocket', 'Successfully connected to WebSocket');
+    } catch (error: any) {
+      console.error('❌ WebSocket connection failed:', error);
+      debugLogger.log('useWebSocket', 'Failed to connect to WebSocket:', error);
+      setConnectionError(error.message || 'Failed to connect to WebSocket');
+      setIsConnected(false);
     }
-  }, [url, token, onMessage, onConnect, onDisconnect, onError, reconnectInterval, maxReconnectAttempts])
+  }, [user]);
 
+  // Disconnect from WebSocket
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-    }
-    
-    if (wsRef.current) {
-      wsRef.current.close(1000, 'Manual disconnect')
-      wsRef.current = null
-    }
-  }, [])
+    websocketService.disconnect();
+    setIsConnected(false);
+    setConnectionError(null);
+    setReconnectAttempts(0);
+    debugLogger.log('useWebSocket', 'Disconnected from WebSocket');
+  }, []);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message))
-    } else {
-      console.warn('WebSocket is not connected')
+  // Subscribe to conversation
+  const subscribeToConversation = useCallback((convId: number) => {
+    if (!isConnected) {
+      debugLogger.log('useWebSocket', 'Not connected, cannot subscribe to conversation');
+      return;
     }
-  }, [])
 
-  const isConnected = useCallback(() => {
-    return wsRef.current?.readyState === WebSocket.OPEN
-  }, [])
+    try {
+      websocketService.subscribeToConversation(convId, callbacksRef.current);
+      debugLogger.log('useWebSocket', `Subscribed to conversation ${convId}`);
+    } catch (error: any) {
+      debugLogger.log('useWebSocket', `Failed to subscribe to conversation ${convId}:`, error);
+      setConnectionError(error.message || 'Failed to subscribe to conversation');
+    }
+  }, [isConnected]);
 
+  // Unsubscribe from conversation
+  const unsubscribeFromConversation = useCallback((convId: number) => {
+    try {
+      websocketService.unsubscribeFromConversation(convId);
+      debugLogger.log('useWebSocket', `Unsubscribed from conversation ${convId}`);
+    } catch (error: any) {
+      debugLogger.log('useWebSocket', `Failed to unsubscribe from conversation ${convId}:`, error);
+    }
+  }, []);
+
+  // Send message
+  const sendMessage = useCallback((message: SendMessageRequest) => {
+    if (!isConnected) {
+      throw new Error('WebSocket not connected');
+    }
+
+    const targetConversationId = message.conversationId || conversationId;
+    if (!targetConversationId) {
+      throw new Error('No conversation ID provided');
+    }
+
+    try {
+      websocketService.sendMessage(targetConversationId, message);
+      debugLogger.log('useWebSocket', 'Message sent:', message);
+    } catch (error: any) {
+      debugLogger.log('useWebSocket', 'Failed to send message:', error);
+      setConnectionError(error.message || 'Failed to send message');
+      throw error;
+    }
+  }, [isConnected, conversationId]);
+
+  // Send typing indicator
+  const sendTypingIndicator = useCallback((isTyping: boolean) => {
+    if (!isConnected || !conversationId || !user) {
+      return;
+    }
+
+    const typingData: TypingRequest = {
+      conversationId,
+      userId: user.id,
+      username: user.username,
+      isTyping
+    };
+
+    try {
+      websocketService.sendTypingIndicator(conversationId, typingData);
+      debugLogger.log('useWebSocket', 'Typing indicator sent:', typingData);
+    } catch (error: any) {
+      debugLogger.log('useWebSocket', 'Failed to send typing indicator:', error);
+    }
+  }, [isConnected, conversationId, user]);
+
+  // Mark message as read
+  const markAsRead = useCallback((messageId?: number) => {
+    if (!isConnected || !conversationId || !user) {
+      return;
+    }
+
+    const readData: MarkAsReadRequest = {
+      conversationId,
+      messageId,
+      userId: user.id
+    };
+
+    try {
+      websocketService.markAsRead(conversationId, readData);
+      debugLogger.log('useWebSocket', 'Mark as read sent:', readData);
+    } catch (error: any) {
+      debugLogger.log('useWebSocket', 'Failed to mark as read:', error);
+    }
+  }, [isConnected, conversationId, user]);
+
+  // Auto-connect when user is available
   useEffect(() => {
-    connect()
-
-    return () => {
-      disconnect()
+    console.log('🔌 useWebSocket auto-connect check:', {
+      autoConnect,
+      user: user?.id,
+      isConnected,
+      shouldConnect: autoConnect && user && !isConnected
+    });
+    
+    if (autoConnect && user && !isConnected) {
+      console.log('🔌 Attempting auto-connect...');
+      connect();
     }
-  }, [connect, disconnect])
+  }, [autoConnect, user, isConnected, connect]);
+
+  // Subscribe to conversation when it changes
+  useEffect(() => {
+    if (conversationId && isConnected) {
+      subscribeToConversation(conversationId);
+      
+      return () => {
+        unsubscribeFromConversation(conversationId);
+      };
+    }
+  }, [conversationId, isConnected, subscribeToConversation, unsubscribeFromConversation]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all typing timeouts
+      typingTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      typingTimeoutRef.current.clear();
+      
+      // Unsubscribe from current conversation
+      if (conversationId) {
+        unsubscribeFromConversation(conversationId);
+      }
+    };
+  }, [conversationId, unsubscribeFromConversation]);
+
+  // Get typing users list
+  const getTypingUsers = useCallback(() => {
+    return Array.from(typingUsers.values());
+  }, [typingUsers]);
 
   return {
+    isConnected,
+    connectionError,
+    reconnectAttempts,
+    typingUsers: getTypingUsers(),
     connect,
     disconnect,
+    subscribeToConversation,
+    unsubscribeFromConversation,
     sendMessage,
-    isConnected
-  }
-}
+    sendTypingIndicator,
+    markAsRead
+  };
+};

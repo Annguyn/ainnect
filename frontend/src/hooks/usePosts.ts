@@ -14,7 +14,6 @@ export const usePosts = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const { user } = useAuth();
 
-  // Load initial posts
   const loadPosts = useCallback(async (page = 0, reset = false) => {
     if (isLoading) return;
     
@@ -27,10 +26,10 @@ export const usePosts = () => {
       let posts: any[] = [];
       
       try {
-        // Try getting posts from dedicated feed endpoint
-        response = await postService.getNewsFeed(page, 10);
+        // Try getting posts from personalized feed endpoint
+        response = await postService.getFeedPosts(page, 5);
         posts = (response.content || []).map(transformPost);
-        console.log('Loaded posts from feed endpoint');
+        console.log('Loaded posts from personalized feed endpoint');
         
         // Debug: Check first post reaction state after transformation
         if (posts.length > 0) {
@@ -44,12 +43,12 @@ export const usePosts = () => {
           });
         }
       } catch (feedError) {
-        console.warn('General posts endpoint not available, trying user-specific posts');
+        console.warn('Personalized feed endpoint not available, trying user-specific posts');
         
         try {
           // Try getting posts by current user first
           if (user) {
-            response = await postService.getPostsByAuthor(user.id, page, 10);
+            response = await postService.getPostsByAuthor(user.id, page, 5);
             posts = (response.content || []).map(transformPost);
             console.log(`Loaded posts for user ${user.id}`);
           } else {
@@ -65,7 +64,7 @@ export const usePosts = () => {
             
             for (const userId of userIds) {
               try {
-                const userResponse = await postService.getPostsByAuthor(userId, 0, 5);
+                const userResponse = await postService.getPostsByAuthor(userId, 0, 1);
                 allPosts = [...allPosts, ...(userResponse.content || [])];
               } catch (e) {
                 console.warn(`Failed to load posts for user ${userId}`);
@@ -111,10 +110,14 @@ export const usePosts = () => {
       if (reset || page === 0) {
         setPosts(posts);
       } else {
-        setPosts(prev => [...prev, ...posts]);
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(post => post.id));
+          const newPosts = posts.filter(post => !existingIds.has(post.id));
+          return [...prev, ...newPosts];
+        });
       }
       
-      setHasMore(response ? response.number < response.totalPages - 1 : false);
+      setHasMore(response && response.page ? response.page.number < response.page.totalPages - 1 : false);
       setCurrentPage(page);
     } catch (err: any) {
       setError(err.message || 'Failed to load posts');
@@ -124,19 +127,16 @@ export const usePosts = () => {
     }
   }, [isLoading, user]);
 
-  // Load more posts (pagination)
   const loadMorePosts = useCallback(() => {
     if (hasMore && !isLoading) {
       loadPosts(currentPage + 1, false);
     }
   }, [hasMore, isLoading, currentPage, loadPosts]);
 
-  // Refresh posts
   const refreshPosts = useCallback(() => {
     loadPosts(0, true);
   }, [loadPosts]);
 
-  // Create new post
   const createPost = useCallback(async (content: string, visibility: 'public_' | 'friends' | 'private' = 'public_', mediaFiles?: File[]) => {
     if (!user) {
       throw new Error('User not authenticated');
@@ -153,7 +153,6 @@ export const usePosts = () => {
       const newPost = await postService.createPost(postData);
       console.log(`Successfully created post ${newPost.id} by user ${user.id}`);
       
-      // Add the new post to the beginning of the list
       setPosts(prev => [newPost, ...prev]);
       return newPost;
     } catch (err: any) {
@@ -163,7 +162,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // React to post with specific reaction type
   const reactToPost = useCallback(async (postId: number, reactionType: 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry') => {
     debugLogger.log('usePosts', 'reactToPost called', { postId, reactionType, userId: user?.id });
     
@@ -178,26 +176,21 @@ export const usePosts = () => {
       debugLogger.log('usePosts', 'Successfully reacted to post', { postId, reactionType });
       console.log(`Successfully reacted to post ${postId} with ${reactionType}`);
       
-      // Refresh posts to get updated reaction state from server
       await loadPosts(0, true);
       debugLogger.log('usePosts', 'Posts refreshed after reaction', { postId, reactionType });
       
-      // Also update the post in local state as fallback
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           const currentReactions = post.reactionsCount || { like: 0, love: 0, wow: 0, sad: 0, angry: 0, haha: 0, total: 0 };
           const oldReaction = post.userReaction as keyof typeof currentReactions;
           
-          // Create new reaction counts
           const newReactions = { ...currentReactions };
           
-          // Remove old reaction if exists
           if (oldReaction && oldReaction in newReactions) {
             newReactions[oldReaction] = Math.max(0, newReactions[oldReaction] - 1);
             newReactions.total = Math.max(0, newReactions.total - 1);
           }
           
-          // Add new reaction
           if (reactionType in newReactions) {
             newReactions[reactionType as keyof typeof newReactions] = (newReactions[reactionType as keyof typeof newReactions] || 0) + 1;
             newReactions.total = newReactions.total + 1;
@@ -224,7 +217,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // Remove reaction from post
   const unreactToPost = useCallback(async (postId: number) => {
     debugLogger.log('usePosts', 'unreactToPost called', { postId, userId: user?.id });
     
@@ -239,20 +231,16 @@ export const usePosts = () => {
       debugLogger.log('usePosts', 'Successfully unreacted to post', { postId });
       console.log(`Successfully removed reaction from post ${postId}`);
       
-      // Refresh posts to get updated reaction state from server
       await loadPosts(0, true);
       debugLogger.log('usePosts', 'Posts refreshed after unreaction', { postId });
       
-      // Also update the post in local state as fallback
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           const currentReactions = post.reactionsCount || { like: 0, love: 0, wow: 0, sad: 0, angry: 0, haha: 0, total: 0 };
           const oldReaction = post.userReaction as keyof typeof currentReactions;
           
-          // Create new reaction counts
           const newReactions = { ...currentReactions };
           
-          // Remove old reaction if exists
           if (oldReaction && oldReaction in newReactions) {
             newReactions[oldReaction] = Math.max(0, newReactions[oldReaction] - 1);
             newReactions.total = Math.max(0, newReactions.total - 1);
@@ -280,7 +268,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // Legacy toggle like method (for backward compatibility)
   const toggleLike = useCallback(async (postId: number) => {
     const post = posts.find(p => p.id === postId);
     if (post?.userReaction === 'like') {
@@ -290,7 +277,6 @@ export const usePosts = () => {
     }
   }, [posts, reactToPost, unreactToPost]);
 
-  // Add comment to post
   const addComment = useCallback(async (postId: number, content: string, parentId?: number) => {
     if (!user) {
       throw new Error('User not authenticated');
@@ -304,7 +290,6 @@ export const usePosts = () => {
     try {
       const commentId = await commentService.addCommentToPost(postId, commentData);
       
-      // Update the comments count in local state
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
@@ -323,7 +308,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // Share post
   const sharePost = useCallback(async (postId: number, comment?: string) => {
     if (!user) {
       throw new Error('User not authenticated');
@@ -334,7 +318,6 @@ export const usePosts = () => {
         comment
       });
       
-      // Update the shares count in local state
       setPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
@@ -353,7 +336,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // Delete post
   const deletePost = useCallback(async (postId: number) => {
     if (!user) {
       throw new Error('User not authenticated');
@@ -363,7 +345,6 @@ export const usePosts = () => {
       await postService.deletePost(postId);
       console.log(`Successfully deleted post ${postId}`);
       
-      // Remove the post from local state
       setPosts(prev => prev.filter(post => post.id !== postId));
     } catch (err: any) {
       setError(err.message || 'Failed to delete post');
@@ -372,7 +353,6 @@ export const usePosts = () => {
     }
   }, [user]);
 
-  // Load posts on component mount
   useEffect(() => {
     loadPosts(0, true);
   }, []);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui';
@@ -24,7 +24,6 @@ export const FriendRequestsPage: React.FC = () => {
       return;
     }
     loadFriendRequests();
-    // Read initial tab from query (?tab=sent)
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
     if (tabParam === 'sent') {
@@ -42,7 +41,6 @@ export const FriendRequestsPage: React.FC = () => {
         socialService.getSentFriendRequests(0, 50)
       ]);
       
-      // Normalize received list (supports two formats)
       let normalizedReceived: any[] = [];
       const rawReceived: any = receivedResponse as any;
       if (Array.isArray(rawReceived?.content)) {
@@ -65,9 +63,6 @@ export const FriendRequestsPage: React.FC = () => {
       }
       setFriendRequests(normalizedReceived);
 
-      // Backend can return two shapes for sent requests:
-      // 1) { content: Friendship[] }
-      // 2) { result, message, data: { friendships: Raw[] } }
       let normalizedSent: any[] = [];
       const rawAny: any = sentResponse as any;
       if (Array.isArray(rawAny?.content)) {
@@ -142,7 +137,6 @@ export const FriendRequestsPage: React.FC = () => {
         }
       }
       
-      // Remove from received requests
       setFriendRequests(prev => prev.filter((req: any) => (req.friendshipId || req.id) !== friendshipIdOrUserId));
       
       debugLogger.log('FriendRequestsPage', 'Friend request rejected', { friendshipId: friendshipIdOrUserId });
@@ -157,7 +151,6 @@ export const FriendRequestsPage: React.FC = () => {
   const handleCancelRequest = async (friendshipId: number, otherUserId?: number) => {
     try {
       setIsProcessing(friendshipId);
-      // Note: API doesn't have cancel endpoint, so we'll use reject
       if (otherUserId) {
         await socialService.rejectFriendRequest({ otherUserId });
       } else {
@@ -201,6 +194,20 @@ export const FriendRequestsPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Lời mời kết bạn</h1>
           <p className="text-gray-600 mt-2">Quản lý lời mời kết bạn của bạn</p>
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex space-x-4 mb-8">
+          <Link to="/friends">
+            <Button className="flex-1">
+              Bạn bè
+            </Button>
+          </Link>
+          <Link to="/blocked-users">
+            <Button className="flex-1">
+              Người bị chặn
+            </Button>
+          </Link>
         </div>
 
         {/* Tabs */}

@@ -35,7 +35,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showActions, setShowActions] = useState(false)
   const [showReactions, setShowReactions] = useState(false)
   const isOwnMessage = message.senderId === currentUserId
-  const isDeleted = message.isDeleted
+  const isDeleted = message.deletedAt !== null
   const isEdited = message.isEdited
 
   const formatTime = (dateString: string) => {
@@ -48,14 +48,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const getReadStatusIcon = () => {
     if (!isOwnMessage) return null
     
-    const readByOthers = message.readBy.filter(read => read.userId !== currentUserId)
+    const readByOthers = message.readBy?.filter(read => read.userId !== currentUserId) || []
     
     if (readByOthers.length === 0) {
-      return <Check className="w-3 h-3 text-gray-400" />
-    } else if (readByOthers.length === 1) {
-      return <CheckCheck className="w-3 h-3 text-gray-400" />
+      return <Check className="w-3 h-3 text-gray-400" aria-label="Đã gửi" />
     } else {
-      return <CheckCheck className="w-3 h-3 text-blue-500" />
+      return <CheckCheck className="w-3 h-3 text-blue-500" aria-label="Đã đọc" />
     }
   }
 
@@ -96,7 +94,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Avatar */}
         {!isConsecutive && (
           <div className="flex-shrink-0">
-            {message.sender.avatar ? (
+            {message.sender?.avatar ? (
               <img
                 src={message.sender.avatar}
                 alt={message.sender.firstName}
@@ -105,7 +103,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             ) : (
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                 <span className="text-white font-semibold text-xs">
-                  {message.sender.firstName.charAt(0)}
+                  {message.sender?.firstName?.charAt(0) || message.senderDisplayName?.charAt(0) || '?'}
                 </span>
               </div>
             )}
@@ -117,7 +115,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Sender name for group chats */}
           {!isConsecutive && !isOwnMessage && (
             <span className="text-xs text-gray-600 mb-1 px-1">
-              {message.sender.firstName} {message.sender.lastName}
+              {message.sender?.firstName} {message.sender?.lastName}
             </span>
           )}
 
@@ -135,7 +133,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           >
             {isDeleted ? (
               <div className="italic text-gray-500">
-                This message was deleted
+                Tin nhắn đã bị xóa
               </div>
             ) : (
               <>
@@ -144,11 +142,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
 
                 {/* Attachments */}
-                {message.attachmentUrls.length > 0 && (
+                {message.attachmentUrls && message.attachmentUrls.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {message.attachmentUrls.map((url, index) => (
                       <div key={index} className="rounded-lg overflow-hidden">
-                        {message.messageType === 'image' ? (
+                        {message.messageType === 'IMAGE' ? (
                           <img
                             src={url}
                             alt={`Attachment ${index + 1}`}
@@ -181,7 +179,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         key={index}
                         className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full"
                       >
-                        {reaction.emoji} {reaction.user.firstName}
+                        {reaction.emoji} {reaction.count}
                       </span>
                     ))}
                   </div>
@@ -256,7 +254,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               {formatTime(message.createdAt)}
             </span>
             {isEdited && (
-              <span className="text-xs text-gray-500">(edited)</span>
+              <span className="text-xs text-gray-500">(đã sửa)</span>
             )}
             {getReadStatusIcon()}
           </div>

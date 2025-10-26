@@ -24,6 +24,7 @@ export interface User {
   skills?: Skill[];
   socialLinks?: SocialLink[];
   isVerified?: boolean;
+  isPrivate?: boolean;
   profileViews?: number;
   connectionCount?: number;
   createdAt?: Date;

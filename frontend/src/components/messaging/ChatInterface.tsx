@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Conversation, Message } from '../../types/messaging'
+import { Conversation, Message, MessageType, ConversationType, TypingRequest } from '../../types/messaging'
 import { messagingService } from '../../services/messagingService'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
+import { TypingIndicator } from './TypingIndicator'
 import { cn } from '../../lib/utils'
 import { 
   ArrowLeft, 
@@ -17,15 +18,27 @@ import {
 
 interface ChatInterfaceProps {
   conversation: Conversation
+  messages: Message[]
+  typingUsers: TypingRequest[]
   currentUserId: number
   onBack?: () => void
+  onSendMessage?: (conversationId: number, content: string, messageType: any) => Promise<void>
+  onTyping?: (isTyping: boolean) => void
+  onMarkAsRead?: (conversationId: number, messageId: number) => void
+  wsConnected?: boolean
   className?: string
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   conversation,
+  messages: propMessages,
+  typingUsers: propTypingUsers,
   currentUserId,
   onBack,
+  onSendMessage: propOnSendMessage,
+  onTyping: propOnTyping,
+  onMarkAsRead: propOnMarkAsRead,
+  wsConnected,
   className
 }) => {
   const [messages, setMessages] = useState<Message[]>([])
@@ -37,8 +50,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadMessages()
-  }, [conversation.id])
+    if (propMessages) {
+      setMessages(propMessages)
+      setLoading(false)
+    } else {
+      loadMessages()
+    }
+  }, [conversation.id, propMessages])
 
   useEffect(() => {
     scrollToBottom()
@@ -53,12 +71,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       )
       
       if (pageNum === 0) {
-        setMessages(response.content.reverse())
+        setMessages((response.messages || []).reverse())
       } else {
-        setMessages(prev => [...response.content.reverse(), ...prev])
+        setMessages(prev => [...(response.messages || []).reverse(), ...prev])
       }
       
-      setHasMore(!response.last)
+      setHasMore(response.hasNext)
       setPage(pageNum)
     } catch (error) {
       console.error('Failed to load messages:', error)
@@ -77,25 +95,35 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const handleSendMessage = async (content: string, messageType: 'text' | 'image' | 'file', attachments: string[]) => {
+  const handleSendMessage = async (content: string, messageType: MessageType, attachments: string[]) => {
     if (!content.trim() && attachments.length === 0) return
 
     try {
       setSending(true)
-      const newMessage = await messagingService.sendMessage({
-        conversationId: conversation.id,
-        content,
-        messageType,
-        attachmentUrls: attachments
-      })
       
-      setMessages(prev => [...prev, newMessage])
-      
-      // Mark as read
-      await messagingService.markMessageAsRead({
-        conversationId: conversation.id,
-        messageId: newMessage.id
-      })
+      if (propOnSendMessage) {
+        await propOnSendMessage(conversation.id, content, messageType)
+      } else {
+        const newMessage = await messagingService.sendMessage({
+          conversationId: conversation.id,
+          content,
+          messageType,
+          attachmentUrls: attachments
+        })
+        
+        setMessages(prev => [...prev, newMessage])
+        
+        // Mark as read
+        if (propOnMarkAsRead) {
+          await propOnMarkAsRead(conversation.id, newMessage.id)
+        } else {
+          await messagingService.markMessageAsRead({
+            conversationId: conversation.id,
+            messageId: newMessage.id,
+            userId: currentUserId
+          })
+        }
+      }
     } catch (error) {
       console.error('Failed to send message:', error)
     } finally {
@@ -121,7 +149,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const handleDeleteMessage = async (message: Message) => {
-    if (confirm('Are you sure you want to delete this message?')) {
+    if (window.confirm('Are you sure you want to delete this message?')) {
       try {
         await messagingService.deleteMessage(message.id)
         setMessages(prev => prev.map(m => 
@@ -146,8 +174,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getConversationTitle = () => {
     if (conversation.title) return conversation.title
     
-    if (conversation.type === 'direct') {
-      const otherParticipant = conversation.participants.find(p => p.id !== currentUserId)
+    if (conversation.type === ConversationType.DIRECT) {
+      const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId)
       return otherParticipant ? `${otherParticipant.firstName} ${otherParticipant.lastName}` : 'Direct Message'
     }
     
@@ -157,8 +185,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getConversationAvatar = () => {
     if (conversation.avatar) return conversation.avatar
     
-    if (conversation.type === 'direct') {
-      const otherParticipant = conversation.participants.find(p => p.id !== currentUserId)
+    if (conversation.type === ConversationType.DIRECT) {
+      const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId)
       return otherParticipant?.avatar || undefined
     }
     
@@ -204,9 +232,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             
             <div>
               <h2 className="font-semibold text-gray-900">{getConversationTitle()}</h2>
-              {conversation.type === 'direct' && (
+              {conversation.type === ConversationType.DIRECT && (
                 <p className="text-sm text-gray-500">
-                  {conversation.participants.find(p => p.id !== currentUserId)?.isOnline ? 'Online' : 'Offline'}
+                  {conversation.participants?.find(p => p.id !== currentUserId)?.isOnline ? 'Online' : 'Offline'}
                 </p>
               )}
             </div>
@@ -273,12 +301,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
         
+        {/* Typing Indicator */}
+        {propTypingUsers && propTypingUsers.length > 0 && (
+          <TypingIndicator 
+            users={propTypingUsers.map(t => ({
+              id: t.userId,
+              firstName: t.username,
+              lastName: ''
+            }))}
+          />
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
       <MessageInput
         onSendMessage={handleSendMessage}
+        onStartTyping={() => propOnTyping?.(true)}
+        onStopTyping={() => propOnTyping?.(false)}
         disabled={sending}
         placeholder={`Message ${getConversationTitle()}...`}
       />

@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         </Link>
 
         <Link
-          to="/messaging"
+          to="/messages"
           className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
           <div className="w-8 h-8 flex items-center justify-center bg-blue-100 rounded-full">

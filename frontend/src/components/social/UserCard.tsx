@@ -255,7 +255,6 @@ export const UserCard: React.FC<UserCardProps> = ({
     )
   }
 
-  // Default variant
   return (
     <div className={cn(
       'bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow',

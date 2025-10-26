@@ -1,7 +1,10 @@
 // Main components
 export { Avatar } from './Avatar';
+export { AnimatedLogo } from './AnimatedLogo';
+export { ConnectionAnimation } from './ConnectionAnimation';
 export { CreatePost } from './CreatePost';
 export { PostCard } from './PostCard';
+export { PostSkeleton, PostSkeletonList } from './PostSkeleton';
 export { Header } from './Header';
 export { Sidebar } from './Sidebar';
 export { EmptyState } from './EmptyState';
@@ -12,6 +15,12 @@ export { ReactionsModal } from './ReactionsModal';
 export { ProfileSettingsModal } from './ProfileSettingsModal';
 export { SocialButton } from './SocialButton';
 export { UserProfileCard } from './UserProfileCard';
+
+// Messaging components
+export { MessagingLink } from './MessagingLink';
+export { ConversationLink } from './ConversationLink';
+export { MessagingNavigation } from './MessagingNavigation';
+export { MessagingBreadcrumb } from './MessagingBreadcrumb';
 
 // Auth components
 export * from './auth';

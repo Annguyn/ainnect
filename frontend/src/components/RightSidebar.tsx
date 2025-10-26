@@ -1,23 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Users, TrendingUp, Star, MessageCircle, Heart } from 'lucide-react';
+import { fetchFriendRequests } from '@services/friendRequestService';
 
 interface RightSidebarProps {
   className?: string;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) => {
-  // Mock data for trending topics and suggestions
-  const trendingTopics = [
-    { id: 1, name: '#Công nghệ', posts: 1250 },
-    { id: 2, name: '#Học tập', posts: 890 },
-    { id: 3, name: '#Du lịch', posts: 650 },
-    { id: 4, name: '#Ẩm thực', posts: 420 },
-    { id: 5, name: '#Thể thao', posts: 380 },
-  ];
+interface FriendRequest {
+  id: number;
+  name: string;
+  mutualFriends: number;
+}
 
+export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) => {
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [showFriendRequests, setShowFriendRequests] = useState(true);
+
+  useEffect(() => {
+    const loadFriendRequests = async () => {
+      try {
+        const data = await fetchFriendRequests();
+        setFriendRequests(data);
+      } catch (error) {
+        console.error('Failed to fetch friend requests:', error);
+      }
+    };
+
+    loadFriendRequests();
+  }, []);
+
+  // Mock data for suggested groups and recent activities
   const suggestedGroups = [
     { id: 1, name: 'Lập trình viên Việt Nam', members: 15420, avatar: '💻' },
     { id: 2, name: 'Du lịch bụi', members: 8900, avatar: '🎒' },
@@ -33,28 +48,45 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) =>
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Trending Topics */}
+      {/* Friend Requests */}
       <Card className="p-4">
-        <div className="flex items-center space-x-2 mb-3">
-          <TrendingUp className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">Xu hướng</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-900">Lời mời kết bạn</h3>
+          </div>
+          <button
+            onClick={() => setShowFriendRequests(!showFriendRequests)}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {showFriendRequests ? 'Ẩn' : 'Hiện'}
+          </button>
         </div>
-        <div className="space-y-2">
-          {trendingTopics.map((topic) => (
-            <Link
-              key={topic.id}
-              to={`/search?q=${encodeURIComponent(topic.name)}`}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">
-                {topic.name}
-              </span>
-              <span className="text-xs text-gray-500">
-                {topic.posts.toLocaleString()} bài viết
-              </span>
-            </Link>
-          ))}
-        </div>
+        {showFriendRequests && (
+          <div className="space-y-2">
+            {friendRequests.map((request) => (
+              <div
+                key={request.id}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{request.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {request.mutualFriends} bạn chung
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button size="sm" variant="outline" className="text-xs">
+                    Chấp nhận
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs">
+                    Từ chối
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Suggested Groups */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   FollowButton, 
   FriendRequestButton, 
@@ -8,6 +8,8 @@ import {
 } from '../components/social'
 import { useSocial } from '../hooks/useSocial'
 import { cn } from '../lib/utils'
+import { socialService } from '../services/socialService'
+import { User, SocialUser } from '../types';
 
 export const SocialPage: React.FC = () => {
   const {
@@ -26,80 +28,41 @@ export const SocialPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'feed' | 'users' | 'notifications'>('feed')
   const [showNotificationCenter, setShowNotificationCenter] = useState(false)
+  const [users, setUsers] = useState<SocialUser[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const fetchedUsers = await socialService.fetchUsers();
+      const mappedUsers: SocialUser[] = fetchedUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl ?? undefined, // Ensure compatibility with SocialUser
+        bio: user.bio || '',
+        isOnline: false, // Default value, update if real-time data is available
+        lastSeen: undefined, // Default value, update if real-time data is available
+        followerCount: 0, // Default value
+        followingCount: 0, // Default value
+        postCount: 0, // Default value
+        isVerified: false, // Default value
+      }));
+      setUsers(mappedUsers);
+    };
+
+    const loadActivities = async () => {
+      const fetchedActivities = await socialService.fetchActivities();
+      setActivities(fetchedActivities);
+    };
+
+    loadUsers();
+    loadActivities();
+  }, [])
 
   const handleNotificationClick = (notification: any) => {
     console.log('Notification clicked:', notification)
     // Handle navigation to relevant content
   }
-
-  const mockUsers = [
-    {
-      id: 1,
-      username: 'johndoe',
-      displayName: 'John Doe',
-      avatarUrl: 'https://via.placeholder.com/100',
-      bio: 'Software developer and tech enthusiast',
-      isVerified: true,
-      isOnline: true,
-      followerCount: 1250,
-      followingCount: 340,
-      postCount: 89,
-      isFollowing: false,
-      isFollower: false,
-      isFriend: false,
-      friendshipStatus: 'none' as const
-    },
-    {
-      id: 2,
-      username: 'janesmith',
-      displayName: 'Jane Smith',
-      avatarUrl: 'https://via.placeholder.com/100',
-      bio: 'Designer and creative director',
-      isVerified: false,
-      isOnline: false,
-      lastSeen: new Date(Date.now() - 1800000).toISOString(),
-      followerCount: 890,
-      followingCount: 210,
-      postCount: 156,
-      isFollowing: true,
-      isFollower: false,
-      isFriend: false,
-      friendshipStatus: 'none' as const
-    },
-    {
-      id: 3,
-      username: 'mikejohnson',
-      displayName: 'Mike Johnson',
-      avatarUrl: 'https://via.placeholder.com/100',
-      bio: 'Photographer and travel blogger',
-      isVerified: true,
-      isOnline: true,
-      followerCount: 2100,
-      followingCount: 450,
-      postCount: 234,
-      isFollowing: false,
-      isFollower: true,
-      isFriend: false,
-      friendshipStatus: 'pending_received' as const
-    }
-  ]
-
-  const mockActivities = [
-    {
-      id: 1,
-      userId: 2,
-      user: mockUsers[1],
-      type: 'follow' as const,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      userId: 3,
-      user: mockUsers[2],
-      type: 'friend_request' as const,
-      createdAt: new Date(Date.now() - 3600000).toISOString()
-    }
-  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,7 +127,7 @@ export const SocialPage: React.FC = () => {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Bảng tin xã hội</h2>
               <SocialFeed
-                activities={mockActivities}
+                activities={activities}
                 onFollow={followUser}
                 onUnfollow={unfollowUser}
                 onSendFriendRequest={sendFriendRequest}
@@ -181,7 +144,7 @@ export const SocialPage: React.FC = () => {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Khám phá người dùng</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockUsers.map((user) => (
+                {users.map((user) => (
                   <UserCard
                     key={user.id}
                     user={user}

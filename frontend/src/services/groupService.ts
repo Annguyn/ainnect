@@ -32,20 +32,16 @@ class GroupService {
     const endpoint = this.baseUrl;
     debugLogger.logApiCall('POST', endpoint, groupData);
     try {
-      // Debug: log groupData before FormData creation
       console.log('createGroup received groupData:', groupData);
       
       let formData: FormData;
       
-      // If groupData is already FormData, use it directly
       if (groupData instanceof FormData) {
         formData = groupData;
         console.log("Using provided FormData directly");
       } else {
-        // Create FormData from object
         formData = new FormData();
         
-        // Always append 'name' if present and not empty
         const groupName = (groupData as any).name;
         if (typeof groupName === 'string' && groupName.trim() !== "") {
           formData.append('name', groupName.trim());
@@ -60,11 +56,9 @@ class GroupService {
           }
         });
 
-        // Fallback: if FormData is still empty, manually append all expected fields
         let isFormDataEmpty = true;
         formData.forEach(() => { isFormDataEmpty = false; });
         if (isFormDataEmpty) {
-          // Manually append all expected fields
           if ((groupData as any).name) formData.append('name', (groupData as any).name);
           if ((groupData as any).description) formData.append('description', (groupData as any).description);
           if ((groupData as any).privacy) formData.append('visibility', (groupData as any).privacy);
@@ -93,9 +87,6 @@ class GroupService {
     }
   }
 
-  /**
-   * Update group information
-   */
   async updateGroup(groupId: number, updateData: UpdateGroupRequest): Promise<Group> {
     const endpoint = `${this.baseUrl}/${groupId}`;
     debugLogger.logApiCall('PUT', endpoint, updateData);
@@ -109,9 +100,6 @@ class GroupService {
     }
   }
 
-  /**
-   * Delete a group
-   */
   async deleteGroup(groupId: number): Promise<void> {
     const endpoint = `${this.baseUrl}/${groupId}`;
     debugLogger.logApiCall('DELETE', endpoint);
@@ -124,9 +112,6 @@ class GroupService {
     }
   }
 
-  /**
-   * Get group details by ID
-   */
   async getGroupById(groupId: number): Promise<Group> {
     const endpoint = `${this.baseUrl}/${groupId}`;
     debugLogger.logApiCall('GET', endpoint);
@@ -620,8 +605,8 @@ class GroupService {
       debugLogger.log('GroupService', '📄 Group posts loaded', {
         groupId,
         postsCount: response.content?.length || 0,
-        totalElements: response.totalElements,
-        totalPages: response.totalPages
+        totalElements: response.page.totalElements,
+        totalPages: response.page.totalPages
       });
       return response;
     } catch (error) {

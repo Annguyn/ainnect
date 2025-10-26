@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from './ui';
 import { Button } from './ui';
+import { AnimatedLogo } from './AnimatedLogo';
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -64,11 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2 hover:opacity-90 transition-opacity">
-              <img
-                src="/favicon.ico"
-                alt="Ainnect Logo"
-                className="w-10 h-10"
-              />
+              <AnimatedLogo size="md" />
               <h1 className="text-xl font-bold text-primary-600">
                 ainnect
               </h1>
@@ -79,23 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Main Navigation */}
           <div className="hidden md:flex flex-1 justify-center space-x-2">
             <Link
-              to="/"
-              className="px-6 py-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-            </Link>
-            <Link
-              to="/friends"
-              className="px-6 py-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-              </svg>
-            </Link>
-            <Link
-              to="/messaging"
+              to="/messages"
               className="px-6 py-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -205,15 +186,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </Link>
-            <Link
-              to="/friend-requests?tab=received"
-              title="Lời mời kết bạn"
-              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
             </Link>
           </div>
@@ -373,11 +345,11 @@ export const Header: React.FC<HeaderProps> = ({
 
                   {/* Messages Button with Counter */}
                   <button
-                    onClick={() => navigate('/messaging')}
+                    onClick={() => navigate('/messages')}
                     className="p-2 hover:bg-gray-100 rounded-full relative text-gray-600 hover:text-primary-600"
                   >
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
                       <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
                     </svg>
                     <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">

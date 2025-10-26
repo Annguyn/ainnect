@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { User } from '../../types/messaging'
+import { ConversationType } from '../../types/messaging'
+import { User } from '../../types'
 import { cn } from '../../lib/utils'
 import { X, Search, Users, User as UserIcon, Check } from 'lucide-react'
 
 interface CreateConversationModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateConversation: (type: 'direct' | 'group', title: string, participantIds: number[]) => void
+  onCreateConversation: (type: ConversationType, title: string, participantIds: number[]) => void
   currentUserId: number
+  friends?: User[]
+  loadingFriends?: boolean
   className?: string
 }
 
@@ -16,10 +19,12 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
   onClose,
   onCreateConversation,
   currentUserId,
+  friends = [],
+  loadingFriends = false,
   className
 }) => {
   const [step, setStep] = useState<'type' | 'participants' | 'details'>('type')
-  const [conversationType, setConversationType] = useState<'direct' | 'group'>('direct')
+  const [conversationType, setConversationType] = useState<ConversationType>(ConversationType.DIRECT)
   const [title, setTitle] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUsers, setSelectedUsers] = useState<User[]>([])
@@ -33,7 +38,14 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
   }, [isOpen])
 
   useEffect(() => {
-    if (conversationType === 'direct') {
+    if (friends && friends.length > 0) {
+      console.log('Friends prop changed, reloading users:', friends)
+      loadUsers()
+    }
+  }, [friends])
+
+  useEffect(() => {
+    if (conversationType === ConversationType.DIRECT) {
       setStep('participants')
     } else {
       setStep('details')
@@ -43,14 +55,24 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
   const loadUsers = async () => {
     try {
       setLoading(true)
-      // TODO: Replace with actual user service
-      const mockUsers: User[] = [
-        { id: 2, username: 'john_doe', email: 'john@example.com', firstName: 'John', lastName: 'Doe', avatar: '', isOnline: true },
-        { id: 3, username: 'jane_smith', email: 'jane@example.com', firstName: 'Jane', lastName: 'Smith', avatar: '', isOnline: false },
-        { id: 4, username: 'bob_wilson', email: 'bob@example.com', firstName: 'Bob', lastName: 'Wilson', avatar: '', isOnline: true },
-        { id: 5, username: 'alice_brown', email: 'alice@example.com', firstName: 'Alice', lastName: 'Brown', avatar: '', isOnline: true },
-      ]
-      setAvailableUsers(mockUsers.filter(user => user.id !== currentUserId))
+      console.log('CreateConversationModal - Friends prop:', friends)
+      console.log('CreateConversationModal - Loading friends:', loadingFriends)
+      
+      // Use friends prop if available, otherwise fallback to mock data
+      if (friends && friends.length > 0) {
+        console.log('Using real friends data:', friends)
+        setAvailableUsers(friends.filter(user => user.id !== currentUserId))
+      } else {
+        console.log('Using mock data fallback')
+        // Fallback mock data
+        const mockUsers: User[] = [
+          { id: 2, username: 'john_doe', email: 'john@example.com', displayName: 'John Doe', firstName: 'John', lastName: 'Doe', avatar: '', isActive: true },
+          { id: 3, username: 'jane_smith', email: 'jane@example.com', displayName: 'Jane Smith', firstName: 'Jane', lastName: 'Smith', avatar: '', isActive: true },
+          { id: 4, username: 'bob_wilson', email: 'bob@example.com', displayName: 'Bob Wilson', firstName: 'Bob', lastName: 'Wilson', avatar: '', isActive: true },
+          { id: 5, username: 'alice_brown', email: 'alice@example.com', displayName: 'Alice Brown', firstName: 'Alice', lastName: 'Brown', avatar: '', isActive: true },
+        ]
+        setAvailableUsers(mockUsers.filter(user => user.id !== currentUserId))
+      }
     } catch (error) {
       console.error('Failed to load users:', error)
     } finally {
@@ -62,14 +84,15 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
-      user.firstName.toLowerCase().includes(query) ||
-      user.lastName.toLowerCase().includes(query) ||
+      user.displayName.toLowerCase().includes(query) ||
+      (user.firstName && user.firstName.toLowerCase().includes(query)) ||
+      (user.lastName && user.lastName.toLowerCase().includes(query)) ||
       user.username.toLowerCase().includes(query)
     )
   })
 
   const handleUserSelect = (user: User) => {
-    if (conversationType === 'direct') {
+    if (conversationType === ConversationType.DIRECT) {
       setSelectedUsers([user])
       handleCreateConversation()
     } else {
@@ -94,7 +117,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
 
   const handleClose = () => {
     setStep('type')
-    setConversationType('direct')
+    setConversationType(ConversationType.DIRECT)
     setTitle('')
     setSearchQuery('')
     setSelectedUsers([])
@@ -102,7 +125,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
   }
 
   const canProceed = () => {
-    if (conversationType === 'direct') {
+    if (conversationType === ConversationType.DIRECT) {
       return selectedUsers.length === 1
     } else {
       return selectedUsers.length > 0 && title.trim().length > 0
@@ -117,9 +140,9 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            {step === 'type' && 'New Conversation'}
-            {step === 'participants' && 'Select Contact'}
-            {step === 'details' && 'Group Details'}
+            {step === 'type' && 'Cuộc trò chuyện mới'}
+            {step === 'participants' && 'Chọn liên hệ'}
+            {step === 'details' && 'Chi tiết nhóm'}
           </h2>
           <button
             onClick={handleClose}
@@ -137,10 +160,10 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
               
               <div className="space-y-3">
                 <button
-                  onClick={() => setConversationType('direct')}
+                  onClick={() => setConversationType(ConversationType.DIRECT)}
                   className={cn(
                     "w-full p-4 border rounded-lg text-left transition-colors",
-                    conversationType === 'direct'
+                    conversationType === ConversationType.DIRECT
                       ? "border-primary-500 bg-primary-50"
                       : "border-gray-200 hover:border-gray-300"
                   )}
@@ -150,17 +173,17 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                       <UserIcon className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Direct Message</h3>
-                      <p className="text-sm text-gray-600">Start a private conversation with one person</p>
+                      <h3 className="font-medium text-gray-900">Tin nhắn riêng</h3>
+                      <p className="text-sm text-gray-600">Bắt đầu cuộc trò chuyện riêng với một người</p>
                     </div>
                   </div>
                 </button>
 
                 <button
-                  onClick={() => setConversationType('group')}
+                  onClick={() => setConversationType(ConversationType.GROUP)}
                   className={cn(
                     "w-full p-4 border rounded-lg text-left transition-colors",
-                    conversationType === 'group'
+                    conversationType === ConversationType.GROUP
                       ? "border-primary-500 bg-primary-50"
                       : "border-gray-200 hover:border-gray-300"
                   )}
@@ -170,8 +193,8 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                       <Users className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Group Chat</h3>
-                      <p className="text-sm text-gray-600">Create a group conversation with multiple people</p>
+                      <h3 className="font-medium text-gray-900">Nhóm trò chuyện</h3>
+                      <p className="text-sm text-gray-600">Tạo cuộc trò chuyện nhóm với nhiều người</p>
                     </div>
                   </div>
                 </button>
@@ -185,7 +208,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search contacts..."
+                  placeholder="Tìm kiếm liên hệ..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -199,7 +222,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm">No contacts found</p>
+                    <p className="text-sm">Không tìm thấy liên hệ nào</p>
                   </div>
                 ) : (
                   filteredUsers.map((user) => (
@@ -212,13 +235,13 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                         {user.avatar ? (
                           <img
                             src={user.avatar}
-                            alt={user.firstName}
+                            alt={user.displayName}
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                             <span className="text-white font-semibold text-sm">
-                              {user.firstName.charAt(0)}
+                              {user.displayName.charAt(0)}
                             </span>
                           </div>
                         )}
@@ -226,9 +249,9 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <h3 className="font-medium text-gray-900">
-                              {user.firstName} {user.lastName}
+                              {user.displayName}
                             </h3>
-                            {user.isOnline && (
+                            {user.isActive && (
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             )}
                           </div>
@@ -252,14 +275,14 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter group name..."
+                  placeholder="Nhập tên nhóm..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Selected Members ({selectedUsers.length})
+                  Thành viên đã chọn ({selectedUsers.length})
                 </label>
                 <div className="max-h-32 overflow-y-auto space-y-2">
                   {selectedUsers.map((user) => (
@@ -268,18 +291,18 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                         {user.avatar ? (
                           <img
                             src={user.avatar}
-                            alt={user.firstName}
+                            alt={user.displayName}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                             <span className="text-white font-semibold text-xs">
-                              {user.firstName.charAt(0)}
+                              {user.displayName.charAt(0)}
                             </span>
                           </div>
                         )}
                         <span className="text-sm font-medium text-gray-900">
-                          {user.firstName} {user.lastName}
+                          {user.displayName}
                         </span>
                       </div>
                       <button
@@ -317,18 +340,18 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
                         {user.avatar ? (
                           <img
                             src={user.avatar}
-                            alt={user.firstName}
+                            alt={user.displayName}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                             <span className="text-white font-semibold text-xs">
-                              {user.firstName.charAt(0)}
+                              {user.displayName.charAt(0)}
                             </span>
                           </div>
                         )}
                         <span className="text-sm font-medium text-gray-900">
-                          {user.firstName} {user.lastName}
+                          {user.displayName}
                         </span>
                       </div>
                     </button>
@@ -344,7 +367,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
             onClick={handleClose}
             className="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
           >
-            Cancel
+            Hủy
           </button>
           
           {step === 'details' && (
@@ -353,7 +376,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
               disabled={!canProceed()}
               className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Group
+              Tạo nhóm
             </button>
           )}
         </div>

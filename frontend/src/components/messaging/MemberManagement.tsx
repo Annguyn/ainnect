@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Conversation } from '../../types/messaging'
+import { User, Conversation, ConversationMember, ConversationMemberRole } from '../../types/messaging'
 import { messagingService } from '../../services/messagingService'
 import { cn } from '../../lib/utils'
 import { 
@@ -25,7 +25,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
   onClose,
   className
 }) => {
-  const [members, setMembers] = useState<User[]>([])
+  const [members, setMembers] = useState<ConversationMember[]>([])
   const [availableUsers, setAvailableUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -44,7 +44,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
         page: 0,
         size: 100
       })
-      setMembers(response.content)
+      setMembers(response.members)
     } catch (error) {
       console.error('Failed to load members:', error)
     } finally {
@@ -71,10 +71,21 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
 
     try {
       await messagingService.addMembersToConversation(conversation.id, {
+        conversationId: conversation.id,
         userIds: selectedUsers.map(user => user.id)
       })
       
-      setMembers(prev => [...prev, ...selectedUsers])
+      setMembers(prev => [...prev, ...selectedUsers.map(user => ({
+        userId: user.id,
+        username: user.username,
+        displayName: user.displayName || `${user.firstName} ${user.lastName}`,
+        avatarUrl: user.avatarUrl || user.avatar,
+        role: 'MEMBER' as ConversationMemberRole,
+        joinedAt: new Date().toISOString(),
+        lastReadMessageId: undefined,
+        isOnline: user.isOnline || false,
+        lastSeenAt: undefined
+      }))])
       setSelectedUsers([])
       setShowAddMembers(false)
     } catch (error) {
@@ -86,7 +97,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
     if (confirm('Are you sure you want to remove this member?')) {
       try {
         await messagingService.removeMemberFromConversation(conversation.id, userId)
-        setMembers(prev => prev.filter(member => member.id !== userId))
+        setMembers(prev => prev.filter(member => member.userId !== userId))
       } catch (error) {
         console.error('Failed to remove member:', error)
       }
@@ -112,7 +123,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       user.lastName.toLowerCase().includes(query) ||
       user.username.toLowerCase().includes(query)
     )
-  }).filter(user => !members.some(member => member.id === user.id))
+  }).filter(user => !members.some(member => member.userId === user.id))
 
   const isCurrentUser = (userId: number) => userId === currentUserId
   const isAdmin = (userId: number) => {
@@ -164,18 +175,18 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
               ) : (
                 members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={member.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      {member.avatar ? (
+                      {member.avatarUrl ? (
                         <img
-                          src={member.avatar}
-                          alt={member.firstName}
+                          src={member.avatarUrl}
+                          alt={member.displayName}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
-                            {member.firstName.charAt(0)}
+                            {member.displayName.charAt(0)}
                           </span>
                         </div>
                       )}
@@ -183,9 +194,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h3 className="font-medium text-gray-900">
-                            {member.firstName} {member.lastName}
+                            {member.displayName}
                           </h3>
-                          {isAdmin(member.id) && (
+                          {isAdmin(member.userId) && (
                             <Crown className="w-4 h-4 text-yellow-500" />
                           )}
                           {member.isOnline && (
@@ -196,9 +207,9 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
                       </div>
                     </div>
 
-                    {!isCurrentUser(member.id) && (
+                    {!isCurrentUser(member.userId) && (
                       <button
-                        onClick={() => handleRemoveMember(member.id)}
+                        onClick={() => handleRemoveMember(member.userId)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="Remove member"
                       >

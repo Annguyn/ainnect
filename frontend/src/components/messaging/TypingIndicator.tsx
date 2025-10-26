@@ -18,22 +18,22 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 
   const getTypingText = () => {
     if (users.length === 1) {
-      return `${users[0].firstName} is typing...`
+      return `${users[0].firstName} đang gõ...`
     } else if (users.length === 2) {
-      return `${users[0].firstName} and ${users[1].firstName} are typing...`
+      return `${users[0].firstName} và ${users[1].firstName} đang gõ...`
     } else {
-      return `${users[0].firstName} and ${users.length - 1} others are typing...`
+      return `${users[0].firstName} và ${users.length - 1} người khác đang gõ...`
     }
   }
 
   return (
-    <div className={cn("flex items-center space-x-2 p-3", className)}>
+    <div className={cn("flex items-center space-x-2 p-3 bg-gray-50 rounded-lg mx-4 mb-2", className)}>
       <div className="flex space-x-1">
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+        <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+        <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
       </div>
-      <span className="text-sm text-gray-500 italic">{getTypingText()}</span>
+      <span className="text-sm text-gray-600 italic">{getTypingText()}</span>
     </div>
   )
 }

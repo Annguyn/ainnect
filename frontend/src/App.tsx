@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -14,13 +14,14 @@ import BlockedUsersPage from './pages/BlockedUsersPage';
 import ReportsPage from './pages/ReportsPage';
 import { GroupsPage } from './pages/GroupsPage';
 import { GroupPage } from './pages/GroupPage';
+import MessagingPage from './pages/MessagingPage';
+import ConversationPage from './pages/ConversationPage';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Main application routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
@@ -30,7 +31,6 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<SearchPage />} />
         
-        {/* Social features routes */}
         <Route path="/friend-requests" element={<FriendRequestsPage />} />
         <Route path="/followers" element={<FollowersPage />} />
         <Route path="/followers/:userId" element={<FollowersPage />} />
@@ -41,9 +41,16 @@ function App() {
         <Route path="/blocked-users" element={<BlockedUsersPage />} />
         <Route path="/reports" element={<ReportsPage />} />
 
-        {/* Groups routes */}
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupPage />} />
+
+        {/* Messaging Routes */}
+        <Route path="/messages" element={<MessagingPage />} />
+        <Route path="/messages/:conversationId" element={<ConversationPage />} />
+        
+        {/* Backward compatibility - redirect old messaging route */}
+        <Route path="/messaging" element={<Navigate to="/messages" replace />} />
+        <Route path="/messaging/:conversationId" element={<Navigate to="/messages/:conversationId" replace />} />
       </Routes>
     </Router>
   );

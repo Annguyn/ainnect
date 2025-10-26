@@ -1,4 +1,6 @@
 import { apiClient } from './apiClient';
+import type { BlockedUsersResponse } from '../types/social';
+import type { User } from '../types';
 
 // Types for Social Graph APIs
 export interface FollowRequest {
@@ -107,15 +109,7 @@ export interface UserSocialStats {
   blocked: boolean;
 }
 
-export interface User {
-  id: number;
-  username: string;
-  displayName: string;
-  avatarUrl?: string;
-  bio?: string;
-  isVerified?: boolean;
-  isPrivate?: boolean;
-}
+// User interface is now imported from types/index.ts
 
 
 export interface Share {
@@ -143,12 +137,12 @@ export interface Report {
 
 export interface PaginatedResponse<T> {
   content: T[];
-  page: number;
-  size: number;
+  currentPage: number;
+  pageSize: number;
   totalElements: number;
   totalPages: number;
-  first: boolean;
-  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -209,8 +203,32 @@ export class SocialService {
   }
 
   async getFriends(userId: number, page: number = 0, size: number = 10): Promise<PaginatedResponse<User>> {
-    const response = await apiClient.get<PaginatedResponse<User>>(`/api/social/friends/${userId}?page=${page}&size=${size}`);
-    return response;
+    const response = await apiClient.get<any>(`/api/social/friends/${userId}?page=${page}&size=${size}`);
+    const payload = (response && typeof response === 'object' && 'data' in response) ? (response as any).data : response;
+    const friendships = payload?.friendships || payload?.content || [];
+    const normalized = (friendships as any[]).map((f) => ({
+      id: f.id ?? f.userId,
+      username: f.username,
+      displayName: f.displayName,
+      avatarUrl: f.avatarUrl,
+      email: f.email || '',
+      isActive: true,
+      isVerified: f.isVerified || false,
+      isPrivate: f.isPrivate || false,
+      bio: f.bio || null,
+      firstName: f.firstName,
+      lastName: f.lastName,
+      avatar: f.avatarUrl
+    })) as User[];
+    return {
+      content: normalized,
+      currentPage: payload?.currentPage ?? payload?.page ?? page,
+      pageSize: payload?.pageSize ?? payload?.size ?? size,
+      totalElements: payload?.totalElements ?? normalized.length,
+      totalPages: payload?.totalPages ?? 1,
+      hasNext: payload?.hasNext ?? false,
+      hasPrevious: payload?.hasPrevious ?? false,
+    } as PaginatedResponse<User>;
   }
 
   async getCommonFriends(otherUserId: number, page: number = 0, size: number = 10): Promise<PaginatedResponse<User>> {
@@ -270,9 +288,9 @@ export class SocialService {
     await apiClient.delete<void>(`/api/social/block/${blockedUserId}`);
   }
 
-  async getBlockedUsers(page: number = 0, size: number = 10): Promise<PaginatedResponse<User>> {
-    const response = await apiClient.get<PaginatedResponse<User>>(`/api/social/blocked-users?page=${page}&size=${size}`);
-    return response;
+  async getBlockedUsers(page: number = 0, size: number = 10): Promise<BlockedUsersResponse> {
+    const response = await apiClient.get<ApiResponse<BlockedUsersResponse>>(`/api/social/blocked-users?page=${page}&size=${size}`);
+    return response.data!;
   }
 
   async checkBlockStatus(blockedId: number): Promise<boolean> {
@@ -343,6 +361,18 @@ export class SocialService {
       return (response as { data: UserSocialStats }).data;
     }
     return response as UserSocialStats;
+  }
+
+  // Fetch users
+  async fetchUsers(): Promise<User[]> {
+    const response = await apiClient.get<User[]>('/api/social/users');
+    return response;
+  }
+
+  // Fetch activities
+  async fetchActivities(): Promise<any[]> {
+    const response = await apiClient.get<any[]>('/api/social/activities');
+    return response;
   }
 }
 

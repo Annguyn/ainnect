@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import { ApiErrorResponse } from '../types';
+import { debugLogger } from '../utils/debugLogger';
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -15,26 +16,43 @@ class ApiClient {
         'Content-Type': 'application/json',
       },
     });
-
     this.setupInterceptors();
     this.loadTokensFromStorage();
   }
 
   private setupInterceptors() {
-    // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
         if (this.accessToken) {
           config.headers.Authorization = `Bearer ${this.accessToken}`;
         }
+        debugLogger.logApiCall(
+          config.method?.toUpperCase() || 'UNKNOWN',
+          config.url || 'UNKNOWN',
+          config.data
+        );
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        debugLogger.logApiCall(
+          error.config?.method?.toUpperCase() || 'UNKNOWN',
+          error.config?.url || 'UNKNOWN',
+          error.config?.data
+        );
+        return Promise.reject(error);
+      }
     );
 
     // Response interceptor
     this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
+      (response: AxiosResponse) => {
+        debugLogger.logApiResponse(
+          response.config.method?.toUpperCase() || 'UNKNOWN',
+          response.config.url || 'UNKNOWN',
+          response.data
+        );
+        return response;
+      },
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
 
@@ -60,17 +78,22 @@ class ApiClient {
   }
 
   private handleError(error: AxiosError): ApiErrorResponse {
-    if (error.response?.data) {
-      return error.response.data as ApiErrorResponse;
-    }
-
-    return {
+    const errorResponse = error.response?.data as ApiErrorResponse || {
       timestamp: new Date().toISOString(),
       status: error.response?.status || 500,
       error: 'Network Error',
       message: error.message || 'An unexpected error occurred',
       details: null,
     };
+
+    debugLogger.logApiResponse(
+      error.config?.method?.toUpperCase() || 'UNKNOWN',
+      error.config?.url || 'UNKNOWN',
+      undefined,
+      errorResponse
+    );
+
+    return errorResponse;
   }
 
   private loadTokensFromStorage() {
@@ -120,7 +143,6 @@ class ApiClient {
     return response.data;
   }
 
-  // HTTP Methods
   async get<T>(url: string, config?: any): Promise<T> {
     const response = await this.client.get<T>(url, config);
     return response.data;

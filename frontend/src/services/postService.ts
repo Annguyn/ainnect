@@ -89,10 +89,12 @@ export interface SharePostRequest {
 
 export interface PostsResponse {
   content: Post[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
+  page: {
+    number: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
 }
 
 class PostService {
@@ -198,8 +200,28 @@ class PostService {
     await apiClient.delete(`${this.baseUrl}/${postId}`);
   }
 
+  async getFeedPosts(page = 0, size = 5): Promise<PostsResponse> {
+    const endpoint = `${this.baseUrl}/feed/user`;
+    debugLogger.logApiCall('GET', endpoint, { page, size });
+    try {
+      const response = await apiClient.get<PostsResponse>(endpoint, {
+        params: { page, size }
+      });
+      debugLogger.logApiResponse('GET', endpoint, response);
+      debugLogger.log('PostService', 'Personalized feed loaded', {
+        postsCount: response.content?.length || 0,
+        totalElements: response.page.totalElements,
+        totalPages: response.page.totalPages
+      });
+      return response;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      throw error;
+    }
+  }
+
   // List posts by author
-  async getPostsByAuthor(authorId: number, page = 0, size = 10): Promise<PostsResponse> {
+  async getPostsByAuthor(authorId: number, page = 0, size = 5): Promise<PostsResponse> {
     const endpoint = this.baseUrl;
     debugLogger.logApiCall('GET', endpoint, { authorId, page, size });
     try {
@@ -226,14 +248,14 @@ class PostService {
   }
 
   // Get all posts (simulating news feed since no specific feed endpoint exists)
-  async getAllPosts(page = 0, size = 10): Promise<PostsResponse> {
+  async getAllPosts(page = 0, size = 5): Promise<PostsResponse> {
     return await apiClient.get<PostsResponse>(this.baseUrl, {
       params: { page, size }
     });
   }
 
   // Get news feed posts using dedicated feed endpoint
-  async getNewsFeed(page = 0, size = 10, sort = 'createdAt,desc'): Promise<PostsResponse> {
+  async getNewsFeed(page = 0, size = 5, sort = 'createdAt,desc'): Promise<PostsResponse> {
     const endpoint = `${this.baseUrl}/feed`;
     debugLogger.logApiCall('GET', endpoint, { page, size, sort });
     try {
@@ -249,10 +271,10 @@ class PostService {
         size,
         sort,
         totalPosts: response.content?.length || 0,
-        totalElements: response.totalElements,
-        totalPages: response.totalPages,
-        currentPage: response.number,
-        hasNext: response.number < response.totalPages - 1,
+        totalElements: response.page.totalElements,
+        totalPages: response.page.totalPages,
+        currentPage: response.page.number,
+        hasNext: response.page.number < response.page.totalPages - 1,
         posts: response.content?.map(p => ({
           id: p.id,
           author: p.authorUsername,
@@ -284,9 +306,8 @@ class PostService {
     }
   }
 
-  // Get public posts for unauthenticated users
-  async getPublicPosts(page = 0, size = 10, sort = 'createdAt,desc'): Promise<PostsResponse> {
-    const endpoint = `${this.baseUrl}/public`;
+  async getPublicPosts(page = 0, size = 5, sort = 'createdAt,desc'): Promise<PostsResponse> {
+    const endpoint = `${this.baseUrl}/feed`;
     debugLogger.logApiCall('GET', endpoint, { page, size, sort });
     try {
       const response = await apiClient.get<PostsResponse>(endpoint, {
@@ -300,10 +321,10 @@ class PostService {
         size,
         sort,
         totalPosts: response.content?.length || 0,
-        totalElements: response.totalElements,
-        totalPages: response.totalPages,
-        currentPage: response.number,
-        hasNext: response.number < response.totalPages - 1,
+        totalElements: response.page.totalElements,
+        totalPages: response.page.totalPages,
+        currentPage: response.page.number,
+        hasNext: response.page.number < response.page.totalPages - 1,
         posts: response.content?.map(p => ({
           id: p.id,
           author: p.authorUsername,
@@ -405,9 +426,7 @@ class PostService {
     return await apiClient.post<number>(`${this.baseUrl}/${postId}/shares`, shareData);
   }
 
-  // Toggle like (convenience method)
-  // Get reactions for a post
-  async getPostReactions(postId: number, page = 0, size = 50): Promise<{
+  async getPostReactions(postId: number, page = 0, size = 5): Promise<{
     content: Array<{
       id: number;
       type: 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
@@ -471,10 +490,8 @@ class PostService {
 
   async toggleLike(postId: number): Promise<void> {
     try {
-      // Try to react first
       await this.reactToPost(postId, { type: 'like' });
     } catch (error: any) {
-      // If already reacted, remove the reaction
       if (error.response?.status === 409) {
         await this.unreactPost(postId);
       } else {

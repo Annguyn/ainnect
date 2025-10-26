@@ -11,7 +11,6 @@ export class DebugLogger {
     return DebugLogger.instance;
   }
 
-  // Button click logging
   logButtonClick(buttonName: string, data?: any) {
     if (!DEBUG_ENABLED) return;
     
@@ -25,7 +24,6 @@ export class DebugLogger {
     console.groupEnd();
   }
 
-  // API call logging
   logApiCall(method: string, endpoint: string, data?: any) {
     if (!DEBUG_ENABLED) return;
     
@@ -36,8 +34,6 @@ export class DebugLogger {
     }
     console.groupEnd();
   }
-
-  // API response logging
   logApiResponse(method: string, endpoint: string, response?: any, error?: any) {
     if (!DEBUG_ENABLED) return;
     
@@ -56,7 +52,6 @@ export class DebugLogger {
     }
   }
 
-  // Component state changes
   logStateChange(component: string, stateName: string, oldValue: any, newValue: any) {
     if (!DEBUG_ENABLED) return;
     

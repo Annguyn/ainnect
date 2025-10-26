@@ -151,9 +151,33 @@ export interface PaginatedResponse<T> {
   last: boolean
 }
 
+export interface BlockedUser {
+  id: number;
+  blockerId: number;
+  blockerUsername: string;
+  blockerDisplayName: string;
+  blockerAvatarUrl?: string;
+  blockedId: number;
+  blockedUsername: string;
+  blockedDisplayName: string;
+  blockedAvatarUrl?: string;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface BlockedUsersResponse {
+  blocks: BlockedUser[];
+  currentPage: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface SocialFilters {
-  page?: number
-  size?: number
-  type?: string
-  status?: string
+  page?: number;
+  size?: number;
+  type?: string;
+  status?: string;
 }

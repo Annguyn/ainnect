@@ -1,76 +1,163 @@
 import React, { useState, useEffect } from 'react'
-import { Conversation } from '../../types/messaging'
-import { messagingService } from '../../services/messagingService'
+import { Conversation, ConversationType } from '../../types/messaging'
+import { User } from '../../types'
+import { useMessaging } from '../../hooks/useMessaging'
 import { ConversationList } from './ConversationList'
 import { ChatInterface } from './ChatInterface'
 import { CreateConversationModal } from './CreateConversationModal'
+import { WebSocketStatus } from './WebSocketStatus'
+import { WebSocketTest } from './WebSocketTest'
+import { socialService } from '../../services/socialService'
 import { cn } from '../../lib/utils'
 
 interface MessagingAppProps {
-  currentUserId: number
+  currentUserId?: number
+  initialConversationId?: number
   className?: string
 }
 
 export const MessagingApp: React.FC<MessagingAppProps> = ({
   currentUserId,
+  initialConversationId,
   className
 }) => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [showWebSocketTest, setShowWebSocketTest] = useState(false)
+  const [friends, setFriends] = useState<User[]>([])
+  const [loadingFriends, setLoadingFriends] = useState(false)
 
-  useEffect(() => {
-    loadUnreadCount()
-    const interval = setInterval(loadUnreadCount, 30000) // Update every 30 seconds
-    return () => clearInterval(interval)
-  }, [])
-
-  const loadUnreadCount = async () => {
-    try {
-      const response = await messagingService.getTotalUnreadCount()
-      setUnreadCount(response.totalUnreadCount)
-    } catch (error) {
-      console.error('Failed to load unread count:', error)
-    }
-  }
+  const {
+    conversations,
+    messages,
+    unreadCount,
+    loading,
+    error,
+    typingUsers,
+    wsConnected,
+    wsError,
+    loadConversations,
+    loadMessages,
+    markAsRead,
+    sendMessage,
+    createConversation,
+    addMembers,
+    handleTyping,
+    currentUserId: actualUserId
+  } = useMessaging({
+    currentUserId,
+    currentConversationId: selectedConversation?.id
+  })
 
   const handleConversationSelect = (conversation: Conversation) => {
     setSelectedConversation(conversation)
+    // Mark messages as read when selecting conversation
+    if (conversation.unreadCount > 0) {
+      markAsRead(conversation.id)
+    }
+  }
+
+  const loadFriends = async () => {
+    try {
+      setLoadingFriends(true)
+      if (actualUserId) {
+        const response = await socialService.getFriends(actualUserId, 0, 100) // Load up to 100 friends
+        console.log('Friends API Response:', response)
+        
+        // Response is already transformed by socialService.getFriends()
+        const friends = response.content || []
+        
+        console.log('Friends data:', friends)
+        setFriends(friends)
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error)
+    } finally {
+      setLoadingFriends(false)
+    }
   }
 
   const handleCreateConversation = async (
-    type: 'direct' | 'group',
-    title: string,
-    participantIds: number[]
+    type: ConversationType,
+    title?: string,
+    participantIds: number[] = []
   ) => {
     try {
-      const newConversation = await messagingService.createConversation({
-        type,
-        title: type === 'group' ? title : undefined,
-        participantIds
-      })
-      
+      const newConversation = await createConversation(type, title, participantIds)
       setSelectedConversation(newConversation)
+      setShowCreateModal(false)
     } catch (error) {
       console.error('Failed to create conversation:', error)
     }
+  }
+
+  const handleShowCreateModal = () => {
+    loadFriends()
+    setShowCreateModal(true)
   }
 
   const handleBackToList = () => {
     setSelectedConversation(null)
   }
 
+  // Auto-select conversation when initialConversationId is provided
+  useEffect(() => {
+    if (initialConversationId && conversations && conversations.length > 0) {
+      const conversation = conversations.find(c => c.id === initialConversationId)
+      if (conversation && !selectedConversation) {
+        setSelectedConversation(conversation)
+      }
+    }
+  }, [initialConversationId, conversations, selectedConversation])
+
   return (
     <div className={cn("flex h-full bg-gray-50", className)}>
+      {/* Error Status Indicator */}
+      {error && (
+        <div className="absolute top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md">
+          <p className="text-sm mb-2">{error}</p>
+          <button 
+            onClick={() => {
+              loadConversations()
+            }}
+            className="text-xs bg-red-200 hover:bg-red-300 px-2 py-1 rounded transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+      
+      {/* WebSocket Status Indicator */}
+      <div className="absolute top-4 right-4 z-50">
+        <WebSocketStatus
+          isConnected={wsConnected}
+          error={wsError}
+          reconnectAttempts={0}
+        />
+      </div>
+
+      {/* WebSocket Test Button */}
+      <div className="absolute top-4 left-4 z-50">
+        <button
+          onClick={() => setShowWebSocketTest(!showWebSocketTest)}
+          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+        >
+          {showWebSocketTest ? 'Hide' : 'Show'} WS Test
+        </button>
+      </div>
+
       {/* Conversation List - Hidden on mobile when chat is open */}
       <div className={cn(
         "w-full lg:w-80 flex-shrink-0",
         selectedConversation ? "hidden lg:block" : "block"
       )}>
         <ConversationList
+          conversations={conversations}
           selectedConversationId={selectedConversation?.id}
           onConversationSelect={handleConversationSelect}
-          onCreateConversation={() => setShowCreateModal(true)}
+          onCreateConversation={handleShowCreateModal}
+          loading={loading}
+          error={error}
         />
       </div>
 
@@ -79,8 +166,14 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
         <div className="flex-1 flex flex-col min-w-0">
           <ChatInterface
             conversation={selectedConversation}
-            currentUserId={currentUserId}
+            messages={messages}
+            typingUsers={typingUsers}
+            currentUserId={actualUserId || 0}
             onBack={handleBackToList}
+            onSendMessage={sendMessage}
+            onTyping={handleTyping}
+            onMarkAsRead={markAsRead}
+            wsConnected={wsConnected}
           />
         </div>
       ) : (
@@ -91,16 +184,16 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to Messages</h3>
-            <p className="text-gray-600 mb-4">Select a conversation to start messaging</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Chào mừng đến với Tin nhắn</h3>
+            <p className="text-gray-600 mb-4">Chọn một cuộc trò chuyện để bắt đầu nhắn tin</p>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleShowCreateModal}
               className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              New Conversation
+              Cuộc trò chuyện mới
             </button>
           </div>
         </div>
@@ -111,8 +204,32 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreateConversation={handleCreateConversation}
-        currentUserId={currentUserId}
+        currentUserId={actualUserId || 0}
+        friends={friends}
+        loadingFriends={loadingFriends}
       />
+
+      {/* WebSocket Test Modal */}
+      {showWebSocketTest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold">WebSocket Test</h2>
+                <button
+                  onClick={() => setShowWebSocketTest(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <WebSocketTest />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

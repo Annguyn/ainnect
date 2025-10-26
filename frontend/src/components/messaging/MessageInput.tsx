@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { MessageType } from '../../types/messaging'
 import { cn } from '../../lib/utils'
 import { 
   Send, 
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react'
 
 interface MessageInputProps {
-  onSendMessage: (content: string, messageType: 'text' | 'image' | 'file', attachments: string[]) => void
+  onSendMessage: (content: string, messageType: MessageType, attachments: string[]) => void
   onStartTyping?: () => void
   onStopTyping?: () => void
   placeholder?: string
@@ -52,8 +53,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         if (onStopTyping) {
           onStopTyping()
         }
-      }, 1000)
+      }, 2000) // Tăng thời gian lên 2 giây
     } else if (!value.trim() && onStopTyping) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
       onStopTyping()
     }
   }
@@ -61,7 +65,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleSendMessage = () => {
     if (!message.trim() && attachments.length === 0) return
 
-    const messageType = attachments.length > 0 ? 'image' : 'text'
+    const messageType = attachments.length > 0 ? MessageType.IMAGE : MessageType.TEXT
     onSendMessage(message.trim(), messageType, attachments)
     
     setMessage('')
@@ -106,6 +110,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   }
 
   const emojis = ['😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🎉', '😢', '😮', '😡', '👏']
+
+  // Cleanup typing timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div className={cn("bg-white border-t border-gray-200 p-4", className)}>

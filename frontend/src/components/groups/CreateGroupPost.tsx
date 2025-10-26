@@ -9,6 +9,7 @@ interface CreateGroupPostProps {
   groupName: string;
   onCreatePost: (content: string, mediaFiles?: File[]) => Promise<void>;
   isLoading?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
   groupName,
   onCreatePost,
   isLoading = false,
+  disabled = false,
   className = ''
 }) => {
   const { user } = useAuth();
@@ -87,7 +89,9 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
   };
 
   const handleTextareaClick = () => {
-    setIsExpanded(true);
+    if (!disabled) {
+      setIsExpanded(true);
+    }
   };
 
   const handleCancel = () => {
@@ -113,10 +117,11 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
             {!isExpanded ? (
               <button
                 onClick={handleTextareaClick}
-                className="w-full text-left px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors group"
+                disabled={disabled}
+                className={`w-full text-left px-4 py-3 bg-gray-100 rounded-full transition-colors group ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-200'}`}
               >
-                <span className="text-sm text-gray-500 group-hover:text-gray-700">
-                  Chia sẻ điều gì đó với {groupName}...
+                <span className={`text-sm ${disabled ? 'text-gray-400' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                  {disabled ? 'Bạn cần tham gia nhóm để đăng bài...' : `Chia sẻ điều gì đó với ${groupName}...`}
                 </span>
               </button>
             ) : (
@@ -126,9 +131,10 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={`Chia sẻ điều gì đó với ${groupName}...`}
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[120px] text-gray-900 placeholder-gray-500"
-                    autoFocus
+                    placeholder={disabled ? `Bạn cần tham gia nhóm để đăng bài...` : `Chia sẻ điều gì đó với ${groupName}...`}
+                    className={`w-full p-4 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[120px] text-gray-900 placeholder-gray-500 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                    disabled={disabled}
+                    autoFocus={!disabled}
                   />
                   <div className="absolute bottom-3 right-3 flex items-center space-x-2">
                     <span className={`text-xs ${content.length > 4500 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -194,7 +200,7 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={handleCancel}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || disabled}
                     >
                       Hủy
                     </Button>
@@ -202,7 +208,7 @@ export const CreateGroupPost: React.FC<CreateGroupPostProps> = ({
                       type="submit"
                       variant="primary"
                       size="sm"
-                      disabled={(!content.trim() && selectedFiles.length === 0) || isSubmitting}
+                      disabled={disabled || (!content.trim() && selectedFiles.length === 0) || isSubmitting}
                       className="min-w-[80px]"
                     >
                       {isSubmitting ? (

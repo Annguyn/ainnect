@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Conversation } from '../../types/messaging'
+import { Conversation, ConversationType } from '../../types/messaging'
 import { messagingService } from '../../services/messagingService'
 import { cn } from '../../lib/utils'
+import { GroupMembersDisplay } from './GroupMembersDisplay'
 import { 
   MessageCircle, 
   Users, 
@@ -12,16 +13,22 @@ import {
 } from 'lucide-react'
 
 interface ConversationListProps {
+  conversations?: Conversation[]
   selectedConversationId?: number
   onConversationSelect: (conversation: Conversation) => void
   onCreateConversation: () => void
+  loading?: boolean
+  error?: string | null
   className?: string
 }
 
 export const ConversationList: React.FC<ConversationListProps> = ({
+  conversations: propConversations,
   selectedConversationId,
   onConversationSelect,
   onCreateConversation,
+  loading: propLoading,
+  error: propError,
   className
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -30,8 +37,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'direct' | 'group'>('all')
 
   useEffect(() => {
-    loadConversations()
-  }, [activeTab])
+    if (propConversations) {
+      setConversations(propConversations)
+      setLoading(false)
+    } else {
+      loadConversations()
+    }
+  }, [activeTab, propConversations])
 
   const loadConversations = async () => {
     try {
@@ -49,7 +61,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           response = await messagingService.getUserConversations({ page: 0, size: 50 })
       }
       
-      setConversations(response.content)
+      setConversations(response.conversations)
     } catch (error) {
       console.error('Failed to load conversations:', error)
     } finally {
@@ -57,13 +69,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     }
   }
 
-  const filteredConversations = conversations.filter(conversation => {
+  const filteredConversations = (conversations || []).filter(conversation => {
     if (!searchQuery) return true
     
     const searchLower = searchQuery.toLowerCase()
     return (
       conversation.title?.toLowerCase().includes(searchLower) ||
-      conversation.participants.some(p => 
+      conversation.participants?.some(p => 
         p.firstName.toLowerCase().includes(searchLower) ||
         p.lastName.toLowerCase().includes(searchLower) ||
         p.username.toLowerCase().includes(searchLower)
@@ -88,19 +100,35 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const getConversationTitle = (conversation: Conversation) => {
     if (conversation.title) return conversation.title
     
-    if (conversation.type === 'direct') {
-      const otherParticipant = conversation.participants[0]
-      return `${otherParticipant.firstName} ${otherParticipant.lastName}`
+    if (conversation.type === ConversationType.DIRECT) {
+      // Use otherParticipant fields from backend
+      if (conversation.otherParticipantDisplayName) {
+        return conversation.otherParticipantDisplayName
+      }
+      if (conversation.otherParticipantUsername) {
+        return conversation.otherParticipantUsername
+      }
+      // Fallback to participants array
+      const otherParticipant = conversation.participants?.[0]
+      if (otherParticipant) {
+        return otherParticipant.displayName || `${otherParticipant.firstName || ''} ${otherParticipant.lastName || ''}`.trim() || otherParticipant.username
+      }
+      return 'Tin nhắn riêng'
     }
     
-    return 'Group Chat'
+    return 'Nhóm trò chuyện'
   }
 
   const getConversationAvatar = (conversation: Conversation) => {
     if (conversation.avatar) return conversation.avatar
     
-    if (conversation.type === 'direct') {
-      return conversation.participants[0]?.avatar || undefined
+    if (conversation.type === ConversationType.DIRECT) {
+      // Use otherParticipant fields from backend
+      if (conversation.otherParticipantAvatarUrl) {
+        return conversation.otherParticipantAvatarUrl
+      }
+      // Fallback to participants array
+      return conversation.participants?.[0]?.avatar || undefined
     }
     
     return undefined
@@ -130,7 +158,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Tìm kiếm cuộc trò chuyện..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -170,7 +198,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-500">
             <MessageCircle className="w-8 h-8 mb-2" />
-            <p className="text-sm">No conversations found</p>
+            <p className="text-sm">Không tìm thấy cuộc trò chuyện nào</p>
           </div>
         ) : (
           <div className="p-2">
@@ -202,7 +230,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                   )}
                   
                   {/* Online indicator for direct messages */}
-                  {conversation.type === 'direct' && conversation.participants[0]?.isOnline && (
+                  {conversation.type === ConversationType.DIRECT && (
+                    conversation.otherParticipantIsOnline || conversation.participants?.[0]?.isOnline
+                  ) && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                   )}
                   
@@ -235,6 +265,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                         conversation.lastMessage.content
                       )}
                     </p>
+                  )}
+                  
+                  {/* Group members display for group conversations */}
+                  {conversation.type === ConversationType.GROUP && (
+                    <div className="mt-1">
+                      <GroupMembersDisplay conversation={conversation} />
+                    </div>
                   )}
                 </div>
 

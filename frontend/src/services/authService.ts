@@ -156,7 +156,6 @@ class AuthService {
     try {
       await apiAuthService.logout();
     } catch (error) {
-      // Continue with logout even if API call fails
       console.error('Logout API call failed:', error);
     } finally {
       this.clearAuth();

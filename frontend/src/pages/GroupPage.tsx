@@ -202,14 +202,24 @@ export const GroupPage: React.FC = () => {
     );
   }
 
-  const isMember = currentGroup.userMembershipStatus === 'joined';
-  const isPending = currentGroup.userMembershipStatus === 'pending';
+  const isMember = currentGroup.userMembershipStatus === 'joined' || 
+                   currentGroup.member === true || 
+                   (currentGroup.userRole && currentGroup.userRole !== null);
+  const isPending = currentGroup.userMembershipStatus === 'pending' || 
+                    currentGroup.hasPendingRequest === true;
   const canManage = currentGroup.userRole === 'owner' || currentGroup.userRole === 'moderator' || currentGroup.userRole === 'admin';
   const isOwner = currentGroup.userRole === 'owner' || currentGroup.isOwner;
   const canPost = isMember;
 
   // Debug logging
   console.log('GroupPage render - members:', members, 'members type:', typeof members, 'members length:', members?.length);
+  console.log('GroupPage membership status:', {
+    userMembershipStatus: currentGroup.userMembershipStatus,
+    member: currentGroup.member,
+    userRole: currentGroup.userRole,
+    isMember,
+    canPost
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -358,16 +368,15 @@ export const GroupPage: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Create Post */}
-            {canPost && (
-              <div data-create-post>
-                <CreateGroupPost
-                  groupId={groupIdNum!}
-                  groupName={currentGroup.name}
-                  onCreatePost={handleCreatePost}
-                  isLoading={isSubmitting}
-                />
-              </div>
-            )}
+            <div data-create-post>
+              <CreateGroupPost
+                groupId={groupIdNum!}
+                groupName={currentGroup.name}
+                onCreatePost={handleCreatePost}
+                isLoading={isSubmitting}
+                disabled={!canPost}
+              />
+            </div>
 
             {/* Posts */}
             <div className="space-y-6">
