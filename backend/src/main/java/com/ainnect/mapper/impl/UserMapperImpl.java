@@ -1,5 +1,6 @@
 package com.ainnect.mapper.impl;
 
+import com.ainnect.dto.user.UserBasicInfoDto;
 import com.ainnect.dto.user.UserDtos;
 import com.ainnect.entity.User;
 import com.ainnect.mapper.UserMapper;
@@ -45,6 +46,19 @@ public class UserMapperImpl implements UserMapper {
                 .location(user.getLocation())
                 .isActive(user.getIsActive())
                 .build();
+    }
+
+    @Override
+    public UserBasicInfoDto toBasicInfoDto(User user) {
+        return new UserBasicInfoDto(
+            user.getId(),
+            user.getUsername(),
+            user.getDisplayName() != null ? user.getDisplayName().split(" ")[0] : null,
+            user.getDisplayName() != null && user.getDisplayName().split(" ").length > 1 ? 
+                user.getDisplayName().substring(user.getDisplayName().indexOf(" ") + 1) : null,
+            user.getAvatarUrl(),
+            user.getEmail()
+        );
     }
 
     @Override

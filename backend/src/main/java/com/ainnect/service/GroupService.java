@@ -4,6 +4,8 @@ import com.ainnect.common.enums.GroupMemberRole;
 import com.ainnect.dto.group.GroupDtos;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface GroupService {
     
     /**
@@ -80,4 +82,39 @@ public interface GroupService {
      * Check if user is moderator of group
      */
     boolean isModerator(Long groupId, Long userId);
+    
+    /**
+     * Get join questions for a group
+     */
+    List<GroupDtos.JoinQuestionResponse> getJoinQuestions(Long groupId);
+    
+    /**
+     * Update join questions for a group (only owner/admin)
+     */
+    void updateJoinQuestions(Long groupId, List<GroupDtos.JoinQuestionRequest> questions, Long currentUserId);
+    
+    /**
+     * Submit join request with answers
+     */
+    GroupDtos.JoinRequestResponse submitJoinRequest(Long groupId, List<GroupDtos.JoinAnswerRequest> answers, Long userId);
+    
+    /**
+     * Get pending join requests for a group (only owner/admin/moderator)
+     */
+    GroupDtos.JoinRequestListResponse getPendingJoinRequests(Long groupId, Pageable pageable, Long currentUserId);
+    
+    /**
+     * Review join request (approve or reject)
+     */
+    GroupDtos.JoinRequestResponse reviewJoinRequest(Long requestId, GroupDtos.ReviewJoinRequestRequest request, Long reviewerId);
+    
+    /**
+     * Get user's join request status for a group
+     */
+    GroupDtos.JoinRequestResponse getUserJoinRequest(Long groupId, Long userId);
+    
+    /**
+     * Cancel join request
+     */
+    void cancelJoinRequest(Long requestId, Long userId);
 }
