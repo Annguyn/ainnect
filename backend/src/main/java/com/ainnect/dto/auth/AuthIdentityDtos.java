@@ -32,11 +32,15 @@ public class AuthIdentityDtos {
 		private String phone;
 
 		@NotBlank(message = "Mật khẩu không được để trống")
-		@Size(min = 6, max = 255, message = "Mật khẩu phải từ 6-255 ký tự")
+		@Size(min = 8, max = 255, message = "Mật khẩu phải từ 8-255 ký tự")
+		@Pattern(
+			regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+			message = "Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa và 1 chữ số"
+		)
 		private String password;
 
 		@NotBlank(message = "Tên hiển thị không được để trống")
-		@Size(max = 100, message = "Tên hiển thị không được quá 100 ký tự")
+		@Size(max = 65, message = "Tên hiển thị không được quá 65 ký tự")
 		private String displayName;
 	}
 

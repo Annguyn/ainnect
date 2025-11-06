@@ -37,13 +37,12 @@ public class PostController {
 		try {
 			Long authorId = extractUserIdFromToken(authHeader);
 			
-			// Create post request
-			PostDtos.CreateRequest request = new PostDtos.CreateRequest();
-			request.setContent(content);
-			request.setGroupId(groupId);
-			request.setVisibility(PostVisibility.valueOf(visibility));
+			PostDtos.CreateRequest request = PostDtos.CreateRequest.builder()
+				.content(content)
+				.groupId(groupId)
+				.visibility(PostVisibility.valueOf(visibility))
+				.build();
 			
-			// Handle media files if provided
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = new ArrayList<>();
 				for (MultipartFile file : mediaFiles) {
@@ -58,7 +57,6 @@ public class PostController {
 			PostDtos.Response response = postService.create(request, authorId);
 			return new ResponseEntity<>(response, HttpStatus.CREATED);
 		} catch (Exception e) {
-			e.printStackTrace(); // Log the exception for debugging
 			return ResponseEntity.badRequest().build();
 		}
 	}
@@ -73,13 +71,11 @@ public class PostController {
 		try {
 			Long authorId = extractUserIdFromToken(authHeader);
 			
-			// Create post request
-			PostDtos.CreateRequest request = new PostDtos.CreateRequest();
-			request.setContent(content);
-			request.setGroupId(groupId);
-			request.setVisibility(PostVisibility.valueOf(visibility));
-			
-			// Handle media files if provided
+			PostDtos.CreateRequest request = PostDtos.CreateRequest.builder()
+				.content(content)
+				.groupId(groupId)
+				.visibility(PostVisibility.valueOf(visibility))
+				.build();
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = new ArrayList<>();
 				for (MultipartFile file : mediaFiles) {
@@ -94,7 +90,6 @@ public class PostController {
 			PostDtos.Response response = postService.create(request, authorId);
 			return new ResponseEntity<>(response, HttpStatus.CREATED);
 		} catch (Exception e) {
-			e.printStackTrace(); // Log the exception for debugging
 			return ResponseEntity.badRequest().build();
 		}
 	}
@@ -127,7 +122,6 @@ public class PostController {
 			PostDtos.Response response = postService.update(postId, request);
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
-			e.printStackTrace();
 			return ResponseEntity.badRequest().build();
 		}
 	}
@@ -160,7 +154,6 @@ public class PostController {
 			PostDtos.Response response = postService.update(postId, request);
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
-			e.printStackTrace();
 			return ResponseEntity.badRequest().build();
 		}
 	}
@@ -171,10 +164,15 @@ public class PostController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/{postId}")
-	public ResponseEntity<PostDtos.Response> get(@PathVariable("postId") Long postId) {
-		return ResponseEntity.ok(postService.getById(postId));
-	}
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostDtos.Response> get(@PathVariable("postId") Long postId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            Long currentUserId = extractUserIdFromToken(authHeader);
+            return ResponseEntity.ok(postService.getByIdForUser(postId, currentUserId));
+        }
+        return ResponseEntity.ok(postService.getById(postId));
+    }
 
 	@GetMapping("/feed")
 	public ResponseEntity<Page<PostDtos.Response>> getFeed(Pageable pageable) {
@@ -189,10 +187,21 @@ public class PostController {
 	}
 
 	@GetMapping
-	public ResponseEntity<Page<PostDtos.Response>> listByAuthor(@RequestParam(value = "authorId", required = false) Long authorId, Pageable pageable) {
+	public ResponseEntity<Page<PostDtos.Response>> listByAuthor(
+			@RequestParam(value = "authorId", required = false) Long authorId,
+			Pageable pageable,
+			@RequestHeader(value = "Authorization", required = false) String authHeader) {
 		if (authorId != null) {
+			if (authHeader != null && authHeader.startsWith("Bearer ")) {
+				Long currentUserId = extractUserIdFromToken(authHeader);
+				return ResponseEntity.ok(postService.listByAuthorForUser(authorId, currentUserId, pageable));
+			}
 			return ResponseEntity.ok(postService.listByAuthor(authorId, pageable));
 		} else {
+			if (authHeader != null && authHeader.startsWith("Bearer ")) {
+				Long currentUserId = extractUserIdFromToken(authHeader);
+				return ResponseEntity.ok(postService.getFeedForUser(currentUserId, pageable));
+			}
 			return ResponseEntity.ok(postService.getFeed(pageable));
 		}
 	}
@@ -242,13 +251,37 @@ public class PostController {
 		return ResponseEntity.ok(postService.getPostReactions(postId, pageable));
 	}
 
-	// Share
 	@PostMapping("/{postId}/shares")
 	public ResponseEntity<Long> share(@PathVariable("postId") Long postId, 
 			@Valid @RequestBody PostDtos.ShareRequest request,
 			@RequestHeader("Authorization") String authHeader) {
 		Long userId = extractUserIdFromToken(authHeader);
 		return new ResponseEntity<>(postService.sharePost(postId, request, userId), HttpStatus.CREATED);
+	}
+
+	@PostMapping(value = "/groups/{groupId}", consumes = "multipart/form-data")
+	public ResponseEntity<PostDtos.Response> createGroupPost(@PathVariable("groupId") Long groupId,
+			@RequestParam("content") String content,
+			@RequestParam(value = "visibility", required = false) String visibility,
+			@RequestParam(value = "mediaFiles", required = false) MultipartFile[] mediaFiles,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
+		
+		PostDtos.CreateRequest request = PostDtos.CreateRequest.builder()
+			.content(content)
+			.visibility(visibility != null ? PostVisibility.valueOf(visibility) : PostVisibility.public_)
+			.mediaUrls(mediaFiles != null ? java.util.Arrays.stream(mediaFiles).map(f -> f.getOriginalFilename()).collect(java.util.stream.Collectors.toList()) : null)
+			.build();
+			
+		return new ResponseEntity<>(postService.createGroupPost(groupId, request, userId), HttpStatus.CREATED);
+	}
+
+	@GetMapping("/groups/{groupId}")
+	public ResponseEntity<Page<PostDtos.Response>> getGroupPosts(@PathVariable("groupId") Long groupId,
+			Pageable pageable,
+			@RequestHeader("Authorization") String authHeader) {
+		Long userId = extractUserIdFromToken(authHeader);
+		return ResponseEntity.ok(postService.getGroupPosts(groupId, userId, pageable));
 	}
 
 	private Long extractUserIdFromToken(String authHeader) {

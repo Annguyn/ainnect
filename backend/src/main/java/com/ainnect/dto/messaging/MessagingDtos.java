@@ -32,6 +32,7 @@ public class MessagingDtos {
         private String content;
         private MessageType messageType;
         private List<String> attachmentUrls;
+        private Long replyToMessageId;
     }
 
     @Data
@@ -69,6 +70,7 @@ public class MessagingDtos {
     public static class MarkAsReadRequest {
         private Long conversationId;
         private Long messageId;
+        private Long userId;
     }
 
     @Data
@@ -90,6 +92,17 @@ public class MessagingDtos {
         private LocalDateTime updatedAt;
         private boolean isMember;
         private ConversationMemberRole userRole;
+
+        // For direct conversations - information about the other participant
+        private Long otherParticipantId;
+        private String otherParticipantUsername;
+        private String otherParticipantDisplayName;
+        private String otherParticipantAvatarUrl;
+        private boolean otherParticipantIsOnline;
+        private LocalDateTime otherParticipantLastSeenAt;
+        
+        // For group conversations - list of all members
+        private List<ConversationMemberResponse> members;
     }
 
     @Data
@@ -111,6 +124,24 @@ public class MessagingDtos {
         private boolean isRead;
         private boolean isEdited;
         private LocalDateTime editedAt;
+        // reactions
+        private java.util.Map<String, Long> reactionCounts;
+        private String currentUserReaction;
+        // reply
+        private ParentMessageInfo replyTo;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ParentMessageInfo {
+        private Long id;
+        private Long senderId;
+        private String senderUsername;
+        private String contentPreview;
+        private MessageType messageType;
+        private LocalDateTime createdAt;
     }
 
     @Data
@@ -194,6 +225,17 @@ public class MessagingDtos {
         private Long conversationId;
         private Long senderId;
         private LocalDateTime timestamp;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TypingRequest {
+        private Long conversationId;
+        private Long userId;
+        private String username;
+        private boolean isTyping;
     }
 
     @Data

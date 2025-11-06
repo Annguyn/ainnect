@@ -5,6 +5,7 @@ import com.ainnect.dto.social.SocialDtos;
 import com.ainnect.entity.*;
 import com.ainnect.repository.*;
 import com.ainnect.service.SocialService;
+import com.ainnect.service.NotificationIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class SocialServiceImpl implements SocialService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ReportRepository reportRepository;
+        private final NotificationIntegrationService notificationIntegrationService;
 
     // Follow operations
     @Override
@@ -229,6 +231,11 @@ public class SocialServiceImpl implements SocialService {
 
             friendshipRepository.save(friendship);
 
+                        // notify recipient about friend request
+                        try {
+                                notificationIntegrationService.handleFriendRequest(requesterId, friendId);
+                        } catch (Exception ignored) {}
+
             return SocialDtos.SocialActionResponse.builder()
                     .action("friend_request")
                     .message("Friend request sent successfully")
@@ -292,6 +299,14 @@ public class SocialServiceImpl implements SocialService {
             friendship.setStatus(FriendshipStatus.accepted);
             friendship.setUpdatedAt(LocalDateTime.now());
             friendshipRepository.save(friendship);
+
+                        // notify requester that friend request was accepted
+                        try {
+                                if (friendship.getRequestedBy() != null) {
+                                        Long requesterId = friendship.getRequestedBy().getId();
+                                        notificationIntegrationService.handleFriendAccept(userId, requesterId);
+                                }
+                        } catch (Exception ignored) {}
             
             return SocialDtos.SocialActionResponse.builder()
                     .action("accept_friend")

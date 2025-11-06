@@ -15,6 +15,8 @@ public interface PostService {
 
 	PostDtos.Response getById(Long postId);
 
+	PostDtos.Response getByIdForUser(Long postId, Long currentUserId);
+
 	Page<PostDtos.Response> getFeed(Pageable pageable);
 
 	Page<PostDtos.Response> listByAuthor(Long authorId, Pageable pageable);
@@ -39,6 +41,11 @@ public interface PostService {
 
 	// Share
 	Long sharePost(Long postId, PostDtos.ShareRequest request, Long userId);
+	
+	// Group posts
+	PostDtos.Response createGroupPost(Long groupId, PostDtos.CreateRequest request, Long authorId);
+	
+	Page<PostDtos.Response> getGroupPosts(Long groupId, Long currentUserId, Pageable pageable);
 }
 
 

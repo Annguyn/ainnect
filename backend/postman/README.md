@@ -2,7 +2,7 @@
 
 ## 📊 Tổng quan API
 
-**Tổng số endpoints**: 71
+**Tổng số endpoints**: 85+ (bao gồm Notification APIs)
 
 ## 📋 Tổng quan
 
@@ -181,6 +181,14 @@ refreshToken = (sẽ được set tự động)
 - `GET /api/profile/complete` - Lấy profile hoàn chỉnh (cần auth)
 - `GET /api/profile/suggestions?type=school&query=harvard` - Lấy gợi ý (public, không cần auth)
 - `GET /api/profile/suggestions/categories?type=school` - Lấy danh mục gợi ý (public, không cần auth)
+
+### 🔔 Notification System (6 endpoints) - **MỚI**
+- `GET /api/notifications` - Lấy danh sách thông báo (có pagination)
+- `GET /api/notifications/stats` - Lấy thống kê thông báo (tổng, chưa đọc, hôm nay)
+- `PUT /api/notifications/{id}/read` - Đánh dấu thông báo đã đọc
+- `PUT /api/notifications/read-all` - Đánh dấu tất cả thông báo đã đọc
+- `DELETE /api/notifications/{id}` - Xóa thông báo
+- `DELETE /api/notifications/cleanup` - Dọn dẹp thông báo cũ (>30 ngày)
 
 ### 🤝 Social Features (25 endpoints) - **MỚI**
 #### Follow/Unfollow (5 endpoints)

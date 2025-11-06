@@ -24,11 +24,15 @@ public class UserDtos {
 		private String phone;
 
 		@NotBlank
-		@Size(min = 6, max = 255)
+		@Size(min = 8, max = 255)
+		@jakarta.validation.constraints.Pattern(
+			regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+			message = "Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa và 1 chữ số"
+		)
 		private String password;
 
 		@NotBlank
-		@Size(max = 100)
+		@Size(max = 65)
 		private String displayName;
 
 		@Size(max = 500)

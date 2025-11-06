@@ -31,7 +31,18 @@ public class Community {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "privacy", nullable = false)
+	@Builder.Default
 	private Privacy privacy = Privacy.public_;
+
+	@Column(name = "avatar_url", length = 500)
+	private String avatarUrl;
+
+	@Column(name = "cover_url", length = 500)
+	private String coverUrl;
+
+	@Column(name = "requires_approval", nullable = false)
+	@Builder.Default
+	private Boolean requiresApproval = false;
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;

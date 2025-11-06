@@ -5,6 +5,7 @@ import com.ainnect.entity.ConversationMemberId;
 import com.ainnect.common.enums.ConversationMemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,9 +15,11 @@ import java.util.Optional;
 
 public interface ConversationMemberRepository extends JpaRepository<ConversationMember, ConversationMemberId> {
 	
-	@Query("SELECT cm FROM ConversationMember cm WHERE cm.conversation.id = :conversationId ORDER BY cm.joinedAt ASC")
-	Page<ConversationMember> findByConversationId(@Param("conversationId") Long conversationId, Pageable pageable);
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT cm FROM ConversationMember cm WHERE cm.conversation.id = :conversationId ORDER BY cm.joinedAt ASC")
+    Page<ConversationMember> findByConversationId(@Param("conversationId") Long conversationId, Pageable pageable);
 	
+	@EntityGraph(attributePaths = {"user"})
 	@Query("SELECT cm FROM ConversationMember cm WHERE cm.conversation.id = :conversationId ORDER BY cm.joinedAt ASC")
 	List<ConversationMember> findByConversationId(@Param("conversationId") Long conversationId);
 	

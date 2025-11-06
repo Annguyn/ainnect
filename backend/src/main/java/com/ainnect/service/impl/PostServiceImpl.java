@@ -1,6 +1,7 @@
 package com.ainnect.service.impl;
 
 import com.ainnect.common.enums.MediaType;
+import com.ainnect.common.enums.NotificationType;
 import com.ainnect.common.enums.ReactionTargetType;
 import com.ainnect.common.enums.ReactionType;
 import com.ainnect.dto.comment.CommentDtos;
@@ -10,6 +11,7 @@ import com.ainnect.entity.*;
 import com.ainnect.repository.*;
 import com.ainnect.service.FileStorageService;
 import com.ainnect.service.PostService;
+import com.ainnect.service.NotificationIntegrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,14 +24,23 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@lombok.extern.slf4j.Slf4j
 public class PostServiceImpl implements PostService {
 	private final PostRepository postRepository;
 	private final UserRepository userRepository;
 	private final CommentRepository commentRepository;
 	private final ReactionRepository reactionRepository;
 	private final ShareRepository shareRepository;
-	private final PostMediaRepository postMediaRepository;
+    private final PostMediaRepository postMediaRepository;
+    private final UserBlockRepository userBlockRepository;
+	private final CommunityRepository communityRepository;
+	private final GroupMemberRepository groupMemberRepository;
 	private final FileStorageService fileStorageService;
+    
+	@org.springframework.beans.factory.annotation.Value("${app.file.base-url:http://localhost:8080}")
+	private String baseUrl;
+
+	private final NotificationIntegrationService notificationIntegrationService;
 
 	@Override
 	public PostDtos.Response create(PostDtos.CreateRequest request, Long authorId) {
@@ -44,8 +55,18 @@ public class PostServiceImpl implements PostService {
 				.shareCount(0)
 				.build();
 		if (request.getGroupId() != null) {
-			// group optional; resolve if provided
-			// Skipped: need CommunityRepository; add when group posts used
+			Community group = communityRepository.findById(request.getGroupId())
+					.orElseThrow(() -> new IllegalArgumentException("Group not found"));
+			
+			if (group.getDeletedAt() != null) {
+				throw new IllegalArgumentException("Group has been deleted");
+			}
+			
+			if (!groupMemberRepository.existsByGroupIdAndUserId(request.getGroupId(), authorId)) {
+				throw new IllegalArgumentException("You must be a member of the group to post");
+			}
+			
+			post.setGroup(group);
 		}
 		Post saved = postRepository.save(post);
 		
@@ -150,6 +171,24 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public PostDtos.Response getByIdForUser(Long postId, Long currentUserId) {
+		Post post = postRepository.findById(postId)
+				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
+
+		Long authorId = post.getAuthor() != null ? post.getAuthor().getId() : null;
+		if (authorId != null && currentUserId != null && !currentUserId.equals(authorId)) {
+			boolean blockedByCurrent = userBlockRepository.existsByBlockerIdAndBlockedId(currentUserId, authorId);
+			boolean blocksCurrent = userBlockRepository.existsByBlockerIdAndBlockedId(authorId, currentUserId);
+			if (blockedByCurrent || blocksCurrent) {
+				throw new IllegalArgumentException("You cannot view this post");
+			}
+		}
+
+		return toResponse(post, currentUserId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public Page<PostDtos.Response> getFeed(Pageable pageable) {
 		Page<Post> posts = postRepository.findAllActivePosts(pageable);
 		return posts.map(this::toResponse);
@@ -197,6 +236,13 @@ public class PostServiceImpl implements PostService {
 		Comment saved = commentRepository.save(comment);
 		post.setCommentCount(post.getCommentCount() + 1);
 		postRepository.save(post);
+
+		// Notify post owner about new comment
+		try {
+			if (post.getAuthor() != null) {
+				notificationIntegrationService.handlePostComment(post.getId(), author.getId(), post.getAuthor().getId());
+			}
+		} catch (Exception ignored) {}
 		return saved.getId();
 	}
 
@@ -240,53 +286,72 @@ public class PostServiceImpl implements PostService {
 	@Override
 	@Transactional
 	public void reactToPost(Long postId, PostDtos.ReactionRequest request, Long userId) {
-		Post post = postRepository.findById(postId)
-				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
-		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found"));
-		
-		// Check for existing reactions and clean up duplicates if any
-		List<Reaction> existingReactions = reactionRepository.findAllByTargetTypeAndTargetIdAndUser_Id(
-				ReactionTargetType.post, postId, userId);
-		
-		if (!existingReactions.isEmpty()) {
-			// Keep the most recent reaction and delete duplicates
-			Reaction mostRecent = existingReactions.get(0);
-			
-			// Delete duplicate reactions if any exist
-			if (existingReactions.size() > 1) {
-				for (int i = 1; i < existingReactions.size(); i++) {
-					reactionRepository.delete(existingReactions.get(i));
-					// Adjust reaction count for each duplicate removed
-					post.setReactionCount(Math.max(0, post.getReactionCount() - 1));
+		try {
+			Post post = postRepository.findById(postId)
+					.orElseThrow(() -> new IllegalArgumentException("Post not found"));
+			User user = userRepository.findById(userId)
+					.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+			// Check for existing reactions and clean up duplicates if any
+			List<Reaction> existingReactions = reactionRepository.findAllByTargetTypeAndTargetIdAndUser_Id(
+					ReactionTargetType.post, postId, userId);
+
+			if (!existingReactions.isEmpty()) {
+				// Keep the most recent reaction and delete duplicates
+				Reaction mostRecent = existingReactions.get(0);
+
+				// Delete duplicate reactions if any exist
+				if (existingReactions.size() > 1) {
+					for (int i = 1; i < existingReactions.size(); i++) {
+						reactionRepository.delete(existingReactions.get(i));
+						// Adjust reaction count for each duplicate removed
+						post.setReactionCount(Math.max(0, post.getReactionCount() - 1));
+					}
+				}
+
+				if (mostRecent.getType() == request.getType()) {
+					// Same reaction type - do nothing (idempotent)
+					postRepository.save(post); // Save any count adjustments
+					return;
+				} else {
+					// Different reaction type - update existing reaction
+					mostRecent.setType(request.getType());
+					reactionRepository.save(mostRecent);
+					postRepository.save(post); // Save any count adjustments
+					return;
 				}
 			}
-			
-			if (mostRecent.getType() == request.getType()) {
-				// Same reaction type - do nothing (idempotent)
-				postRepository.save(post); // Save any count adjustments
-				return;
-			} else {
-				// Different reaction type - update existing reaction
-				mostRecent.setType(request.getType());
-				reactionRepository.save(mostRecent);
-				postRepository.save(post); // Save any count adjustments
-				return;
+
+			// Create new reaction
+			Reaction reaction = Reaction.builder()
+					.targetType(ReactionTargetType.post)
+					.targetId(post.getId())
+					.user(user)
+					.type(request.getType())
+					.build();
+			reactionRepository.save(reaction);
+
+			// Update reaction count
+			post.setReactionCount(post.getReactionCount() + 1);
+			postRepository.save(post);
+
+			// Notify post owner about like/reaction
+			try {
+				if (post.getAuthor() != null) {
+					notificationIntegrationService.handlePostLike(
+                        post.getId(),
+                        user.getId(),
+                        post.getAuthor().getId(),
+                        NotificationType.LIKE // Pass the correct enum value
+                    );
+				}
+			} catch (Exception ex) {
+				log.warn("Failed to create/dispatch notification for post {} reaction by {}: {}", postId, userId, ex.toString());
 			}
+		} catch (Exception ex) {
+			log.error("reactToPost failed for postId={}, userId={}", postId, userId, ex);
+			throw ex;
 		}
-		
-		// Create new reaction
-		Reaction reaction = Reaction.builder()
-				.targetType(ReactionTargetType.post)
-				.targetId(post.getId())
-				.user(user)
-				.type(request.getType())
-				.build();
-		reactionRepository.save(reaction);
-		
-		// Update reaction count
-		post.setReactionCount(post.getReactionCount() + 1);
-		postRepository.save(post);
 	}
 
 	@Override
@@ -322,7 +387,7 @@ public class PostServiceImpl implements PostService {
 						.userId(reaction.getUser().getId())
 						.username(reaction.getUser().getUsername())
 						.displayName(reaction.getUser().getDisplayName())
-						.avatarUrl(reaction.getUser().getAvatarUrl())
+						.avatarUrl(buildFileUrl(reaction.getUser().getAvatarUrl()))
 						.createdAt(reaction.getCreatedAt())
 						.build();
 			} catch (Exception e) {
@@ -397,12 +462,12 @@ public class PostServiceImpl implements PostService {
 		try {
 			if (post.getMedia() != null) {
 				mediaResponses = post.getMedia().stream()
-						.map(media -> PostDtos.MediaResponse.builder()
-								.id(media.getId())
-								.mediaUrl(media.getMediaUrl())
-								.mediaType(media.getMediaType())
-								.createdAt(media.getCreatedAt())
-								.build())
+				.map(media -> PostDtos.MediaResponse.builder()
+					.id(media.getId())
+					.mediaUrl(buildFileUrl(media.getMediaUrl()))
+					.mediaType(media.getMediaType())
+					.createdAt(media.getCreatedAt())
+					.build())
 						.toList();
 			}
 		} catch (Exception e) {
@@ -415,7 +480,7 @@ public class PostServiceImpl implements PostService {
 				.authorId(authorId)
 				.authorUsername(authorUsername)
 				.authorDisplayName(authorDisplayName)
-				.authorAvatarUrl(authorAvatarUrl)
+				.authorAvatarUrl(buildFileUrl(authorAvatarUrl))
 				.groupId(groupId)
 				.content(post.getContent())
 				.visibility(post.getVisibility())
@@ -469,7 +534,7 @@ public class PostServiceImpl implements PostService {
 				.authorId(authorId)
 				.authorUsername(authorUsername)
 				.authorDisplayName(authorDisplayName)
-				.authorAvatarUrl(authorAvatarUrl)
+				.authorAvatarUrl(buildFileUrl(authorAvatarUrl))
 				.parentId(parentId)
 				.content(comment.getContent())
 				.reactionCount(comment.getReactionCount())
@@ -508,8 +573,8 @@ public class PostServiceImpl implements PostService {
 							.type(reaction.getType())
 							.userId(reaction.getUser().getId())
 							.username(reaction.getUser().getUsername())
-							.displayName(reaction.getUser().getDisplayName())
-							.avatarUrl(reaction.getUser().getAvatarUrl())
+								.displayName(reaction.getUser().getDisplayName())
+								.avatarUrl(buildFileUrl(reaction.getUser().getAvatarUrl()))
 							.createdAt(reaction.getCreatedAt())
 							.build();
 					recentReactions.add(reactionResponse);
@@ -536,6 +601,82 @@ public class PostServiceImpl implements PostService {
 				.build();
 	}
 
+	@Override
+	public PostDtos.Response createGroupPost(Long groupId, PostDtos.CreateRequest request, Long authorId) {
+		Community group = communityRepository.findById(groupId)
+				.orElseThrow(() -> new IllegalArgumentException("Group not found"));
+		
+		if (group.getDeletedAt() != null) {
+			throw new IllegalArgumentException("Group has been deleted");
+		}
+		
+		if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, authorId)) {
+			throw new IllegalArgumentException("You must be a member of the group to post");
+		}
+		
+		User author = userRepository.findById(authorId)
+				.orElseThrow(() -> new IllegalArgumentException("Author not found"));
+		
+		Post post = Post.builder()
+				.author(author)
+				.group(group)
+				.content(request.getContent())
+				.visibility(com.ainnect.common.enums.PostVisibility.group)
+				.commentCount(0)
+				.reactionCount(0)
+				.shareCount(0)
+				.build();
+		
+		Post saved = postRepository.save(post);
+		
+		if (request.getMediaUrls() != null && !request.getMediaUrls().isEmpty()) {
+			List<PostMedia> mediaList = new ArrayList<>();
+			for (String mediaUrl : request.getMediaUrls()) {
+				MediaType mediaType = determineMediaType(mediaUrl);
+				PostMedia media = PostMedia.builder()
+						.post(saved)
+						.mediaUrl(mediaUrl)
+						.mediaType(mediaType)
+						.build();
+				mediaList.add(postMediaRepository.save(media));
+			}
+			saved.setMedia(mediaList);
+		}
+		
+		return toResponse(saved);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<PostDtos.Response> getGroupPosts(Long groupId, Long currentUserId, Pageable pageable) {
+		Community group = communityRepository.findById(groupId)
+				.orElseThrow(() -> new IllegalArgumentException("Group not found"));
+		
+		if (group.getDeletedAt() != null) {
+			throw new IllegalArgumentException("Group has been deleted");
+		}
+		
+		if (currentUserId == null || !groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUserId)) {
+			throw new IllegalArgumentException("You must be a member of the group to view posts");
+		}
+		
+		List<Post> posts = postRepository.findByGroup_Id(groupId);
+		List<Post> filteredPosts = posts.stream()
+				.filter(p -> p.getDeletedAt() == null)
+				.sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+				.toList();
+		
+		int start = (int) pageable.getOffset();
+		int end = Math.min((start + pageable.getPageSize()), filteredPosts.size());
+		List<Post> pageContent = filteredPosts.subList(start, end);
+		
+		List<PostDtos.Response> responses = pageContent.stream()
+				.map(this::toResponse)
+				.toList();
+		
+		return new PageImpl<>(responses, pageable, filteredPosts.size());
+	}
+
 	private MediaType determineMediaType(String mediaUrl) {
 		if (mediaUrl == null || mediaUrl.isEmpty()) {
 			return MediaType.file;
@@ -553,6 +694,31 @@ public class PostServiceImpl implements PostService {
 		} else {
 			return MediaType.file;
 		}
+	}
+
+	// Build full file URL using configured baseUrl. Handles cases where stored
+	// mediaUrl may already be a full URL, a path starting with '/api/files/',
+	// or just a filename.
+	private String buildFileUrl(String fileName) {
+		if (fileName == null || fileName.trim().isEmpty()) {
+			return fileName;
+		}
+
+		if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+			return fileName;
+		}
+
+		if (fileName.contains("/api/files/")) {
+			String path = fileName.substring(fileName.indexOf("/api/files/"));
+			return baseUrl + path;
+		}
+
+		// If it's a plain filename, assume posts category
+		if (!fileName.startsWith("/")) {
+			return baseUrl + "/api/files/posts/" + fileName;
+		}
+
+		return baseUrl + fileName;
 	}
 }
 

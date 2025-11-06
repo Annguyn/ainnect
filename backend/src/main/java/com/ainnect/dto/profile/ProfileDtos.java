@@ -27,19 +27,37 @@ public class ProfileDtos {
         private LocalDateTime joinedAt;
         private boolean isVerified;
         private boolean isPrivate;
-        private boolean isBlocked;
-        private boolean isBlockedBy;
-        private boolean isFollowing;
-        private boolean isFollowedBy;
-        private boolean isFriend;
-        private boolean canSendFriendRequest;
-        private FriendshipStatus friendshipStatus;
+        private RelationshipResponse relationship;
         private SocialStatsResponse socialStats;
         private List<EducationDtos.Response> educations;
         private List<WorkExperienceDtos.Response> workExperiences;
         private List<InterestDtos.Response> interests;
         private List<LocationDtos.Response> locations;
         private ProfilePostsResponse posts;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RelationshipResponse {
+        // Follow relationship
+        private boolean isFollowing;           // Current user đang follow profile user
+        private boolean isFollowedBy;          // Profile user đang follow current user
+        private boolean isMutualFollow;        // Cả hai đều follow nhau
+        
+        // Friendship relationship
+        private boolean isFriend;              // Đã là bạn bè
+        private boolean canSendFriendRequest;  // Có thể gửi lời mời kết bạn
+        private FriendshipStatus friendshipStatus; // Trạng thái kết bạn chi tiết
+        
+        // Block relationship
+        private boolean isBlocked;             // Current user đã block profile user
+        private boolean isBlockedBy;           // Profile user đã block current user
+        
+        // Summary status
+        private String relationshipStatus;     // Tóm tắt mối quan hệ: "friends", "following", "followers", "pending_request", "blocked", "none"
+        private String actionAvailable;        // Hành động có thể thực hiện: "follow", "unfollow", "send_friend_request", "accept_friend_request", "remove_friend", "block", "unblock"
     }
 
     @Data

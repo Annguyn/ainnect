@@ -1,0 +1,261 @@
+{
+	"info": {
+		"_postman_id": "group-controller-collection",
+		"name": "GroupController API",
+		"description": "Professional Postman collection for Group Controller APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Groups",
+			"item": [
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Group A",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Mô tả nhóm",
+									"type": "text"
+								},
+								{
+									"key": "visibility",
+									"value": "public_",
+									"type": "text"
+								},
+								{
+									"key": "coverImage",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "joinQuestions",
+									"value": "[{\"question\":\"Bạn tham gia nhóm để làm gì?\",\"isRequired\":true,\"displayOrder\":1},{\"question\":\"Bạn biết nhóm qua đâu?\",\"isRequired\":false,\"displayOrder\":2}]",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"groups"
+							]
+						},
+						"description": "Create a new group with multipart/form-data"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{accessToken}}" }
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Group A Updated",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Mô tả cập nhật",
+									"type": "text"
+								},
+								{
+									"key": "visibility",
+									"value": "private_",
+									"type": "text"
+								},
+								{
+									"key": "coverImage",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","groups","{{groupId}}"]
+						},
+						"description": "Update group information with multipart/form-data"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"method": "DELETE",
+						"header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+						"url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}"] },
+						"description": "Delete a group"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group By Id",
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+						"url": { "raw": "{{baseUrl}}/api/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}"] },
+						"description": "Get group details"
+					},
+					"response": []
+				},
+				{
+					"name": "List Groups (Paged)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/groups?page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api","groups"],
+							"query": [ {"key": "page", "value": "0"}, {"key": "size", "value": "10"} ]
+						},
+						"description": "List all groups"
+					},
+					"response": []
+				},
+				{
+					"name": "List Owner Groups",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/groups/owner/{{ownerId}}?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","groups","owner","{{ownerId}}"], "query": [ {"key": "page", "value": "0"}, {"key": "size", "value": "10"} ] },
+						"description": "List groups by owner"
+					},
+					"response": []
+				},
+				{
+					"name": "List Member Groups",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/groups/member/{{userId}}?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","groups","member","{{userId}}"], "query": [ {"key": "page", "value": "0"}, {"key": "size", "value": "10"} ] },
+						"description": "List groups by member"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Members",
+			"item": [
+				{
+					"name": "Join Group (Direct)",
+					"request": { "method": "POST", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/join", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","join"]} },
+					"response": []
+				},
+				{
+					"name": "Leave Group",
+					"request": { "method": "POST", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/leave", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","leave"]} },
+					"response": []
+				},
+				{
+					"name": "List Members",
+					"request": { "method": "GET", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/members?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","members"], "query": [ {"key":"page","value":"0"}, {"key":"size","value":"10"} ] } },
+					"response": []
+				},
+				{
+					"name": "Update Member Role",
+					"request": { "method": "PUT", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/members/{{targetUserId}}/role?role=moderator", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","members","{{targetUserId}}","role"], "query": [ {"key":"role","value":"moderator"} ] } },
+					"response": []
+				},
+				{
+					"name": "Remove Member",
+					"request": { "method": "DELETE", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/members/{{targetUserId}}", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","members","{{targetUserId}}"] } },
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Join Questions & Requests",
+			"item": [
+				{
+					"name": "Get Join Questions",
+					"request": { "method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/questions", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","questions"] } },
+					"response": []
+				},
+				{
+					"name": "Update Join Questions",
+					"request": { "method": "PUT", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key":"Content-Type","value":"application/json"} ], "body": {"mode":"raw","raw":"[\n  { \"question\": \"Bạn tham gia nhóm để làm gì?\", \"isRequired\": true, \"displayOrder\": 1 },\n  { \"question\": \"Bạn biết nhóm qua đâu?\", \"isRequired\": false, \"displayOrder\": 2 }\n]"}, "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/questions", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","questions"] } },
+					"response": []
+				},
+				{
+					"name": "Submit Join Request",
+					"request": { "method": "POST", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key":"Content-Type","value":"application/json"} ], "body": {"mode":"raw","raw":"[\n  { \"questionId\": 1, \"answer\": \"Tôi muốn học hỏi\" },\n  { \"questionId\": 2, \"answer\": \"Bạn giới thiệu\" }\n]"}, "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/join-requests", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","join-requests"] } },
+					"response": []
+				},
+				{
+					"name": "Get Pending Join Requests",
+					"request": { "method": "GET", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/join-requests/pending?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","join-requests","pending"], "query": [ {"key":"page","value":"0"},{"key":"size","value":"10"} ] } },
+					"response": []
+				},
+				{
+					"name": "Review Join Request",
+					"request": { "method": "POST", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key":"Content-Type","value":"application/json"} ], "body": {"mode":"raw","raw":"{ \n  \"approved\": true, \n  \"message\": \"Chào mừng bạn\" \n}"}, "url": {"raw": "{{baseUrl}}/api/join-requests/{{requestId}}/review", "host": ["{{baseUrl}}"], "path": ["api","join-requests","{{requestId}}","review"] } },
+					"response": []
+				},
+				{
+					"name": "My Join Request",
+					"request": { "method": "GET", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/groups/{{groupId}}/join-requests/my-request", "host": ["{{baseUrl}}"], "path": ["api","groups","{{groupId}}","join-requests","my-request"] } },
+					"response": []
+				},
+				{
+					"name": "Cancel Join Request",
+					"request": { "method": "DELETE", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/join-requests/{{requestId}}", "host": ["{{baseUrl}}"], "path": ["api","join-requests","{{requestId}}"] } },
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Group Posts",
+			"item": [
+				{
+					"name": "Create Post in Group",
+					"request": { "method": "POST", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"}, {"key":"Content-Type","value":"application/json"} ], "body": {"mode":"raw","raw":"{\n  \"content\": \"Bài viết trong nhóm\",\n  \"mediaUrls\": []\n}"}, "url": {"raw": "{{baseUrl}}/api/posts/groups/{{groupId}}", "host": ["{{baseUrl}}"], "path": ["api","posts","groups","{{groupId}}"] } },
+					"response": []
+				},
+				{
+					"name": "Get Group Posts",
+					"request": { "method": "GET", "header": [ {"key": "Authorization", "value": "Bearer {{accessToken}}"} ], "url": {"raw": "{{baseUrl}}/api/posts/groups/{{groupId}}?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api","posts","groups","{{groupId}}"], "query": [ {"key":"page","value":"0"}, {"key":"size","value":"10"} ] } },
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "accessToken", "value": "", "type": "string" },
+		{ "key": "groupId", "value": "1", "type": "string" },
+		{ "key": "ownerId", "value": "1", "type": "string" },
+		{ "key": "userId", "value": "1", "type": "string" },
+		{ "key": "targetUserId", "value": "2", "type": "string" },
+		{ "key": "requestId", "value": "1", "type": "string" }
+	]
+}
+
+

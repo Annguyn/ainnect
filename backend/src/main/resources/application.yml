@@ -1,43 +1,54 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/ainnect?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: annguyen199
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
-    open-in-view: false
+        format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL:true}
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.MySQLDialect}
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
+
   jackson:
     serialization:
-      write-dates-as-timestamps: false
+      write-dates-as-timestamps: ${SPRING_JACKSON_SERIALIZATION_WRITE_DATES_AS_TIMESTAMPS:false}
+
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
-      enabled: true
-      file-size-threshold: 2KB
-      location: ${java.io.tmpdir}
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:100MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:100MB}
+      enabled: ${SPRING_SERVLET_MULTIPART_ENABLED:true}
+      file-size-threshold: ${SPRING_SERVLET_MULTIPART_FILE_SIZE_THRESHOLD:2KB}
+      location: ${SPRING_SERVLET_MULTIPART_LOCATION:${java.io.tmpdir}}
+
+  # Redis (bật nếu ứng dụng có dùng cache/session)
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis}
+      port: ${SPRING_REDIS_PORT:6379}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:
-    org.hibernate.SQL: info
-    org.hibernate.orm.jdbc.bind: info
+    org.hibernate.SQL: ${LOGGING_LEVEL_ORG_HIBERNATE_SQL:info}
+    org.hibernate.orm.jdbc.bind: ${LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_BIND:info}
 
-# JWT Configuration
+# JWT
 jwt:
-  secret: mySecretKeyForAinnectApplicationThatIsVerySecureAndLong
-  expiration: 86400000 # 24 hours in milliseconds
-  refresh-expiration: 604800000 # 7 days in milliseconds
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-# File Upload Configuration
+# Upload + CORS
 app:
   file:
-    upload-dir: uploads
-    base-url: http://localhost:8080
+    upload-dir: ${UPLOAD_DIR:uploads}
+    base-url: ${BASE_URL:http://localhost:8080}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}

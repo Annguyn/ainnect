@@ -27,6 +27,9 @@ public class UserServiceImpl implements UserService {
     public User createUser(UserDtos.CreateRequest request) {
         String username = getFieldValue(request, "username", String.class);
         String email = getFieldValue(request, "email", String.class);
+        if (email != null) {
+            email = email.trim().toLowerCase(java.util.Locale.ROOT);
+        }
         
         if (existsByUsername(username)) {
             throw new RuntimeException("Username đã tồn tại: " + username);
@@ -60,10 +63,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByUsernameOrEmail(String usernameOrEmail) {
-        if (usernameOrEmail.contains("@")) {
-            return findByEmail(usernameOrEmail);
+        String input = usernameOrEmail == null ? null : usernameOrEmail.trim();
+        if (input != null && input.contains("@")) {
+            return findByEmail(input.toLowerCase(java.util.Locale.ROOT));
         } else {
-            return findByUsername(usernameOrEmail);
+            return findByUsername(input);
         }
     }
 

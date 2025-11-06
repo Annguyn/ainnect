@@ -39,5 +39,9 @@ public class Message {
 
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_message_id")
+    private Message parent;
 }
 

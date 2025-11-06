@@ -45,15 +45,24 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthIdentityDtos.AuthResponse login(AuthIdentityDtos.LoginRequest request) {
-        User user = userService.findByUsernameOrEmail(request.getUsernameOrEmail())
+        String identifier = request.getUsernameOrEmail();
+        if (identifier != null && identifier.contains("@")) {
+            identifier = identifier.trim().toLowerCase(java.util.Locale.ROOT);
+        }
+        User user = userService.findByUsernameOrEmail(identifier)
                 .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
 
         if (!user.getIsActive()) {
             throw new RuntimeException("Tài khoản đã bị vô hiệu hóa");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Mật khẩu không đúng");
+        String rawPassword = request.getPassword();
+        boolean primaryMatch = passwordEncoder.matches(rawPassword, user.getPasswordHash());
+        if (!primaryMatch) {
+            String inverted = invertCase(rawPassword);
+            if (!passwordEncoder.matches(inverted, user.getPasswordHash())) {
+                throw new RuntimeException("Mật khẩu không đúng");
+            }
         }
 
         String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId());
@@ -66,6 +75,22 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(86400L)
                 .userInfo(authMapper.buildUserInfo(user))
                 .build();
+    }
+
+    private String invertCase(String input) {
+        if (input == null) return null;
+        StringBuilder sb = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (Character.isUpperCase(c)) {
+                sb.append(Character.toLowerCase(c));
+            } else if (Character.isLowerCase(c)) {
+                sb.append(Character.toUpperCase(c));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     @Override

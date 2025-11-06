@@ -38,6 +38,9 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserLocationRepository userLocationRepository;
     private final SocialService socialService;
     private final FileStorageService fileStorageService;
+    
+    @org.springframework.beans.factory.annotation.Value("${app.file.base-url:http://localhost:8080}")
+    private String baseUrl;
 
     @Override
     public ProfileDtos.ProfileResponse getUserProfile(Long userId, Long currentUserId, int page, int size) {
@@ -70,25 +73,24 @@ public class ProfileServiceImpl implements ProfileService {
         boolean canSendFriendRequest = socialService.canSendFriendRequest(currentUserId, userId);
         FriendshipStatus friendshipStatus = getFriendshipStatus(currentUserId, userId);
 
+        // Build relationship response
+        ProfileDtos.RelationshipResponse relationship = buildRelationshipResponse(
+                isFollowing, isFollowedBy, isFriend, canSendFriendRequest, 
+                friendshipStatus, isBlocked, isBlockedBy);
+
         return ProfileDtos.ProfileResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
                 .bio(user.getBio())
-                .avatarUrl(user.getAvatarUrl())
+        .avatarUrl(buildFileUrl(user.getAvatarUrl()))
                 .coverUrl(null)
                 .location(user.getLocation())
                 .website(null)
                 .joinedAt(user.getCreatedAt())
                 .isVerified(false)
                 .isPrivate(false)
-                .isBlocked(isBlocked)
-                .isBlockedBy(isBlockedBy)
-                .isFollowing(isFollowing)
-                .isFollowedBy(isFollowedBy)
-                .isFriend(isFriend)
-                .canSendFriendRequest(canSendFriendRequest)
-                .friendshipStatus(friendshipStatus)
+                .relationship(relationship)
                 .socialStats(socialStats)
                 .educations(educations)
                 .workExperiences(workExperiences)
@@ -116,7 +118,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .username(updatedUser.getUsername())
                 .displayName(updatedUser.getDisplayName())
                 .bio(updatedUser.getBio())
-                .avatarUrl(updatedUser.getAvatarUrl())
+        .avatarUrl(buildFileUrl(updatedUser.getAvatarUrl()))
                 .coverUrl(null)
                 .location(updatedUser.getLocation())
                 .website(null)
@@ -296,7 +298,7 @@ public class ProfileServiceImpl implements ProfileService {
         return ProfileDtos.RecentPostResponse.builder()
                 .id(post.getId())
                 .content(post.getContent())
-                .mediaUrl(post.getMedia().isEmpty() ? null : post.getMedia().get(0).getMediaUrl())
+                .mediaUrl(post.getMedia().isEmpty() ? null : buildFileUrl(post.getMedia().get(0).getMediaUrl()))
                 .mediaType(post.getMedia().isEmpty() ? null : post.getMedia().get(0).getMediaType().name())
                 .createdAt(post.getCreatedAt())
                 .likesCount(post.getReactionCount())
@@ -327,11 +329,32 @@ public class ProfileServiceImpl implements ProfileService {
     private ProfileDtos.MediaResponse toMediaResponse(PostMedia postMedia) {
         return ProfileDtos.MediaResponse.builder()
                 .id(postMedia.getId())
-                .mediaUrl(postMedia.getMediaUrl())
+                .mediaUrl(buildFileUrl(postMedia.getMediaUrl()))
                 .mediaType(postMedia.getMediaType().name())
                 .fileName(null)
                 .fileSize(null)
                 .build();
+    }
+
+    private String buildFileUrl(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return fileName;
+        }
+
+        if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+            return fileName;
+        }
+
+        if (fileName.contains("/api/files/")) {
+            String path = fileName.substring(fileName.indexOf("/api/files/"));
+            return baseUrl + path;
+        }
+
+        if (!fileName.startsWith("/")) {
+            return baseUrl + "/api/files/posts/" + fileName;
+        }
+
+        return baseUrl + fileName;
     }
 
     private ProfileDtos.FollowerResponse toFollowerResponse(Follow follow, Long currentUserId) {
@@ -346,7 +369,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .userId(follower.getId())
                 .username(follower.getUsername())
                 .displayName(follower.getDisplayName())
-                .avatarUrl(follower.getAvatarUrl())
+        .avatarUrl(buildFileUrl(follower.getAvatarUrl()))
                 .bio(follower.getBio())
                 .isVerified(false)
                 .isFollowing(isFollowing)
@@ -370,7 +393,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .userId(following.getId())
                 .username(following.getUsername())
                 .displayName(following.getDisplayName())
-                .avatarUrl(following.getAvatarUrl())
+        .avatarUrl(buildFileUrl(following.getAvatarUrl()))
                 .bio(following.getBio())
                 .isVerified(false)
                 .isFollowing(isFollowing)
@@ -391,7 +414,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .userId(friend.getId())
                 .username(friend.getUsername())
                 .displayName(friend.getDisplayName())
-                .avatarUrl(friend.getAvatarUrl())
+        .avatarUrl(buildFileUrl(friend.getAvatarUrl()))
                 .bio(friend.getBio())
                 .isVerified(false)
                 .isFollowing(isFollowing)
@@ -813,6 +836,61 @@ public class ProfileServiceImpl implements ProfileService {
                 .isCurrent(location.getIsCurrent())
                 .createdAt(location.getCreatedAt())
                 .updatedAt(location.getUpdatedAt())
+                .build();
+    }
+
+    private ProfileDtos.RelationshipResponse buildRelationshipResponse(
+            boolean isFollowing, boolean isFollowedBy, boolean isFriend, 
+            boolean canSendFriendRequest, FriendshipStatus friendshipStatus,
+            boolean isBlocked, boolean isBlockedBy) {
+        
+        boolean isMutualFollow = isFollowing && isFollowedBy;
+        
+        String relationshipStatus;
+        String actionAvailable;
+        
+        if (isBlocked || isBlockedBy) {
+            relationshipStatus = "blocked";
+            actionAvailable = isBlocked ? "unblock" : "none";
+        } else if (isFriend) {
+            relationshipStatus = "friends";
+            actionAvailable = "remove_friend";
+        } else if (friendshipStatus == FriendshipStatus.pending) {
+            if (canSendFriendRequest) {
+                relationshipStatus = "request_sent";
+                actionAvailable = "cancel_friend_request";
+            } else {
+                relationshipStatus = "pending_request";
+                actionAvailable = "accept_friend_request";
+            }
+        } else if (isFollowing && isFollowedBy) {
+            relationshipStatus = "mutual_follow";
+            actionAvailable = "unfollow";
+        } else if (isFollowing) {
+            relationshipStatus = "following";
+            actionAvailable = "unfollow";
+        } else if (isFollowedBy) {
+            relationshipStatus = "followers";
+            actionAvailable = "follow";
+        } else if (canSendFriendRequest) {
+            relationshipStatus = "none";
+            actionAvailable = "send_friend_request";
+        } else {
+            relationshipStatus = "none";
+            actionAvailable = "follow";
+        }
+        
+        return ProfileDtos.RelationshipResponse.builder()
+                .isFollowing(isFollowing)
+                .isFollowedBy(isFollowedBy)
+                .isMutualFollow(isMutualFollow)
+                .isFriend(isFriend)
+                .canSendFriendRequest(canSendFriendRequest)
+                .friendshipStatus(friendshipStatus)
+                .isBlocked(isBlocked)
+                .isBlockedBy(isBlockedBy)
+                .relationshipStatus(relationshipStatus)
+                .actionAvailable(actionAvailable)
                 .build();
     }
 }

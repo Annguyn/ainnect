@@ -19,9 +19,7 @@ public class SearchController {
     private final SearchService searchService;
     private final JwtUtil jwtUtil;
 
-    /**
-     * Search across all types (users, groups, posts)
-     */
+   
     @GetMapping
     public ResponseEntity<ApiResponse<SearchDtos.SearchResponse>> searchAll(
             @RequestParam("keyword") String keyword,
@@ -29,6 +27,14 @@ public class SearchController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestHeader("Authorization") String authHeader) {
         try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.<SearchDtos.SearchResponse>builder()
+                                .result("ERROR")
+                                .message("Từ khóa tìm kiếm không được để trống")
+                                .data(null)
+                                .build());
+            }
             Long currentUserId = extractUserIdFromToken(authHeader);
             Pageable pageable = PageRequest.of(page, size);
             
@@ -49,9 +55,7 @@ public class SearchController {
         }
     }
 
-    /**
-     * Search users only
-     */
+
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<SearchDtos.UserSearchResponse>> searchUsers(
             @RequestParam("keyword") String keyword,
@@ -59,6 +63,14 @@ public class SearchController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestHeader("Authorization") String authHeader) {
         try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.<SearchDtos.UserSearchResponse>builder()
+                                .result("ERROR")
+                                .message("Từ khóa tìm kiếm không được để trống")
+                                .data(null)
+                                .build());
+            }
             Long currentUserId = extractUserIdFromToken(authHeader);
             Pageable pageable = PageRequest.of(page, size);
             
@@ -79,9 +91,7 @@ public class SearchController {
         }
     }
 
-    /**
-     * Search groups/communities only
-     */
+
     @GetMapping("/groups")
     public ResponseEntity<ApiResponse<SearchDtos.GroupSearchResponse>> searchGroups(
             @RequestParam("keyword") String keyword,
@@ -89,6 +99,14 @@ public class SearchController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestHeader("Authorization") String authHeader) {
         try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.<SearchDtos.GroupSearchResponse>builder()
+                                .result("ERROR")
+                                .message("Từ khóa tìm kiếm không được để trống")
+                                .data(null)
+                                .build());
+            }
             Long currentUserId = extractUserIdFromToken(authHeader);
             Pageable pageable = PageRequest.of(page, size);
             
@@ -108,10 +126,6 @@ public class SearchController {
                             .build());
         }
     }
-
-    /**
-     * Search posts only
-     */
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<SearchDtos.PostSearchResponse>> searchPosts(
             @RequestParam("keyword") String keyword,
@@ -119,6 +133,14 @@ public class SearchController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestHeader("Authorization") String authHeader) {
         try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.<SearchDtos.PostSearchResponse>builder()
+                                .result("ERROR")
+                                .message("Từ khóa tìm kiếm không được để trống")
+                                .data(null)
+                                .build());
+            }
             Long currentUserId = extractUserIdFromToken(authHeader);
             Pageable pageable = PageRequest.of(page, size);
             
@@ -140,7 +162,7 @@ public class SearchController {
     }
 
     private Long extractUserIdFromToken(String authHeader) {
-        String token = authHeader.substring(7); // Remove "Bearer " prefix
+        String token = authHeader.substring(7);
         return jwtUtil.extractUserId(token);
     }
 }

@@ -17,6 +17,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/files")
@@ -24,6 +25,8 @@ import java.nio.file.Paths;
 public class FileController {
 
     private final FileStorageService fileStorageService;
+    @Value("${app.file.upload-dir:uploads}")
+    private String uploadDir;
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<String>> uploadFile(
@@ -47,12 +50,14 @@ public class FileController {
             @PathVariable("category") String category,
             @PathVariable("fileName") String fileName) {
         try {
-            // Validate category and fileName to prevent path traversal
             if (category.contains("..") || fileName.contains("..")) {
                 return ResponseEntity.badRequest().build();
             }
             
-            Path filePath = Paths.get("uploads").resolve(category).resolve(fileName).normalize();
+            Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize()
+                    .resolve(category)
+                    .resolve(fileName)
+                    .normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -60,7 +65,6 @@ public class FileController {
                 try {
                     contentType = Files.probeContentType(filePath);
                 } catch (IOException ex) {
-                    // Could not determine file type
                 }
 
                 if (contentType == null) {

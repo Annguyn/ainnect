@@ -29,40 +29,57 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL ORDER BY p.createdAt DESC")
 	Page<Post> findAllActivePosts(Pageable pageable);
 	
-	// Privacy-aware queries
 	@EntityGraph(attributePaths = {"author", "group"})
-	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL AND " +
-		   "(p.visibility = 'public_' OR " +
-		   "(p.visibility = 'friends' AND p.author.id IN " +
-		   "(SELECT f.followee.id FROM Follow f WHERE f.follower.id = :currentUserId)) OR " +
-		   "(p.visibility = 'private_' AND p.author.id = :currentUserId) OR " +
-		   "(p.visibility = 'group' AND p.group.id IN " +
-		   "(SELECT gm.group.id FROM GroupMember gm WHERE gm.user.id = :currentUserId))) " +
-		   "ORDER BY p.createdAt DESC")
+	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL " +
+	   "AND p.author.id NOT IN (SELECT ub.blocked.id FROM UserBlock ub WHERE ub.blocker.id = :currentUserId) " +
+	   "AND p.author.id NOT IN (SELECT ub.blocker.id FROM UserBlock ub WHERE ub.blocked.id = :currentUserId) " +
+	   "AND (p.visibility = 'public_' OR " +
+	   "(p.visibility = 'friends' AND EXISTS (" +
+	   "  SELECT 1 FROM Friendship fr " +
+	   "  WHERE fr.status = com.ainnect.common.enums.FriendshipStatus.accepted " +
+	   "    AND ((fr.userLow.id = :currentUserId AND fr.userHigh.id = p.author.id) " +
+	   "      OR (fr.userHigh.id = :currentUserId AND fr.userLow.id = p.author.id))" +
+	   ")) OR " +
+	   "(p.visibility = 'private_' AND p.author.id = :currentUserId) OR " +
+	   "(p.visibility = 'group' AND p.group.id IN (" +
+	   "  SELECT gm.group.id FROM GroupMember gm WHERE gm.user.id = :currentUserId))) " +
+	   "ORDER BY p.createdAt DESC")
 	Page<Post> findVisiblePostsForUser(@Param("currentUserId") Long currentUserId, Pageable pageable);
 	
     @EntityGraph(attributePaths = {"author", "group", "media"})
-	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL AND p.author.id = :authorId AND " +
-		   "(p.visibility = 'public_' OR " +
-		   "(p.visibility = 'friends' AND p.author.id IN " +
-		   "(SELECT f.followee.id FROM Follow f WHERE f.follower.id = :currentUserId)) OR " +
-		   "(p.visibility = 'private_' AND p.author.id = :currentUserId)) " +
-		   "ORDER BY p.createdAt DESC")
+	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL AND p.author.id = :authorId " +
+	   "AND :currentUserId NOT IN (SELECT ub.blocker.id FROM UserBlock ub WHERE ub.blocked.id = :authorId) " +
+	   "AND :currentUserId NOT IN (SELECT ub.blocked.id FROM UserBlock ub WHERE ub.blocker.id = :authorId) " +
+	   "AND (p.visibility = 'public_' OR " +
+	   "(p.visibility = 'friends' AND EXISTS (" +
+	   "  SELECT 1 FROM Friendship fr " +
+	   "  WHERE fr.status = com.ainnect.common.enums.FriendshipStatus.accepted " +
+	   "    AND ((fr.userLow.id = :currentUserId AND fr.userHigh.id = :authorId) " +
+	   "      OR (fr.userHigh.id = :currentUserId AND fr.userLow.id = :authorId))" +
+	   ")) OR " +
+	   "(p.visibility = 'private_' AND p.author.id = :currentUserId)) " +
+	   "ORDER BY p.createdAt DESC")
 	Page<Post> findVisiblePostsByAuthor(@Param("authorId") Long authorId, @Param("currentUserId") Long currentUserId, Pageable pageable);
 	
 	/**
 	 * Search posts by content with privacy filtering
 	 */
 	@EntityGraph(attributePaths = {"author", "group", "media"})
-	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL AND " +
-		   "LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) AND " +
-		   "(p.visibility = 'public_' OR " +
-		   "(p.visibility = 'friends' AND p.author.id IN " +
-		   "(SELECT f.followee.id FROM Follow f WHERE f.follower.id = :currentUserId)) OR " +
-		   "(p.visibility = 'private_' AND p.author.id = :currentUserId) OR " +
-		   "(p.visibility = 'group' AND p.group.id IN " +
-		   "(SELECT gm.group.id FROM GroupMember gm WHERE gm.user.id = :currentUserId))) " +
-		   "ORDER BY p.createdAt DESC")
+	@Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL " +
+	   "AND p.author.id NOT IN (SELECT ub.blocked.id FROM UserBlock ub WHERE ub.blocker.id = :currentUserId) " +
+	   "AND p.author.id NOT IN (SELECT ub.blocker.id FROM UserBlock ub WHERE ub.blocked.id = :currentUserId) " +
+	   "AND LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) AND " +
+	   "(p.visibility = 'public_' OR " +
+	   "(p.visibility = 'friends' AND EXISTS (" +
+	   "  SELECT 1 FROM Friendship fr " +
+	   "  WHERE fr.status = com.ainnect.common.enums.FriendshipStatus.accepted " +
+	   "    AND ((fr.userLow.id = :currentUserId AND fr.userHigh.id = p.author.id) " +
+	   "      OR (fr.userHigh.id = :currentUserId AND fr.userLow.id = p.author.id))" +
+	   ")) OR " +
+	   "(p.visibility = 'private_' AND p.author.id = :currentUserId) OR " +
+	   "(p.visibility = 'group' AND p.group.id IN (" +
+	   "  SELECT gm.group.id FROM GroupMember gm WHERE gm.user.id = :currentUserId))) " +
+	   "ORDER BY p.createdAt DESC")
 	Page<Post> searchPosts(@Param("keyword") String keyword, @Param("currentUserId") Long currentUserId, Pageable pageable);
 	
 	// Additional methods for profile

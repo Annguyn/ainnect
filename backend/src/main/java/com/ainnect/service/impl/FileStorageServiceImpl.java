@@ -23,27 +23,23 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final Path fileStorageLocation;
     private final String baseUrl;
     
-    // Supported image formats
     private static final List<String> SUPPORTED_IMAGE_TYPES = Arrays.asList(
         "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
     );
     
-    // Supported video formats
     private static final List<String> SUPPORTED_VIDEO_TYPES = Arrays.asList(
         "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", 
         "video/webm", "video/mkv", "video/3gp", "video/quicktime"
     );
     
-    // All supported media types (images + videos)
     private static final List<String> SUPPORTED_MEDIA_TYPES = Arrays.asList(
         "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp",
         "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", 
         "video/webm", "video/mkv", "video/3gp", "video/quicktime"
     );
     
-    // Supported file categories
     private static final List<String> SUPPORTED_CATEGORIES = Arrays.asList(
-        "avatars", "schools", "companies", "interests", "locations", "posts", "general"
+        "avatars", "schools", "companies", "interests", "locations", "posts", "general", "messages"
     );
     
     // Max file size: 100MB
@@ -56,7 +52,6 @@ public class FileStorageServiceImpl implements FileStorageService {
         
         try {
             Files.createDirectories(this.fileStorageLocation);
-            // Create directories for different file categories
             Files.createDirectories(this.fileStorageLocation.resolve("avatars"));
             Files.createDirectories(this.fileStorageLocation.resolve("schools"));
             Files.createDirectories(this.fileStorageLocation.resolve("companies"));
@@ -64,6 +59,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             Files.createDirectories(this.fileStorageLocation.resolve("locations"));
             Files.createDirectories(this.fileStorageLocation.resolve("posts"));
             Files.createDirectories(this.fileStorageLocation.resolve("general"));
+            Files.createDirectories(this.fileStorageLocation.resolve("messages"));
         } catch (Exception ex) {
             throw new RuntimeException("Could not create the directory where the uploaded files will be stored.", ex);
         }
@@ -88,7 +84,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             Path targetLocation = categoryPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
             
-            return baseUrl + "/api/files/" + category + "/" + fileName;
+            return "/api/files/" + category + "/" + fileName;
         } catch (IOException ex) {
             log.error("Could not store file {}. Error: {}", fileName, ex.getMessage());
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
@@ -110,7 +106,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             Path targetLocation = avatarPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
             
-            return baseUrl + "/api/files/avatars/" + fileName;
+            return "/api/files/avatars/" + fileName;
         } catch (IOException ex) {
             log.error("Could not store avatar file for user {}. Error: {}", userId, ex.getMessage());
             throw new RuntimeException("Không thể lưu file avatar. Vui lòng thử lại!", ex);
@@ -132,7 +128,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             Path targetLocation = coverPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
             
-            return baseUrl + "/api/files/avatars/" + fileName;
+            return "/api/files/avatars/" + fileName;
         } catch (IOException ex) {
             log.error("Could not store cover file for user {}. Error: {}", userId, ex.getMessage());
             throw new RuntimeException("Không thể lưu file cover. Vui lòng thử lại!", ex);
@@ -142,7 +138,6 @@ public class FileStorageServiceImpl implements FileStorageService {
     @Override
     public void deleteFile(String fileName) {
         try {
-            // Extract category from fileName (format: category/filename)
             String[] parts = fileName.split("/", 2);
             if (parts.length == 2) {
                 String category = parts[0];
@@ -169,12 +164,10 @@ public class FileStorageServiceImpl implements FileStorageService {
             return false;
         }
         
-        // Check file size
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("File quá lớn. Kích thước tối đa là 100MB");
         }
         
-        // Check content type
         String contentType = file.getContentType();
         if (contentType == null || !SUPPORTED_MEDIA_TYPES.contains(contentType.toLowerCase())) {
             throw new IllegalArgumentException("Định dạng file không được hỗ trợ. Chỉ chấp nhận: JPEG, PNG, GIF, WebP, MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP");
@@ -202,7 +195,6 @@ public class FileStorageServiceImpl implements FileStorageService {
             return originalFileName.substring(originalFileName.lastIndexOf("."));
         }
         
-        // Fallback based on content type
         String contentType = file.getContentType();
         if (contentType != null) {
             switch (contentType.toLowerCase()) {

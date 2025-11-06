@@ -7,6 +7,7 @@ import com.ainnect.dto.messaging.MessagingDtos;
 import com.ainnect.entity.*;
 import com.ainnect.repository.*;
 import com.ainnect.service.MessageService;
+import com.ainnect.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,12 +30,29 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final MessageAttachmentRepository messageAttachmentRepository;
     private final UserRepository userRepository;
+    private final WebSocketService webSocketService;
+    private final MessageReactionRepository messageReactionRepository;
 
     @Override
     @Transactional
     public MessagingDtos.ConversationResponse createConversation(MessagingDtos.CreateConversationRequest request, Long creatorId) {
         User creator = userRepository.findById(creatorId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (request.getType() == ConversationType.direct) {
+            if (request.getParticipantIds() == null || request.getParticipantIds().isEmpty()) {
+                throw new IllegalArgumentException("Direct conversation requires one participant");
+            }
+            Long otherUserId = request.getParticipantIds().get(0);
+            if (otherUserId.equals(creatorId)) {
+                throw new IllegalArgumentException("Cannot create direct conversation with yourself");
+            }
+            List<Conversation> existingList = conversationRepository.findDirectConversationBetweenUsers(
+                    creatorId, otherUserId, org.springframework.data.domain.PageRequest.of(0, 1));
+            if (!existingList.isEmpty()) {
+                return toConversationResponse(existingList.get(0), creatorId);
+            }
+        }
 
         Conversation conversation = Conversation.builder()
                 .type(request.getType())
@@ -46,7 +64,6 @@ public class MessageServiceImpl implements MessageService {
 
         Conversation savedConversation = conversationRepository.save(conversation);
 
-        // Add creator as member
         ConversationMemberId creatorMemberId = new ConversationMemberId(savedConversation.getId(), creatorId);
         ConversationMember creatorMember = ConversationMember.builder()
                 .id(creatorMemberId)
@@ -58,28 +75,46 @@ public class MessageServiceImpl implements MessageService {
 
         conversationMemberRepository.save(creatorMember);
 
-        // Add other participants
         if (request.getParticipantIds() != null && !request.getParticipantIds().isEmpty()) {
-            for (Long participantId : request.getParticipantIds()) {
+            List<Long> uniqueIds = request.getParticipantIds().stream().distinct().collect(Collectors.toList());
+            for (Long participantId : uniqueIds) {
                 if (!participantId.equals(creatorId)) {
                     User participant = userRepository.findById(participantId)
                             .orElseThrow(() -> new IllegalArgumentException("Participant not found: " + participantId));
 
-                    ConversationMemberId memberId = new ConversationMemberId(savedConversation.getId(), participantId);
-                    ConversationMember member = ConversationMember.builder()
-                            .id(memberId)
-                            .conversation(savedConversation)
-                            .user(participant)
-                            .role(ConversationMemberRole.member)
-                            .joinedAt(LocalDateTime.now())
-                            .build();
+                    if (!conversationMemberRepository.existsByConversationIdAndUserId(savedConversation.getId(), participantId)) {
+                        ConversationMemberId memberId = new ConversationMemberId(savedConversation.getId(), participantId);
+                        ConversationMember member = ConversationMember.builder()
+                                .id(memberId)
+                                .conversation(savedConversation)
+                                .user(participant)
+                                .role(ConversationMemberRole.member)
+                                .joinedAt(LocalDateTime.now())
+                                .build();
 
-                    conversationMemberRepository.save(member);
+                        conversationMemberRepository.save(member);
+                    }
                 }
             }
         }
 
-        return toConversationResponse(savedConversation, creatorId);
+        MessagingDtos.ConversationResponse response = toConversationResponse(savedConversation, creatorId);
+
+        try {
+            MessagingDtos.WebSocketMessage wsMessage = MessagingDtos.WebSocketMessage.builder()
+                    .type("NEW_CONVERSATION")
+                    .data(response)
+                    .conversationId(savedConversation.getId())
+                    .senderId(creatorId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            webSocketService.sendMessageToConversation(savedConversation.getId(), wsMessage);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification for new conversation: {}", e.getMessage());
+        }
+
+        return response;
     }
 
     @Override
@@ -192,9 +227,17 @@ public class MessageServiceImpl implements MessageService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
+        if (request.getReplyToMessageId() != null) {
+            Message parent = messageRepository.findByIdAndDeletedAtIsNull(request.getReplyToMessageId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent message not found"));
+            if (!parent.getConversation().getId().equals(request.getConversationId())) {
+                throw new IllegalArgumentException("Parent message does not belong to this conversation");
+            }
+            message.setParent(parent);
+        }
+
         Message savedMessage = messageRepository.save(message);
 
-        // Save attachments if any
         if (request.getAttachmentUrls() != null && !request.getAttachmentUrls().isEmpty()) {
             for (String attachmentUrl : request.getAttachmentUrls()) {
                 MessageAttachment attachment = MessageAttachment.builder()
@@ -207,11 +250,26 @@ public class MessageServiceImpl implements MessageService {
             }
         }
 
-        // Update conversation timestamp
         conversation.setUpdatedAt(LocalDateTime.now());
         conversationRepository.save(conversation);
 
-        return toMessageResponse(savedMessage, senderId);
+        MessagingDtos.MessageResponse messageResponse = toMessageResponse(savedMessage, senderId);
+
+        try {
+            MessagingDtos.WebSocketMessage wsMessage = MessagingDtos.WebSocketMessage.builder()
+                    .type("NEW_MESSAGE")
+                    .data(messageResponse)
+                    .conversationId(request.getConversationId())
+                    .senderId(senderId)
+                    .timestamp(messageResponse.getCreatedAt())
+                    .build();
+            
+            webSocketService.sendMessageToConversation(request.getConversationId(), wsMessage);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification for message: {}", e.getMessage());
+        }
+
+        return messageResponse;
     }
 
     @Override
@@ -222,7 +280,7 @@ public class MessageServiceImpl implements MessageService {
 
         Page<Message> messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
         List<MessagingDtos.MessageResponse> messages = messagePage.getContent().stream()
-                .map(message -> toMessageResponse(message, userId))
+                .map(message -> toMessageResponseWithReactions(message, userId))
                 .collect(Collectors.toList());
 
         return MessagingDtos.MessageListResponse.builder()
@@ -245,7 +303,91 @@ public class MessageServiceImpl implements MessageService {
             throw new IllegalArgumentException("You are not a member of this conversation");
         }
 
-        return toMessageResponse(message, userId);
+        return toMessageResponseWithReactions(message, userId);
+    }
+
+    @Override
+    @Transactional
+    public void reactToMessage(Long messageId, String type, Long userId) {
+        Message message = messageRepository.findByIdAndDeletedAtIsNull(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        if (!isMember(message.getConversation().getId(), userId)) {
+            throw new IllegalArgumentException("You are not a member of this conversation");
+        }
+        com.ainnect.common.enums.ReactionType reactionType;
+        try {
+            reactionType = com.ainnect.common.enums.ReactionType.valueOf(type.toLowerCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid reaction type");
+        }
+        var existing = messageReactionRepository.findByMessageIdAndUserId(messageId, userId);
+        if (existing.isPresent()) {
+            MessageReaction mr = existing.get();
+            mr.setType(reactionType);
+            messageReactionRepository.save(mr);
+        } else {
+            User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+            MessageReaction mr = MessageReaction.builder()
+                    .message(message)
+                    .user(user)
+                    .type(reactionType)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            messageReactionRepository.save(mr);
+        }
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("messageId", messageId);
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        for (var rt : com.ainnect.common.enums.ReactionType.values()) {
+            counts.put(rt.name(), messageReactionRepository.countByMessageIdAndType(messageId, rt));
+        }
+        payload.put("reactionCounts", counts);
+        payload.put("userId", userId);
+        payload.put("currentUserReaction", reactionType.name());
+
+        try {
+            MessagingDtos.WebSocketMessage ws = MessagingDtos.WebSocketMessage.builder()
+                    .type("MESSAGE_REACTION")
+                    .data(payload)
+                    .conversationId(message.getConversation().getId())
+                    .senderId(userId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            webSocketService.sendMessageToConversation(message.getConversation().getId(), ws);
+        } catch (Exception ignored) { }
+    }
+
+    @Override
+    @Transactional
+    public void removeReactionFromMessage(Long messageId, Long userId) {
+        var existing = messageReactionRepository.findByMessageIdAndUserId(messageId, userId);
+        if (existing.isPresent()) {
+            MessageReaction mr = existing.get();
+            Message message = mr.getMessage();
+            messageReactionRepository.delete(mr);
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("messageId", messageId);
+            java.util.Map<String, Long> counts = new java.util.HashMap<>();
+            for (var rt : com.ainnect.common.enums.ReactionType.values()) {
+                counts.put(rt.name(), messageReactionRepository.countByMessageIdAndType(messageId, rt));
+            }
+            payload.put("reactionCounts", counts);
+            payload.put("userId", userId);
+            payload.put("currentUserReaction", null);
+
+            try {
+                MessagingDtos.WebSocketMessage ws = MessagingDtos.WebSocketMessage.builder()
+                        .type("MESSAGE_REACTION")
+                        .data(payload)
+                        .conversationId(message.getConversation().getId())
+                        .senderId(userId)
+                        .timestamp(LocalDateTime.now())
+                        .build();
+                webSocketService.sendMessageToConversation(message.getConversation().getId(), ws);
+            } catch (Exception ignored) { }
+        }
     }
 
     @Override
@@ -327,6 +469,20 @@ public class MessageServiceImpl implements MessageService {
                 conversationMemberRepository.save(memberObj);
             }
         }
+
+        try {
+            MessagingDtos.WebSocketMessage wsMessage = MessagingDtos.WebSocketMessage.builder()
+                    .type("MEMBER_ADDED")
+                    .data(request.getUserIds())
+                    .conversationId(request.getConversationId())
+                    .senderId(userId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            webSocketService.sendMessageToConversation(request.getConversationId(), wsMessage);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification for added members: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -371,6 +527,12 @@ public class MessageServiceImpl implements MessageService {
 
         member.setLastReadMessageId(request.getMessageId());
         conversationMemberRepository.save(member);
+
+        try {
+            webSocketService.sendReadReceipt(request.getConversationId(), request);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket read receipt notification: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -411,13 +573,12 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public MessagingDtos.ConversationResponse getOrCreateDirectConversation(Long userId1, Long userId2) {
-        Optional<Conversation> existingConversation = conversationRepository.findDirectConversationBetweenUsers(userId1, userId2);
-        
-        if (existingConversation.isPresent()) {
-            return toConversationResponse(existingConversation.get(), userId1);
+        List<Conversation> existingList = conversationRepository.findDirectConversationBetweenUsers(
+                userId1, userId2, org.springframework.data.domain.PageRequest.of(0, 1));
+        if (!existingList.isEmpty()) {
+            return toConversationResponse(existingList.get(0), userId1);
         }
 
-        // Create new direct conversation
         MessagingDtos.CreateConversationRequest request = MessagingDtos.CreateConversationRequest.builder()
                 .type(ConversationType.direct)
                 .participantIds(List.of(userId2))
@@ -436,7 +597,7 @@ public class MessageServiceImpl implements MessageService {
         ConversationMember member = conversationMemberRepository.findByConversationIdAndUserId(conversation.getId(), currentUserId).orElse(null);
         ConversationMemberRole userRole = member != null ? member.getRole() : null;
 
-        return MessagingDtos.ConversationResponse.builder()
+        MessagingDtos.ConversationResponse.ConversationResponseBuilder builder = MessagingDtos.ConversationResponse.builder()
                 .id(conversation.getId())
                 .type(conversation.getType())
                 .title(conversation.getTitle())
@@ -450,8 +611,34 @@ public class MessageServiceImpl implements MessageService {
                 .createdAt(conversation.getCreatedAt())
                 .updatedAt(conversation.getUpdatedAt())
                 .isMember(isMember(conversation.getId(), currentUserId))
-                .userRole(userRole)
-                .build();
+                .userRole(userRole);
+
+        if (conversation.getType() == ConversationType.direct) {
+            List<ConversationMember> allMembers = conversationMemberRepository.findByConversationId(conversation.getId());
+            Optional<ConversationMember> otherParticipant = allMembers.stream()
+                    .filter(m -> !m.getUser().getId().equals(currentUserId))
+                    .findFirst();
+            
+            if (otherParticipant.isPresent()) {
+                User otherUser = otherParticipant.get().getUser();
+                builder.otherParticipantId(otherUser.getId())
+                        .otherParticipantUsername(otherUser.getUsername())
+                        .otherParticipantDisplayName(otherUser.getDisplayName())
+                        .otherParticipantAvatarUrl(otherUser.getAvatarUrl())
+                        .otherParticipantIsOnline(false)
+                        .otherParticipantLastSeenAt(null);
+            }
+        }
+        
+        if (conversation.getType() == ConversationType.group) {
+            List<ConversationMember> allMembers = conversationMemberRepository.findByConversationId(conversation.getId());
+            List<MessagingDtos.ConversationMemberResponse> memberResponses = allMembers.stream()
+                    .map(this::toConversationMemberResponse)
+                    .collect(Collectors.toList());
+            builder.members(memberResponses);
+        }
+
+        return builder.build();
     }
 
     private MessagingDtos.MessageResponse toMessageResponse(Message message, Long currentUserId) {
@@ -463,7 +650,7 @@ public class MessageServiceImpl implements MessageService {
         ConversationMember member = conversationMemberRepository.findByConversationIdAndUserId(message.getConversation().getId(), currentUserId).orElse(null);
         boolean isRead = member != null && member.getLastReadMessageId() != null && member.getLastReadMessageId() >= message.getId();
 
-        return MessagingDtos.MessageResponse.builder()
+        MessagingDtos.MessageResponse resp = MessagingDtos.MessageResponse.builder()
                 .id(message.getId())
                 .conversationId(message.getConversation().getId())
                 .senderId(message.getSender().getId())
@@ -476,9 +663,37 @@ public class MessageServiceImpl implements MessageService {
                 .createdAt(message.getCreatedAt())
                 .deletedAt(message.getDeletedAt())
                 .isRead(isRead)
-                .isEdited(false) // TODO: Implement message editing tracking
+                .isEdited(false) 
                 .editedAt(null)
                 .build();
+
+        if (message.getParent() != null) {
+            Message parent = message.getParent();
+            MessagingDtos.ParentMessageInfo p = MessagingDtos.ParentMessageInfo.builder()
+                    .id(parent.getId())
+                    .senderId(parent.getSender().getId())
+                    .senderUsername(parent.getSender().getUsername())
+                    .contentPreview(parent.getContent() != null && parent.getContent().length() > 120 ? parent.getContent().substring(0, 120) : parent.getContent())
+                    .messageType(parent.getMessageType())
+                    .createdAt(parent.getCreatedAt())
+                    .build();
+            resp.setReplyTo(p);
+        }
+        return resp;
+    }
+
+    private MessagingDtos.MessageResponse toMessageResponseWithReactions(Message message, Long currentUserId) {
+        MessagingDtos.MessageResponse base = toMessageResponse(message, currentUserId);
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        for (var rt : com.ainnect.common.enums.ReactionType.values()) {
+            counts.put(rt.name(), messageReactionRepository.countByMessageIdAndType(message.getId(), rt));
+        }
+        var current = messageReactionRepository.findByMessageIdAndUserId(message.getId(), currentUserId)
+                .map(mr -> mr.getType().name())
+                .orElse(null);
+        base.setReactionCounts(counts);
+        base.setCurrentUserReaction(current);
+        return base;
     }
 
     private MessagingDtos.MessageAttachmentResponse toMessageAttachmentResponse(MessageAttachment attachment) {
@@ -501,7 +716,7 @@ public class MessageServiceImpl implements MessageService {
                 .role(member.getRole())
                 .joinedAt(member.getJoinedAt())
                 .lastReadMessageId(member.getLastReadMessageId())
-                .isOnline(false) // TODO: Implement online status tracking
+                .isOnline(false) 
                 .lastSeenAt(null)
                 .build();
     }

@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/social/stats/**").permitAll() 
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/ws-messaging/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/feed", "/api/posts/*", "/api/posts/*/comments", "/api/posts/*/reactions").permitAll()
                 .requestMatchers("/api/notifications/**").authenticated()
                 .requestMatchers("/actuator/**").permitAll()

@@ -17,6 +17,8 @@ import java.util.List;
 public class PostDtos {
     @Getter
     @Setter
+    @Builder
+    @AllArgsConstructor
     public static class CreateRequest {
         private Long groupId;
         @NotBlank

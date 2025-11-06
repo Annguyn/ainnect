@@ -223,6 +223,54 @@
 					"response": []
 				},
 				{
+					"name": "Create Group Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "content",
+									"value": "This is a post in a group",
+									"type": "text"
+								},
+								{
+									"key": "visibility",
+									"value": "public_",
+									"type": "text",
+									"description": "Post visibility: public_, friends_, private_"
+								},
+								{
+									"key": "mediaFiles",
+									"type": "file",
+									"src": [],
+									"description": "Optional media files"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/groups/{{groupId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								"groups",
+								"{{groupId}}"
+							]
+						},
+						"description": "Create a new post in a specific group"
+					},
+					"response": []
+				},
+				{
 					"name": "Get Post by ID",
 					"request": {
 						"method": "GET",
@@ -613,6 +661,11 @@
 		},
 		{
 			"key": "authorId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
 			"value": "1",
 			"type": "string"
 		}

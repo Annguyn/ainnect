@@ -1,0 +1,204 @@
+{
+	"info": {
+		"_postman_id": "notification-controller-collection",
+		"name": "NotificationController API",
+		"description": "Professional Postman collection for Notification Controller APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get User Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?page=0&size=20&sortBy=createdAt&sortDir=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt",
+									"description": "Sort field"
+								},
+								{
+									"key": "sortDir",
+									"value": "desc",
+									"description": "Sort direction (asc/desc)"
+								}
+							]
+						},
+						"description": "Get paginated list of user notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"stats"
+							]
+						},
+						"description": "Get notification statistics (total, unread, today)"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"{{notificationId}}",
+								"read"
+							]
+						},
+						"description": "Mark a specific notification as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"read-all"
+							]
+						},
+						"description": "Mark all notifications as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"{{notificationId}}"
+							]
+						},
+						"description": "Delete a specific notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Cleanup Old Notifications",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/cleanup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"cleanup"
+							]
+						},
+						"description": "Delete notifications older than 30 days"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "notificationId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

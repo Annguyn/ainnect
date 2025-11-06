@@ -18,6 +18,10 @@ public interface MessageService {
     MessagingDtos.MessageResponse sendMessage(MessagingDtos.SendMessageRequest request, Long senderId);
     MessagingDtos.MessageListResponse getConversationMessages(Long conversationId, Long userId, Pageable pageable);
     MessagingDtos.MessageResponse getMessageById(Long messageId, Long userId);
+
+    void reactToMessage(Long messageId, String type, Long userId);
+
+    void removeReactionFromMessage(Long messageId, Long userId);
     MessagingDtos.MessageResponse editMessage(Long messageId, String newContent, Long userId);
     void deleteMessage(Long messageId, Long userId);
 

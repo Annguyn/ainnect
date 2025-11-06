@@ -134,14 +134,15 @@ public class GroupMapper {
             return null;
         }
         
-        // If it's already a full URL, return as is
         if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
             return fileName;
         }
         
-        // If it's just a filename, build the full URL
-        // Group cover images are stored in "general" category
+        if (fileName.contains("/api/files/")) {
+            String path = fileName.substring(fileName.indexOf("/api/files/"));
+            return baseUrl + path;
+        }
+
         return baseUrl + "/api/files/general/" + fileName;
     }
 }
-

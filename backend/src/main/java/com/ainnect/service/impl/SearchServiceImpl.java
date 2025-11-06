@@ -32,6 +32,9 @@ public class SearchServiceImpl implements SearchService {
     private final FriendshipRepository friendshipRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserBlockRepository userBlockRepository;
+    
+        @org.springframework.beans.factory.annotation.Value("${app.file.base-url:http://localhost:8080}")
+        private String baseUrl;
 
     @Override
     public SearchDtos.SearchResponse searchAll(String keyword, Long currentUserId, Pageable pageable) {
@@ -41,6 +44,7 @@ public class SearchServiceImpl implements SearchService {
         // Search users
         Page<User> userPage = userRepository.searchUsers(keyword, smallPageable);
         List<SearchDtos.UserSearchResult> users = userPage.getContent().stream()
+                .filter(user -> !isBlockedBetween(currentUserId, user.getId()))
                 .map(user -> toUserSearchResult(user, currentUserId))
                 .collect(Collectors.toList());
 
@@ -75,6 +79,7 @@ public class SearchServiceImpl implements SearchService {
     public SearchDtos.UserSearchResponse searchUsers(String keyword, Long currentUserId, Pageable pageable) {
         Page<User> userPage = userRepository.searchUsers(keyword, pageable);
         List<SearchDtos.UserSearchResult> users = userPage.getContent().stream()
+                .filter(user -> !isBlockedBetween(currentUserId, user.getId()))
                 .map(user -> toUserSearchResult(user, currentUserId))
                 .collect(Collectors.toList());
 
@@ -152,12 +157,20 @@ public class SearchServiceImpl implements SearchService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(buildFileUrl(user.getAvatarUrl()))
                 .bio(user.getBio())
                 .isFollowing(isFollowing)
                 .isFriend(isFriend)
                 .isBlocked(isBlocked)
                 .build();
+    }
+
+    private boolean isBlockedBetween(Long currentUserId, Long otherUserId) {
+        if (currentUserId == null || otherUserId == null || currentUserId.equals(otherUserId)) {
+            return false;
+        }
+        return userBlockRepository.existsByBlockerIdAndBlockedId(currentUserId, otherUserId)
+                || userBlockRepository.existsByBlockerIdAndBlockedId(otherUserId, currentUserId);
     }
 
     private SearchDtos.GroupSearchResult toGroupSearchResult(Community group, Long currentUserId) {
@@ -196,7 +209,7 @@ public class SearchServiceImpl implements SearchService {
         List<SearchDtos.MediaResult> media = post.getMedia().stream()
                 .map(mediaItem -> SearchDtos.MediaResult.builder()
                         .id(mediaItem.getId())
-                        .mediaUrl(mediaItem.getMediaUrl())
+                        .mediaUrl(buildFileUrl(mediaItem.getMediaUrl()))
                         .mediaType(mediaItem.getMediaType().name())
                         .createdAt(mediaItem.getCreatedAt())
                         .build())
@@ -209,7 +222,7 @@ public class SearchServiceImpl implements SearchService {
                 .authorId(post.getAuthor().getId())
                 .authorUsername(post.getAuthor().getUsername())
                 .authorDisplayName(post.getAuthor().getDisplayName())
-                .authorAvatarUrl(post.getAuthor().getAvatarUrl())
+                .authorAvatarUrl(buildFileUrl(post.getAuthor().getAvatarUrl()))
                 .groupId(post.getGroup() != null ? post.getGroup().getId() : null)
                 .groupName(post.getGroup() != null ? post.getGroup().getName() : null)
                 .reactionCount(post.getReactionCount())
@@ -219,4 +232,25 @@ public class SearchServiceImpl implements SearchService {
                 .media(media)
                 .build();
     }
+
+        private String buildFileUrl(String fileName) {
+                if (fileName == null || fileName.trim().isEmpty()) {
+                        return fileName;
+                }
+
+                if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+                        return fileName;
+                }
+
+                if (fileName.contains("/api/files/")) {
+                        String path = fileName.substring(fileName.indexOf("/api/files/"));
+                        return baseUrl + path;
+                }
+
+                if (!fileName.startsWith("/")) {
+                        return baseUrl + "/api/files/posts/" + fileName;
+                }
+
+                return baseUrl + fileName;
+        }
 }
