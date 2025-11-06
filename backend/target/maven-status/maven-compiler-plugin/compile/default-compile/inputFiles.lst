@@ -5,6 +5,7 @@ C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\ja
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\dto\search\SearchDtos.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\UserRoleId.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\ConversationMemberRepository.java
+C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\config\JwtHandshakeHandler.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\config\SecurityConfig.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\Report.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\GroupMemberRepository.java
@@ -43,6 +44,7 @@ C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\ja
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\UserBlock.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\PostBookmarkRepository.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\common\enums\Gender.java
+C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\MessageReactionRepository.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\GroupJoinAnswer.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\CommunityRepository.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\SessionRepository.java
@@ -79,6 +81,7 @@ C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\ja
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\service\SearchService.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\dto\social\FriendshipDtos.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\service\FileStorageService.java
+C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\config\HttpHandshakeInterceptor.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\service\impl\GroupServiceImpl.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\service\GroupService.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\dto\messaging\MessageDtos.java
@@ -124,6 +127,7 @@ C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\ja
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\common\enums\AuthProvider.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\dto\user\UserBasicInfoDto.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\controller\AuthController.java
+C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\MessageReaction.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\entity\Follow.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\repository\HashtagRepository.java
 C:\Users\XPS 9500\Documents\StudyDocumentation\PBL 6\ainnect\backend\src\main\java\com\ainnect\dto\profile\ProfileDtos.java
