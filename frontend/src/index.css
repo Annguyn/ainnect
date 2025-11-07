@@ -3,6 +3,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/animations.css';
+
 @layer base {
   html, body, #root {
     height: 100%;

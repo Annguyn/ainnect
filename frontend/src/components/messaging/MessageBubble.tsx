@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Message, User } from '../../types/messaging'
+import { messagingService } from '../../services/messagingService'
 import { cn } from '../../lib/utils'
 import { 
   MoreVertical, 
@@ -77,6 +78,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   }
 
   const handleReactionClick = (emoji: string) => {
+    const map: Record<string, 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha'> = {
+      '👍': 'like',
+      '❤️': 'love',
+      '😂': 'haha',
+      '😮': 'wow',
+      '😢': 'sad',
+      '😡': 'angry',
+      '😀': 'like'
+    }
+    const type = map[emoji]
+    if (type) {
+      messagingService.reactToMessage(message.id, type).catch(() => {})
+    }
     onReact?.(message, emoji)
     setShowReactions(false)
   }
@@ -94,16 +108,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Avatar */}
         {!isConsecutive && (
           <div className="flex-shrink-0">
-            {message.sender?.avatar ? (
+            {message.senderAvatarUrl ? (
               <img
-                src={message.sender.avatar}
-                alt={message.sender.firstName}
+                src={message.senderAvatarUrl}
+                alt={message.senderDisplayName || 'Avatar'}
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                 <span className="text-white font-semibold text-xs">
-                  {message.sender?.firstName?.charAt(0) || message.senderDisplayName?.charAt(0) || '?'}
+                  {message.senderDisplayName?.charAt(0) || '?'}
                 </span>
               </div>
             )}
@@ -124,9 +138,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             className={cn(
               "relative px-4 py-2 rounded-2xl shadow-sm",
               isOwnMessage
-                ? "bg-primary-500 text-white"
+                ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white"
                 : "bg-white border border-gray-200 text-gray-900",
-              isConsecutive && !isOwnMessage && "ml-10"
+              isConsecutive && !isOwnMessage && "ml-10",
+              !isConsecutive && (isOwnMessage ? 'rounded-tr-sm' : 'rounded-tl-sm')
             )}
             onMouseEnter={() => setShowActions(true)}
             onMouseLeave={() => setShowActions(false)}
@@ -137,7 +152,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               </div>
             ) : (
               <>
-                <div className="whitespace-pre-wrap break-words">
+                <div className="whitespace-pre-wrap break-words leading-relaxed">
                   {message.content}
                 </div>
 
@@ -146,7 +161,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <div className="mt-2 space-y-2">
                     {message.attachmentUrls.map((url, index) => (
                       <div key={index} className="rounded-lg overflow-hidden">
-                        {message.messageType === 'IMAGE' ? (
+                        {message.messageType === 'image' ? (
                           <img
                             src={url}
                             alt={`Attachment ${index + 1}`}
@@ -172,16 +187,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
 
                 {/* Reactions */}
-                {message.reactions && message.reactions.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {message.reactions.map((reaction, index) => (
-                      <span
-                        key={index}
-                        className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full"
-                      >
-                        {reaction.emoji} {reaction.count}
-                      </span>
-                    ))}
+                {(message.reactionCounts && Object.values(message.reactionCounts).some(c => c > 0)) && (
+                  <div className={cn(
+                    "absolute -bottom-3",
+                    isOwnMessage ? "right-2" : "left-2"
+                  )}>
+                    <div className={cn(
+                      "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs shadow bg-white text-gray-700"
+                    )}>
+                      {message.reactionCounts.like > 0 && <span>👍 {message.reactionCounts.like}</span>}
+                      {message.reactionCounts.love > 0 && <span>❤️ {message.reactionCounts.love}</span>}
+                      {message.reactionCounts.haha > 0 && <span>😂 {message.reactionCounts.haha}</span>}
+                      {message.reactionCounts.wow > 0 && <span>😮 {message.reactionCounts.wow}</span>}
+                      {message.reactionCounts.sad > 0 && <span>😢 {message.reactionCounts.sad}</span>}
+                      {message.reactionCounts.angry > 0 && <span>😡 {message.reactionCounts.angry}</span>}
+                    </div>
                   </div>
                 )}
               </>
@@ -189,19 +209,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Message actions */}
             {showActions && !isDeleted && (
-              <div className="absolute top-0 right-0 transform translate-x-full -translate-y-2 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-10">
-                <div className="flex items-center space-x-1">
+              <div className={cn(
+                "absolute",
+                isOwnMessage ? "-left-2 top-1/2 -translate-y-1/2" : "-right-2 top-1/2 -translate-y-1/2"
+              )}>
+                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full shadow-lg p-1 backdrop-blur-sm">
                   <button
                     onClick={() => handleActionClick('react')}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="React"
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Cảm xúc"
                   >
                     <Smile className="w-4 h-4 text-gray-600" />
                   </button>
                   <button
                     onClick={() => handleActionClick('reply')}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Reply"
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Trả lời"
                   >
                     <Reply className="w-4 h-4 text-gray-600" />
                   </button>
@@ -209,15 +232,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     <>
                       <button
                         onClick={() => handleActionClick('edit')}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        title="Edit"
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Chỉnh sửa"
                       >
                         <Edit className="w-4 h-4 text-gray-600" />
                       </button>
                       <button
                         onClick={() => handleActionClick('delete')}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        title="Delete"
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Xóa"
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
@@ -229,13 +252,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Reaction picker */}
             {showReactions && (
-              <div className="absolute top-0 right-0 transform translate-x-full -translate-y-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-20">
-                <div className="flex items-center space-x-1">
+              <div
+                className={cn(
+                  "absolute z-20 bg-white border border-gray-200 rounded-2xl shadow-xl p-1 transition-opacity duration-200 ease-in-out",
+                  isOwnMessage ? "right-0 bottom-[-44px]" : "left-0 bottom-[-44px]",
+                  showReactions ? "opacity-100" : "opacity-0"
+                )}
+                onMouseEnter={() => setShowReactions(true)}
+                onMouseLeave={() => setShowReactions(false)}
+              >
+                <div className="flex items-center gap-1">
                   {reactions.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => handleReactionClick(emoji)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors text-lg"
+                      className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-lg transition-transform transform hover:scale-110"
                     >
                       {emoji}
                     </button>

@@ -130,7 +130,7 @@ export const ReactionsModal: React.FC<ReactionsModalProps> = ({
     : reactionUsers.filter(user => user.type === selectedTab);
 
   const reactionCounts = getReactionCounts();
-  const totalCount = reactions?.totalCount || reactionUsers.length;
+  const totalCount = reactions?.totalCount || 0;
 
   if (!isVisible) return null;
 

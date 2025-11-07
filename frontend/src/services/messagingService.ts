@@ -12,7 +12,8 @@ import {
   ConversationFilters,
   MessageFilters,
   ConversationMember,
-  ConversationType
+  ConversationType,
+  ConversationMemberRole
 } from '../types/messaging'
 
 export const messagingService = {
@@ -41,7 +42,6 @@ export const messagingService = {
       isActive: payload.isActive || true,
       participants: payload.participants || [],
       avatar: payload.avatar || null,
-      // For direct conversations
       otherParticipantId: payload.otherParticipantId,
       otherParticipantUsername: payload.otherParticipantUsername,
       otherParticipantDisplayName: payload.otherParticipantDisplayName,
@@ -56,10 +56,14 @@ export const messagingService = {
     return transformedConversation
   },
 
-  async getConversationById(id: number): Promise<Conversation> {
-    const response = await apiClient.get<any>(`/api/messaging/conversations/${id}`)
+  async getConversationById(id: number, filters: MessageFilters = {}): Promise<Conversation> {
+    const params = new URLSearchParams()
+    if (filters.page !== undefined) params.append('page', filters.page.toString())
+    if (filters.size !== undefined) params.append('size', filters.size.toString())
+
+    const query = params.toString()
+    const response = await apiClient.get<any>(`/api/messaging/conversations/${id}${query ? `?${query}` : ''}`)
     const payload = (response as any)?.data ?? response
-    // Transform API response to match Conversation interface
     return {
       id: payload.id,
       type: payload.type,
@@ -139,7 +143,6 @@ export const messagingService = {
     } as ConversationListResponse
   },
 
-  // Message Operations
   async getConversationMessages(
     conversationId: number, 
     filters: MessageFilters = {}
@@ -192,6 +195,14 @@ export const messagingService = {
     await apiClient.delete(`/api/messaging/messages/${messageId}`)
   },
 
+  async reactToMessage(messageId: number, type: 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha'): Promise<void> {
+    await apiClient.post(`/api/messaging/messages/${messageId}/reactions?type=${encodeURIComponent(type)}`)
+  },
+
+  async unreactMessage(messageId: number): Promise<void> {
+    await apiClient.delete(`/api/messaging/messages/${messageId}/reactions`)
+  },
+
   async getConversationMembers(conversationId: number, filters: MessageFilters = {}): Promise<ConversationMemberListResponse> {
     const params = new URLSearchParams()
     if (filters.page !== undefined) params.append('page', filters.page.toString())
@@ -199,7 +210,28 @@ export const messagingService = {
     
     const response = await apiClient.get<any>(`/api/messaging/conversations/${conversationId}/members?${params}`)
     const payload = (response as any)?.data ?? response
-    return payload as ConversationMemberListResponse
+
+    const transformedMembers: ConversationMember[] = (payload.members || []).map((m: any) => ({
+      userId: m.userId,
+      username: m.username,
+      displayName: m.displayName,
+      avatarUrl: m.avatarUrl ?? undefined,
+      role: ((m.role || '').toString().toUpperCase() === 'ADMIN' ? 'ADMIN' : 'MEMBER') as ConversationMemberRole,
+      joinedAt: m.joinedAt,
+      lastReadMessageId: m.lastReadMessageId ?? undefined,
+      isOnline: (m.online ?? m.isOnline) || false,
+      lastSeenAt: m.lastSeenAt ?? undefined
+    }))
+
+    return {
+      members: transformedMembers,
+      currentPage: payload.currentPage ?? 0,
+      pageSize: payload.pageSize ?? (filters.size ?? 10),
+      totalElements: payload.totalElements ?? transformedMembers.length,
+      totalPages: payload.totalPages ?? 1,
+      hasNext: payload.hasNext ?? false,
+      hasPrevious: payload.hasPrevious ?? false
+    } as ConversationMemberListResponse
   },
 
   async removeMemberFromConversation(conversationId: number, userId: number): Promise<void> {
@@ -208,5 +240,16 @@ export const messagingService = {
 
   async leaveConversation(conversationId: number): Promise<void> {
     await apiClient.delete(`/api/messaging/conversations/${conversationId}/leave`)
+  }
+  ,
+
+  async uploadAndSendMessage(conversationId: number, file: File): Promise<Message> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await apiClient.post<any>(`/api/messaging/conversations/${conversationId}/messages/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    const payload = (response as any)?.data ?? response
+    return payload as Message
   }
 }

@@ -29,11 +29,31 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onMouseLeave
 }) => {
   const pickerRef = useRef<HTMLDivElement>(null);
+  const [hideTimeout, setHideTimeout] = React.useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleMouseLeave = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.relatedTarget as Node)) {
+          if (hideTimeout) {
+              clearTimeout(hideTimeout); 
+              setHideTimeout(null);
+          }
+      }
+    };
+
+    if (isVisible) {
+      pickerRef.current?.addEventListener('mouseleave', handleMouseLeave);
+      return () => pickerRef.current?.removeEventListener('mouseleave', handleMouseLeave);
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-        onClose();
+        const timeout = setTimeout(() => {
+            onClose();
+        }, 5000); 
+        setHideTimeout(timeout);
       }
     };
 
@@ -47,9 +67,9 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
   const pickerStyle = position 
     ? { 
-        position: 'absolute' as const, 
+        position: 'fixed' as const, // Changed to fixed for viewport-relative positioning
         left: position.x, 
-        top: position.y - 70,
+        top: position.y, // Removed hardcoded offset
         zIndex: 50 
       }
     : {};
@@ -58,7 +78,13 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
     <div
       ref={pickerRef}
       onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onMouseLeave={() => {
+          if (hideTimeout) {
+              clearTimeout(hideTimeout); // Cancel hide timeout when hovering over the picker
+              setHideTimeout(null);
+          }
+          onMouseLeave?.();
+      }}
       className="bg-white rounded-full shadow-xl border border-gray-200 p-3 flex items-center space-x-1 animate-bounce-in backdrop-blur-sm transform transition-all duration-200 hover:scale-105"
       style={pickerStyle}
     >

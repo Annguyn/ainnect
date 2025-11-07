@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
@@ -10,7 +11,7 @@ import { Post, postService } from '../services/postService';
 import { commentService } from '../services/commentService';
 import { ShareModal, ReportModal } from './social';
 import { useSocial } from '../hooks/useSocial';
-import type { ReactionType } from './ReactionPicker';
+import { ReactionPicker, ReactionType } from './ReactionPicker';
 import { LinkPreview } from './LinkPreview';
 import { debugLogger } from '../utils/debugLogger';
 import { 
@@ -29,6 +30,7 @@ interface PostCardProps {
   onShare: (id: number) => void;
   onDelete?: (id: number) => void;
   currentUser?: any;
+  currentUserId?: number; // Added currentUserId prop
   className?: string;
   highlight?: string;
 }
@@ -41,6 +43,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onShare, 
   onDelete,
   currentUser,
+  currentUserId, // Destructure currentUserId
   className = '',
   highlight
 }) => {
@@ -77,48 +80,46 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { sharePost, reportPost } = useSocial();
   const [showComments, setShowComments] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
-  const [actualCommentCount, setActualCommentCount] = useState<number | null>(null);
-  const [isLoadingCommentCount, setIsLoadingCommentCount] = useState(true);
   const [previewComments, setPreviewComments] = useState<any[]>([]);
   const [isLoadingPreviewComments, setIsLoadingPreviewComments] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [userProfilePosition, setUserProfilePosition] = useState({ x: 0, y: 0 });
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const userAvatarRef = useRef<HTMLDivElement>(null);
-  const reactionPickerRef = useRef<HTMLDivElement>(null);
 
-  // Load comment count and preview comments immediately when component mounts
+  const actualCommentCount = post.commentCount ?? 0;
+
   useEffect(() => {
-    const loadCommentData = async () => {
+    const loadPreviewComments = async () => {
+      if (!showComments) return;
+
       try {
-        setIsLoadingCommentCount(true);
         setIsLoadingPreviewComments(true);
         
         const response = await commentService.getCommentsByPost(post.id, 0, 3);
-        setActualCommentCount(response.totalElements || 0);
         setPreviewComments(response.content || []);
         
-        debugLogger.log('PostCard', 'Loaded comment data', { 
+        debugLogger.log('PostCard', 'Loaded preview comments', { 
           postId: post.id, 
-          commentCount: response.totalElements || 0,
           previewCommentsCount: response.content?.length || 0
         });
       } catch (error) {
-        debugLogger.log('PostCard', 'Failed to load comment data', { 
+        debugLogger.log('PostCard', 'Failed to load preview comments', { 
           postId: post.id, 
           error 
         });
-        setActualCommentCount(getCommentCount(post));
         setPreviewComments([]);
       } finally {
-        setIsLoadingCommentCount(false);
         setIsLoadingPreviewComments(false);
       }
     };
 
-    loadCommentData();
-  }, [post.id, post]);
+    loadPreviewComments();
+  }, [showComments, post.id]);
 
   const handleUserHover = (e: React.MouseEvent) => {
     if (userAvatarRef.current) {
@@ -156,6 +157,27 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const handleImageError = (index: number) => {
+    setImageErrors(prev => new Set(prev).add(index));
+  };
+
+  const handleImageClick = (index: number) => {
+    setCurrentImageIndex(index);
+    setShowImageViewer(true);
+  };
+
+  const handleNextImage = () => {
+    if (post.media && currentImageIndex < post.media.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+    }
+  };
+
+  const handlePreviousImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
+  };
+
   const loadPostReactions = async (postId: number, page: number = 0) => {
     const response = await postService.getPostReactions(postId, page, 10);
     return response.content || [];
@@ -165,33 +187,151 @@ export const PostCard: React.FC<PostCardProps> = ({
     <div className="transition-transform duration-300 hover:scale-110">{children}</div>
   );
 
-  const safeActualCommentCount = actualCommentCount !== null ? actualCommentCount : 0;
-
-  // Add hover functionality to display reactions and persist until clicking outside
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [reactionPickerPosition, setReactionPickerPosition] = useState({ top: 0, left: 0 });
-
-  const handleReactionHover = (event: React.MouseEvent) => {
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    setReactionPickerPosition({
-      top: rect.top + window.scrollY + rect.height,
-      left: rect.left + window.scrollX + rect.width / 2,
-    });
-    setShowReactionPicker(true);
+  const [activeReactionPicker, setActiveReactionPicker] = useState<number | null>(null);
+  const [pickerPos, setPickerPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
+  
+  const OFFSET_Y = 40;     
+  const OFFSET_X = 10;        
+  const PICKER_W = 280;     
+  const PICKER_H = 56;      
+  
+  const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+  
+  const handleReactionEnter = (e: React.MouseEvent, postId: number) => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    console.log('Hovering over ReactionButton, postId:', postId); // Log hover event
+    const timeout = setTimeout(() => {
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height;
+      console.log('Showing ReactionPicker at position:', { x, y }); // Log picker position
+      setPickerPos({ x, y });
+      setActiveReactionPicker(postId);
+      console.log('ReactionPicker state set to active for postId:', postId); // Log state change
+    }, 500); // Show picker after 500ms
+    setHoverTimeout(timeout);
   };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
-      setShowReactionPicker(false);
-    }
-  };
+  
+  const handleReactionLeave = () => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    console.log('Hover leave detected, but ReactionPicker will remain open'); // Log hover leave
+  }; // Prevent hiding on mouse leave
 
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        reactionPickerRef.current &&
+        !reactionPickerRef.current.contains(event.target as Node)
+      ) {
+        console.log('Closing ReactionPicker: Clicked outside'); // Log reason for closing
+        setActiveReactionPicker(null);
+      }
+    };
+
+    if (activeReactionPicker !== null) {
+      console.log('Adding click outside listener for ReactionPicker'); // Log listener addition
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        console.log('Removing click outside listener for ReactionPicker'); // Log listener removal
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [activeReactionPicker]);
+  
+  const handleReactionMove = (e: React.MouseEvent) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+  
+    let x = e.clientX;
+    let y = e.clientY - 200000;
+  
+    // Clamp to prevent overflow
+    x = clamp(x, 8, vw - PICKER_W - 8);
+    y = clamp(y, 8, vh - PICKER_H - 8);
+  
+    setPickerPos({ x, y });
+  };
+  
+  useEffect(() => {
+    const onResize = () => setActiveReactionPicker(null);
+    const onScroll = () => {
+      if (activeReactionPicker) {
+        setActiveReactionPicker(null);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
     };
   }, []);
+  
+  const handleReaction = (reaction: ReactionType) => {
+    if (post.reactions) {
+        const currentReactionType = post.reactions.currentUserReactionType;
+        const reactionCounts = post.reactions.reactionCounts;
+
+        if (currentReactionType === reaction) {
+            // User is unreacting
+            const reactionIndex = reactionCounts.findIndex(r => r.type === reaction);
+            if (reactionIndex !== -1) {
+                reactionCounts[reactionIndex].count -= 1;
+                if (reactionCounts[reactionIndex].count === 0) {
+                    reactionCounts.splice(reactionIndex, 1);
+                }
+            }
+            post.reactions.currentUserReacted = false;
+            post.reactions.currentUserReactionType = null;
+        } else {
+            // User is reacting
+            if (currentReactionType) {
+                // Remove previous reaction
+                const previousReactionIndex = reactionCounts.findIndex(r => r.type === currentReactionType);
+                if (previousReactionIndex !== -1) {
+                    reactionCounts[previousReactionIndex].count -= 1;
+                    if (reactionCounts[previousReactionIndex].count === 0) {
+                        reactionCounts.splice(previousReactionIndex, 1);
+                    }
+                }
+            }
+
+            const newReactionIndex = reactionCounts.findIndex(r => r.type === reaction);
+            if (newReactionIndex !== -1) {
+                reactionCounts[newReactionIndex].count += 1;
+            } else {
+                reactionCounts.push({ type: reaction, count: 1 });
+            }
+            post.reactions.currentUserReacted = true;
+            post.reactions.currentUserReactionType = reaction;
+        }
+
+        post.reactions.totalCount = reactionCounts.reduce((sum, r) => sum + r.count, 0);
+    }
+
+    onReaction(post.id, reaction);
+    setShowReactionsModal(false); // Close the picker after reacting
+  };
+
+  const getReactionCount = (post: Post) => {
+      if (!post.reactions) return 0;
+      return post.reactions.totalCount || 0; // Use totalCount for accurate reaction count
+  };
+
+  const isCurrentUserPost = post.authorId === currentUserId; // Check if the post belongs to the current user
+
+  const handleDelete = async () => {
+    try {
+      if (onDelete) {
+        await postService.deletePost(post.id);
+        onDelete(post.id);
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
+  };
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 mb-6 max-w-2xl mx-auto ${className}`}>
@@ -272,11 +412,11 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
         {/* Enhance header icons for better visibility and aesthetics */}
         <div className="flex items-center space-x-1">
-          {currentUser && currentUser.id === post.authorId && onDelete && (
+          {currentUser && currentUser.id === post.authorId ? (
             <button 
               onClick={() => {
                 if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-                  onDelete(post.id);
+                  onDelete?.(post.id);
                 }
               }}
               className="p-2 hover:bg-red-100 rounded-full group transition-all duration-300"
@@ -286,9 +426,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             </button>
-          )}
-
-          {(!currentUser || currentUser.id !== post.authorId) && (
+          ) : (
             <button 
               onClick={() => setShowReportModal(true)}
               className="p-2 hover:bg-gray-100 rounded-full transition-all duration-300"
@@ -324,7 +462,6 @@ export const PostCard: React.FC<PostCardProps> = ({
             </details>
           </>
         )}
-        {/* Link preview if content contains URL */}
         {extractFirstUrl(post.content) && (
           <div className="mt-3">
             <LinkPreview url={extractFirstUrl(post.content)!} />
@@ -334,7 +471,6 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {post.images && post.images.length > 0 && (
         <div className="px-4 pb-3">
-          {/* Responsive grid 1/2/3/4 like Facebook */}
           <div className={`grid gap-2 ${post.images && post.images.length === 1 ? 'grid-cols-1' : post.images && post.images.length === 2 ? 'grid-cols-2' : post.images && post.images.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {post.images?.slice(0, 4).map((image, index) => (
               <div key={index} className={`${post.images && post.images.length === 3 && index === 0 ? 'col-span-2' : ''} overflow-hidden rounded-lg`}>
@@ -353,27 +489,41 @@ export const PostCard: React.FC<PostCardProps> = ({
       {post.media && post.media.length > 0 && (
         <div className="px-4 pb-3">
           <div className={`grid gap-2 ${post.media && post.media.length === 1 ? 'grid-cols-1' : post.media && post.media.length === 2 ? 'grid-cols-2' : post.media && post.media.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            {post.media?.slice(0, 4).map((mediaItem, index) => (
-              <div key={index} className={`relative overflow-hidden rounded-lg ${post.media && post.media.length === 3 && index === 0 ? 'col-span-2' : ''}`}>
-                {mediaItem.mediaType === 'video' ? (
-                  <video
-                    src={mediaItem.mediaUrl}
-                    controls
-                    className="w-full h-64 object-cover"
-                    preload="metadata"
-                  >
-                    Trình duyệt của bạn không hỗ trợ video.
-                  </video>
-                ) : (
-                  <img
-                    src={mediaItem.mediaUrl}
-                    alt={`Post media ${index + 1}`}
-                    className="w-full h-64 object-cover transition-transform duration-300 hover:scale-105 cursor-pointer"
-                    onClick={() => window.open(mediaItem.mediaUrl, '_blank')}
-                  />
-                )}
-              </div>
-            ))}
+            {post.media?.slice(0, 4).map((mediaItem, index) => {
+              // Don't render if image failed to load
+              if (imageErrors.has(index)) return null;
+              
+              return (
+                <div key={index} className={`relative overflow-hidden rounded-lg ${post.media && post.media.length === 3 && index === 0 ? 'col-span-2' : ''}`}>
+                  {mediaItem.mediaType === 'video' ? (
+                    <video
+                      src={mediaItem.mediaUrl}
+                      controls
+                      className="w-full h-64 object-cover"
+                      preload="metadata"
+                    >
+                      Trình duyệt của bạn không hỗ trợ video.
+                    </video>
+                  ) : (
+                    <img
+                      src={mediaItem.mediaUrl}
+                      alt={`Post media ${index + 1}`}
+                      className="w-full h-64 object-cover transition-transform duration-300 hover:scale-105 cursor-pointer"
+                      onClick={() => handleImageClick(index)}
+                      onError={() => handleImageError(index)}
+                    />
+                  )}
+                  {index === 3 && post.media && post.media.length > 4 && (
+                    <div 
+                      className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer"
+                      onClick={() => handleImageClick(index)}
+                    >
+                      <span className="text-white text-3xl font-bold">+{post.media.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -388,49 +538,30 @@ export const PostCard: React.FC<PostCardProps> = ({
               }
             }}
             className={`hover:text-blue-600 transition-colors ${getReactionCount(post) > 0 ? 'cursor-pointer hover:underline' : 'cursor-default'}`}
-            disabled={getReactionCount(post) === 0}
-          >
-            {getReactionCount(post) > 0 ? `${getReactionCount(post)} lượt thích` : 'Chưa có lượt thích'}
-          </button>
-          <span>
-            {isLoadingCommentCount ? (
-              <span className="text-gray-400">Đang tải...</span>
-            ) : (
-              (() => {
-                const count =
-                  typeof post.commentCount === 'number'
-                    ? post.commentCount
-                    : safeActualCommentCount !== null
-                    ? safeActualCommentCount
-                    : getCommentCount(post);
-                return count > 0 ? `${count} bình luận` : 'Không có bình luận nào';
-              })()
-            )}
-          </span>
-        </div>
-        <span>{getShareCount(post) > 0 ? `${getShareCount(post)} lượt chia sẻ` : 'Chưa có chia sẻ'}</span>
+          disabled={getReactionCount(post) === 0}
+        >
+          {getReactionCount(post) > 0 ? `${getReactionCount(post)} lượt thích` : 'Chưa có lượt thích'}
+        </button>
+        <span>
+          {actualCommentCount > 0 ? `${actualCommentCount} bình luận` : 'Không có bình luận nào'}
+        </span>
       </div>
-
-      <div className="px-4 py-3 flex items-center justify-between">
+      <span>{getShareCount(post) > 0 ? `${getShareCount(post)} lượt chia sẻ` : 'Chưa có chia sẻ'}</span>
+    </div>      <div className="px-4 py-3 flex items-center justify-between">
         <div
-          ref={reactionPickerRef}
-          onMouseEnter={handleReactionHover}
           className="relative"
+          onMouseEnter={(e) => handleReactionEnter(e, post.id)}
+          onMouseMove={handleReactionMove}
         >
           <ReactionButton
+            postId={post.id} // Added postId prop
             currentReaction={post.userReaction as ReactionType}
             onReaction={(reaction) => onReaction(post.id, reaction)}
             onUnreact={() => onUnreact(post.id)}
             reactionCount={getReactionCount(post)}
             reactions={post.reactions}
           />
-          {showReactionPicker && (
-            <div
-              className="absolute bg-white shadow-lg rounded-lg p-2"
-              style={{ top: reactionPickerPosition.top, left: reactionPickerPosition.left }}
-            >
-            </div>
-          )}
+        
         </div>
         
         <button
@@ -530,19 +661,18 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       {/* Comments Section */}
-      <Comments 
+      <Comments
         postId={post.id}
         isVisible={showComments}
         initialComments={previewComments}
         onCommentAdded={() => {
-
+          // Comment count will be updated from parent component
         }}
         onCommentCountUpdate={(count) => {
-          setActualCommentCount(count);
+          // Comment count is managed by the post data from API
+          // Parent component should refresh the post data if needed
         }}
-      />
-
-      {/* Reactions Modal */}
+      />      {/* Reactions Modal */}
       <ReactionsModal
         isVisible={showReactionsModal}
         onClose={() => setShowReactionsModal(false)}
@@ -581,6 +711,71 @@ export const PostCard: React.FC<PostCardProps> = ({
         targetId={post.id}
         targetName={getPostAuthorName(post)}
       />
+
+      {/* Image Viewer Modal */}
+      {showImageViewer && post.media && post.media.length > 0 && (
+        <div 
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+          onClick={() => setShowImageViewer(false)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImageViewer(false);
+            }}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Previous Button */}
+          {currentImageIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePreviousImage();
+              }}
+              className="absolute left-4 text-white hover:text-gray-300 bg-black bg-opacity-50 rounded-full p-2"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          {/* Image */}
+          <div className="max-w-7xl max-h-screen p-4" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={post.media[currentImageIndex]?.mediaUrl}
+              alt={`Image ${currentImageIndex + 1}`}
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+            <div className="text-center text-white mt-4">
+              <p className="text-sm">
+                {currentImageIndex + 1} / {post.media.filter((_, idx) => !imageErrors.has(idx)).length}
+              </p>
+            </div>
+          </div>
+
+          {/* Next Button */}
+          {currentImageIndex < post.media.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNextImage();
+              }}
+              className="absolute right-4 text-white hover:text-gray-300 bg-black bg-opacity-50 rounded-full p-2"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
+

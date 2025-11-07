@@ -5,10 +5,11 @@ export enum ConversationType {
 }
 
 export enum MessageType {
-  TEXT = 'TEXT',
-  IMAGE = 'IMAGE',
-  FILE = 'FILE',
-  SYSTEM = 'SYSTEM'
+  TEXT = 'text',
+  IMAGE = 'image',
+  FILE = 'file',
+  EMOJI = 'emoji',
+  VIDEO = 'video'
 }
 
 export enum ConversationMemberRole {
@@ -68,6 +69,15 @@ export interface Message {
   content: string
   messageType: MessageType
   attachments: MessageAttachment[]
+  reactionCounts?: {
+    like: number
+    love: number
+    wow: number
+    sad: number
+    angry: number
+    haha: number
+  }
+  currentUserReaction?: 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha' | null
   isRead: boolean
   isEdited: boolean
   editedAt?: string
@@ -78,6 +88,16 @@ export interface Message {
   readBy?: Array<{ userId: number; readAt: string }>
   attachmentUrls?: string[]
   reactions?: Array<{ emoji: string; count: number; users: number[] }>
+  replyTo?: ParentMessageInfo
+}
+
+export interface ParentMessageInfo {
+  id: number
+  senderId: number
+  senderUsername: string
+  contentPreview: string
+  messageType: MessageType
+  createdAt: string
 }
 
 export interface MessageAttachment {
@@ -112,6 +132,7 @@ export interface SendMessageRequest {
   content: string
   messageType: MessageType
   attachmentUrls: string[]
+  replyToMessageId?: number
 }
 
 export interface AddMemberRequest {
@@ -145,11 +166,11 @@ export interface TypingRequest {
 
 // WebSocket message types
 export interface WebSocketMessage {
-  type: 'NEW_MESSAGE' | 'TYPING' | 'ERROR' | 'MESSAGE_READ' | 'MESSAGE_UPDATED' | 'MESSAGE_DELETED' | 'USER_JOINED' | 'USER_LEFT'
-  data: any
-  conversationId: number
-  senderId: number
-  timestamp: string
+  type: 'NEW_MESSAGE' | 'TYPING' | 'ERROR' | 'MESSAGE_READ' | 'MESSAGE_UPDATED' | 'MESSAGE_DELETED' | 'USER_JOINED' | 'USER_LEFT' | 'NOTIFICATION_NEW'; // Added NOTIFICATION_NEW
+  data: any;
+  conversationId: number;
+  senderId: number;
+  timestamp: string;
 }
 
 export interface NotificationResponse {

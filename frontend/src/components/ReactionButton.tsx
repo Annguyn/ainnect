@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { ReactionPicker, ReactionType } from './ReactionPicker';
 import { debugLogger } from '../utils/debugLogger';
+import { postService } from '../services/postService';
 
 interface ReactionButtonProps {
+  postId: number; // Added postId prop
   currentReaction?: ReactionType | null;
   onReaction: (reaction: ReactionType) => void;
   onUnreact: () => void;
@@ -44,6 +46,7 @@ const reactionLabels: Record<ReactionType, string> = {
 };
 
 export const ReactionButton: React.FC<ReactionButtonProps> = ({
+  postId,
   currentReaction,
   onReaction,
   onUnreact,
@@ -54,7 +57,7 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
 }) => {
   // Use reactions data if available, otherwise fallback to props
   const userReaction = reactions?.currentUserReactionType || currentReaction;
-  const totalCount = reactions?.totalCount || reactionCount;
+  const totalCount = reactions?.totalCount || 0;
   const hasReacted = reactions?.currentUserReacted || !!userReaction;
   
   // Debug logging for reaction state
@@ -107,18 +110,18 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   };
 
   const handleMouseLeave = () => {
-    debugLogger.logUserInteraction('Hover Leave', 'ReactionButton');
-    
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
-    }
-    
-    // Start hide timer - reduced delay for better UX
-    const timeout = setTimeout(() => {
-      setShowPicker(false);
-    }, 150);
-    setHideTimeout(timeout);
+      debugLogger.logUserInteraction('Hover Leave', 'ReactionButton');
+      
+      if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          setHoverTimeout(null);
+      }
+      
+      // Start hide timer with a longer delay to allow interaction with the picker
+      const timeout = setTimeout(() => {
+          setShowPicker(false);
+      }, 500); // Increased delay to 500ms
+      setHideTimeout(timeout);
   };
 
   const handlePickerMouseEnter = () => {
@@ -131,78 +134,99 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   };
 
   const handlePickerMouseLeave = () => {
-    debugLogger.logUserInteraction('Picker Mouse Leave', 'ReactionPicker');
-    // Hide picker when leaving picker area
-    setShowPicker(false);
+      debugLogger.logUserInteraction('Picker Mouse Leave', 'ReactionPicker');
+      // Start hide timer with a delay to allow interaction
+      const timeout = setTimeout(() => {
+          setShowPicker(false);
+      }, 500); // Increased delay to 500ms
+      setHideTimeout(timeout);
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (disabled) {
       debugLogger.logButtonClick('ReactionButton - Disabled', { disabled });
       return;
     }
 
-    // If user already reacted, unreact
-    if (hasReacted) {
-      debugLogger.logButtonClick('ReactionButton - Unreact', {
-        currentReaction: userReaction,
-        action: 'unreact'
-      });
-      
-      debugLogger.logUserInteraction('Unreact', 'ReactionButton', { 
-        previousReaction: userReaction 
-      });
-      onUnreact();
-      return;
+    try {
+      // If user already reacted, unreact
+      if (hasReacted) {
+        debugLogger.logButtonClick('ReactionButton - Unreact', {
+          currentReaction: userReaction,
+          action: 'unreact'
+        });
+        
+        debugLogger.logUserInteraction('Unreact', 'ReactionButton', { 
+          previousReaction: userReaction 
+        });
+        await onUnreact();
+      } else {
+        // If not reacted, default to like
+        debugLogger.logButtonClick('ReactionButton - Single Click', {
+          currentReaction,
+          action: 'like'
+        });
+        
+        debugLogger.logUserInteraction('React', 'ReactionButton', { reaction: 'like' });
+        await onReaction('like'); // Default to like on single click
+      }
+
+      // Fetch updated post data
+      await updatePostData(postId);
+    } catch (error) {
+      debugLogger.log('ReactionButton', 'Error handling click', { error });
     }
-    
-    // If not reacted, default to like
-    debugLogger.logButtonClick('ReactionButton - Single Click', {
-      currentReaction,
-      action: 'like'
-    });
-    
-    debugLogger.logUserInteraction('React', 'ReactionButton', { reaction: 'like' });
-    onReaction('like'); // Default to like on single click
   };
 
-  const handleReactionSelect = (reaction: ReactionType) => {
+  const updatePostData = async (postId: number) => {
+    try {
+      const updatedPost = await postService.getPost(postId);
+      debugLogger.log('ReactionButton', 'Post updated after reaction/unreaction', updatedPost);
+
+      if (updatedPost.reactions) {
+        if (reactions) {
+          reactions.totalCount = updatedPost.reactions.totalCount;
+          reactions.currentUserReacted = updatedPost.reactions.currentUserReacted;
+          reactions.currentUserReactionType = updatedPost.reactions.currentUserReactionType;
+        }
+      }
+      reactionCount = updatedPost.reactionCount;
+    } catch (error) {
+      debugLogger.log('ReactionButton', 'Failed to update post data', { postId, error });
+      throw error;
+    }
+  };
+
+  const handleReactionSelect = async (reaction: ReactionType) => {
     if (disabled) {
       debugLogger.logButtonClick('ReactionPicker - Disabled', { disabled });
       setShowPicker(false);
       return;
     }
 
-    // If user already reacted with the same reaction, unreact
-    if (hasReacted && userReaction === reaction) {
-      debugLogger.logButtonClick('ReactionPicker - Unreact Same', {
-        reaction,
-        action: 'unreact'
-      });
-      
-      debugLogger.logUserInteraction('Unreact via Picker', 'ReactionPicker', { 
-        previousReaction: userReaction 
-      });
-      onUnreact();
-      setShowPicker(false);
-      return;
-    }
+    try {
+      if (hasReacted && userReaction === reaction) {
+        debugLogger.logButtonClick('ReactionPicker - Unreact Same', {
+          reaction,
+          action: 'unreact'
+        });
+        await onUnreact();
+      } else {
+        debugLogger.logButtonClick('ReactionPicker - Reaction Select', {
+          selectedReaction: reaction,
+          previousReaction: userReaction,
+          action: hasReacted ? 'change_reaction' : 'react'
+        });
+        await onReaction(reaction);
+      }
 
-    // If user already reacted with different reaction, or not reacted at all, react with new reaction
-    debugLogger.logButtonClick('ReactionPicker - Reaction Select', {
-      selectedReaction: reaction,
-      previousReaction: userReaction,
-      action: hasReacted ? 'change_reaction' : 'react'
-    });
-    
-    debugLogger.logUserInteraction('React via Picker', 'ReactionPicker', { 
-      newReaction: reaction,
-      previousReaction: userReaction 
-    });
-    onReaction(reaction);
-    
-    debugLogger.log('ReactionPicker', 'Hiding reaction picker');
-    setShowPicker(false);
+      // Fetch updated post data
+      await updatePostData(postId);
+    } catch (error) {
+      debugLogger.log('ReactionButton', 'Error handling reaction select', { reaction, error });
+    } finally {
+      setShowPicker(false);
+    }
   };
 
   const isReacted = !!userReaction;

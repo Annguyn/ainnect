@@ -161,7 +161,7 @@ export const useMessaging = ({
     try {
       setError(null)
       const response = await messagingService.getConversationMessages(conversationId, { page: 0, size: 50 })
-      setMessages((response.messages || []).reverse()) // Reverse to show oldest first
+      setMessages((response.messages || []).reverse()) 
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load messages'
       setError(errorMessage)
@@ -206,7 +206,8 @@ export const useMessaging = ({
     conversationId: number,
     content: string,
     messageType: MessageType = MessageType.TEXT,
-    attachmentUrls: string[] = []
+    attachmentUrls: string[] = [],
+    replyToMessageId?: number
   ) => {
     if (!user) throw new Error('User not authenticated')
     
@@ -228,7 +229,8 @@ export const useMessaging = ({
             conversationId,
             content,
             messageType,
-            attachmentUrls
+            attachmentUrls,
+            replyToMessageId
           })
           console.log('✅ WebSocket message sent successfully', wsResult)
           return // Success, don't fallback
@@ -246,7 +248,8 @@ export const useMessaging = ({
         conversationId,
         content,
         messageType,
-        attachmentUrls
+        attachmentUrls,
+        replyToMessageId
       })
       
       // Update local state
@@ -291,7 +294,6 @@ export const useMessaging = ({
         conversationId, 
         userIds 
       })
-      // Reload conversation to get updated member list
       const updatedConversation = await messagingService.getConversationById(conversationId)
       setConversations(prev => (prev || []).map(conv => 
         conv.id === conversationId ? updatedConversation : conv
@@ -306,7 +308,6 @@ export const useMessaging = ({
     sendTypingIndicator(isTyping)
   }, [sendTypingIndicator])
 
-  // Load messages when conversation changes
   useEffect(() => {
     if (currentConversationId) {
       loadMessages(currentConversationId)

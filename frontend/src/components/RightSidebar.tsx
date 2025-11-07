@@ -7,6 +7,7 @@ import { fetchFriendRequests } from '@services/friendRequestService';
 
 interface RightSidebarProps {
   className?: string;
+  suggestedGroups?: any[];
 }
 
 interface FriendRequest {
@@ -15,7 +16,7 @@ interface FriendRequest {
   mutualFriends: number;
 }
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) => {
+export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '', suggestedGroups = [] }) => {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [showFriendRequests, setShowFriendRequests] = useState(true);
 
@@ -32,19 +33,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) =>
     loadFriendRequests();
   }, []);
 
-  // Mock data for suggested groups and recent activities
-  const suggestedGroups = [
-    { id: 1, name: 'Lập trình viên Việt Nam', members: 15420, avatar: '💻' },
-    { id: 2, name: 'Du lịch bụi', members: 8900, avatar: '🎒' },
-    { id: 3, name: 'Nấu ăn ngon', members: 12300, avatar: '🍳' },
-    { id: 4, name: 'Fitness & Yoga', members: 6700, avatar: '💪' },
-  ];
-
-  const recentActivities = [
-    { id: 1, user: 'Nguyễn Văn A', action: 'đã thích bài viết của bạn', time: '5 phút trước', icon: Heart },
-    { id: 2, user: 'Trần Thị B', action: 'đã bình luận bài viết', time: '15 phút trước', icon: MessageCircle },
-    { id: 3, user: 'Lê Văn C', action: 'đã chia sẻ bài viết', time: '1 giờ trước', icon: Star },
-  ];
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -98,12 +86,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) =>
         <div className="space-y-2">
           {suggestedGroups.map((group) => (
             <div key={group.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                {group.avatar}
-              </div>
+              <img
+                src={group.avatarUrl || '/default-group-avatar.png'}
+                alt={group.name}
+                className="w-10 h-10 rounded-full"
+              />
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
-                <p className="text-xs text-gray-500">{group.members.toLocaleString()} thành viên</p>
+                <p className="text-xs text-gray-500">{group.description}</p>
               </div>
               <Button size="sm" variant="outline" className="text-xs">
                 Tham gia
@@ -121,36 +111,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '' }) =>
         </div>
       </Card>
 
-      {/* Recent Activities */}
-      <Card className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Hoạt động gần đây</h3>
-        <div className="space-y-2">
-          {recentActivities.map((activity) => {
-            const IconComponent = activity.icon;
-            return (
-              <div key={activity.id} className="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <IconComponent className="w-4 h-4 text-gray-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">{activity.user}</span> {activity.action}
-                  </p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 pt-3 border-t border-gray-200">
-          <Link
-            to="/notifications"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Xem tất cả thông báo →
-          </Link>
-        </div>
-      </Card>
 
       {/* Quick Actions */}
       <Card className="p-4">

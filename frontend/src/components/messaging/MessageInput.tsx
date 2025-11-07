@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 interface MessageInputProps {
-  onSendMessage: (content: string, messageType: MessageType, attachments: string[]) => void
+  onSendMessage: (content: string, messageType: MessageType, attachments: string[], replyToMessageId?: number) => void
   onStartTyping?: () => void
   onStopTyping?: () => void
   placeholder?: string
@@ -31,6 +31,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const [message, setMessage] = useState('')
   const [attachments, setAttachments] = useState<string[]>([])
+  const [replyTo, setReplyTo] = useState<{ id: number; preview: string } | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -66,10 +67,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     if (!message.trim() && attachments.length === 0) return
 
     const messageType = attachments.length > 0 ? MessageType.IMAGE : MessageType.TEXT
-    onSendMessage(message.trim(), messageType, attachments)
+    onSendMessage(message.trim(), messageType, attachments, replyTo?.id)
     
     setMessage('')
     setAttachments([])
+    setReplyTo(null)
     
     if (onStopTyping) {
       onStopTyping()
@@ -83,13 +85,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     const newAttachments = files.map(file => URL.createObjectURL(file))
     setAttachments(prev => [...prev, ...newAttachments])
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     const newAttachments = files.map(file => URL.createObjectURL(file))
     setAttachments(prev => [...prev, ...newAttachments])
@@ -120,8 +122,33 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [])
 
+  // Wire reply events from parent
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: number; preview: string }
+      setReplyTo(detail)
+    }
+    window.addEventListener('setReplyTo', handler as EventListener)
+    return () => window.removeEventListener('setReplyTo', handler as EventListener)
+  }, [])
+
   return (
-    <div className={cn("bg-white border-t border-gray-200 p-4", className)}>
+    <div className={cn("bg-white border-t border-gray-200 p-3 sm:p-4", className)}>
+      {replyTo && (
+        <div className="mb-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 flex items-start justify-between">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">Đang trả lời</div>
+            <div className="text-sm text-gray-700 line-clamp-2">{replyTo.preview}</div>
+          </div>
+          <button
+            className="text-gray-400 hover:text-gray-600 p-1"
+            onClick={() => setReplyTo(null)}
+            title="Hủy trả lời"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="mb-3">
@@ -176,7 +203,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 ? "text-red-500 hover:text-red-600 hover:bg-red-50"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
             )}
-            title={isRecording ? "Stop recording" : "Start recording"}
+            title={isRecording ? "Dừng ghi âm" : "Bắt đầu ghi âm"}
           >
             {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
@@ -188,9 +215,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={message}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder={placeholder}
+            placeholder={placeholder || "Nhập tin nhắn..."}
             disabled={disabled}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             rows={1}
             style={{ minHeight: '48px', maxHeight: '120px' }}
           />
@@ -227,7 +254,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             onClick={handleSendMessage}
             disabled={disabled || (!message.trim() && attachments.length === 0)}
-            className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             title="Send message"
           >
             <Send className="w-5 h-5" />

@@ -14,7 +14,7 @@ export interface UseWebSocketOptions {
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const { user } = useAuth();
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(websocketService.getConnectionStatus());
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [typingUsers, setTypingUsers] = useState<Map<number, TypingRequest>>(new Map());

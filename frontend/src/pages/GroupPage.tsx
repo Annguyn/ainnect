@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { UpdateGroupRequest } from '../types';
 import { Post } from '../services/postService';
+import { Group } from '../types'; // Import Group type
+import { AxiosResponse } from 'axios';
 
 export const GroupPage: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
@@ -45,6 +47,9 @@ export const GroupPage: React.FC = () => {
   const [postsError, setPostsError] = useState<string | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
+  const [joinedGroupsLoading, setJoinedGroupsLoading] = useState(false);
+  const [joinedGroupsError, setJoinedGroupsError] = useState<string | null>(null);
 
   const groupIdNum = groupId ? parseInt(groupId, 10) : null;
 
@@ -59,6 +64,33 @@ export const GroupPage: React.FC = () => {
       loadGroupPosts();
     }
   }, [groupIdNum]);
+
+  // Fetch joined groups
+  useEffect(() => {
+    const fetchJoinedGroups = async () => {
+      if (!user?.id) return;
+
+      setJoinedGroupsLoading(true);
+      setJoinedGroupsError(null);
+
+      try {
+        const response: AxiosResponse<{ data: { groups: Group[]; totalElements: number } }> = await apiClient.get(
+          `/api/groups/owner/${user.id}?page=0&size=10`
+        );
+        const groups = Array.isArray(response.data.data.groups) ? response.data.data.groups : []; // Ensure groups is an array
+        const totalElements = response.data.data.totalElements ?? 0; // Default to 0 if undefined
+
+        setJoinedGroups(groups);
+        console.log(`Total groups: ${totalElements}`); // Debugging log
+      } catch (error: any) {
+        setJoinedGroupsError(error.message || 'Failed to load joined groups');
+      } finally {
+        setJoinedGroupsLoading(false);
+      }
+    };
+
+    fetchJoinedGroups();
+  }, [user?.id]);
 
   const loadGroupPosts = async () => {
     if (groupIdNum) {
@@ -501,6 +533,50 @@ export const GroupPage: React.FC = () => {
                 </div>
               </div>
             </Card>
+
+            {/* Joined Groups Section */}
+            <div className="space-y-6">
+              <Card>
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Groups You Joined</h3>
+
+                  {joinedGroupsLoading && (
+                    <div className="text-center text-gray-500">Loading...</div>
+                  )}
+
+                  {joinedGroupsError && (
+                    <div className="text-center text-red-500">{joinedGroupsError}</div>
+                  )}
+
+                  {!joinedGroupsLoading && (!joinedGroups || joinedGroups.length === 0) && (
+                    <div className="text-center text-gray-500">You have not joined any groups yet.</div>
+                  )}
+
+                  {joinedGroups && joinedGroups.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {joinedGroups.map((group) => (
+                        <Card key={group.id} className="p-4">
+                          <div className="flex items-center space-x-4">
+                            <Avatar
+                              user={{
+                                avatarUrl: group.avatarUrl,
+                                displayName: group.name,
+                                userId: group.id,
+                              }}
+                              size="sm"
+                            />
+                            <div>
+                              <h4 className="text-md font-medium text-gray-900">{group.name}</h4>
+                              <p className="text-sm text-gray-500">{group.description}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
 

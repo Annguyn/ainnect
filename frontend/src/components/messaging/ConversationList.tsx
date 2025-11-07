@@ -34,7 +34,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'all' | 'direct' | 'group'>('all')
+  const [activeTab, setActiveTab] = useState<'Tất cả' | 'Trực tiếp' | 'Nhóm'>('Tất cả')
 
   useEffect(() => {
     if (propConversations) {
@@ -51,10 +51,10 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       let response
       
       switch (activeTab) {
-        case 'direct':
+        case 'Trực tiếp':
           response = await messagingService.getDirectConversations({ page: 0, size: 50 })
           break
-        case 'group':
+        case 'Nhóm':
           response = await messagingService.getGroupConversations({ page: 0, size: 50 })
           break
         default:
@@ -101,14 +101,12 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     if (conversation.title) return conversation.title
     
     if (conversation.type === ConversationType.DIRECT) {
-      // Use otherParticipant fields from backend
       if (conversation.otherParticipantDisplayName) {
         return conversation.otherParticipantDisplayName
       }
       if (conversation.otherParticipantUsername) {
         return conversation.otherParticipantUsername
       }
-      // Fallback to participants array
       const otherParticipant = conversation.participants?.[0]
       if (otherParticipant) {
         return otherParticipant.displayName || `${otherParticipant.firstName || ''} ${otherParticipant.lastName || ''}`.trim() || otherParticipant.username
@@ -123,11 +121,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     if (conversation.avatar) return conversation.avatar
     
     if (conversation.type === ConversationType.DIRECT) {
-      // Use otherParticipant fields from backend
       if (conversation.otherParticipantAvatarUrl) {
         return conversation.otherParticipantAvatarUrl
       }
-      // Fallback to participants array
       return conversation.participants?.[0]?.avatar || undefined
     }
     
@@ -168,9 +164,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         {/* Tabs */}
         <div className="flex mt-4 space-x-1">
           {[
-            { key: 'all', label: 'All', icon: MessageCircle },
-            { key: 'direct', label: 'Direct', icon: MessageCircle },
-            { key: 'group', label: 'Group', icon: Users }
+            { key: 'Tất cả', label: 'Tất cả', icon: MessageCircle },
+            { key: 'Trực tiếp', label: 'Trực tiếp', icon: MessageCircle },
+            { key: 'Nhóm', label: 'Nhóm', icon: Users }
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}

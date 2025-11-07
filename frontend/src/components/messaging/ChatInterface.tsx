@@ -62,6 +62,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom()
   }, [messages])
 
+  useEffect(() => {
+    if (!messages || messages.length === 0) return
+    const latest = messages[messages.length - 1]
+    if (latest.senderId !== currentUserId && !latest.isRead) {
+      if (propOnMarkAsRead) {
+        propOnMarkAsRead(conversation.id, latest.id)
+      }
+    }
+  }, [messages, currentUserId, conversation.id, propOnMarkAsRead])
+
+  useEffect(() => {
+    console.log('Conversation data:', conversation);
+  }, [conversation]);
+
   const loadMessages = async (pageNum = 0) => {
     try {
       setLoading(true)
@@ -162,8 +176,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const handleReplyMessage = (message: Message) => {
-    // TODO: Implement reply functionality
-    console.log('Reply to message:', message)
+    const preview = message.content?.slice(0, 120) || ''
+    const event = new CustomEvent('setReplyTo', { detail: { id: message.id, preview } })
+    window.dispatchEvent(event)
   }
 
   const handleReactMessage = (message: Message, emoji: string) => {
@@ -172,26 +187,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   const getConversationTitle = () => {
-    if (conversation.title) return conversation.title
-    
     if (conversation.type === ConversationType.DIRECT) {
-      const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId)
-      return otherParticipant ? `${otherParticipant.firstName} ${otherParticipant.lastName}` : 'Direct Message'
+      return conversation.otherParticipantDisplayName || 'Người dùng';
     }
-    
-    return 'Group Chat'
-  }
+    return conversation.title || 'Trò chuyện nhóm';
+  };
 
   const getConversationAvatar = () => {
-    if (conversation.avatar) return conversation.avatar
-    
     if (conversation.type === ConversationType.DIRECT) {
-      const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId)
-      return otherParticipant?.avatar || undefined
+      return conversation.otherParticipantAvatarUrl || undefined;
     }
-    
-    return undefined
-  }
+    return conversation.avatar || undefined;
+  };
 
   const isConsecutiveMessage = (currentMessage: Message, previousMessage: Message | undefined) => {
     if (!previousMessage) return false
@@ -204,7 +211,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className={cn("flex flex-col h-full bg-white", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
         <div className="flex items-center space-x-3">
           {onBack && (
             <button
@@ -231,30 +238,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
             
             <div>
-              <h2 className="font-semibold text-gray-900">{getConversationTitle()}</h2>
-              {conversation.type === ConversationType.DIRECT && (
-                <p className="text-sm text-gray-500">
-                  {conversation.participants?.find(p => p.id !== currentUserId)?.isOnline ? 'Online' : 'Offline'}
-                </p>
-              )}
+              <div className="flex items-center space-x-2">
+                <h2 className="font-semibold text-gray-900">{getConversationTitle()}</h2>
+                {conversation.type === ConversationType.DIRECT && (
+                  <span className={cn(
+                    'inline-flex items-center text-xs px-2 py-0.5 rounded-full',
+                    conversation.participants?.find(p => p.id !== currentUserId)?.isOnline
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  )}>
+                    {conversation.participants?.find(p => p.id !== currentUserId)?.isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Tìm kiếm trong cuộc trò chuyện">
             <Search className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Gọi thoại">
             <Phone className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Gọi video">
             <Video className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Thành viên">
             <Users className="w-5 h-5" />
           </button>
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Thêm">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
@@ -271,31 +285,54 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           }
         }}
       >
+        {/* Top loader when fetching older messages */}
+        {loading && page > 0 && (
+          <div className="flex items-center justify-center py-2">
+            <div className="w-full max-w-sm space-y-2">
+              <div className="h-3 bg-gray-200 rounded w-24 mx-auto animate-pulse" />
+              <div className="h-16 bg-gray-100 rounded animate-pulse" />
+            </div>
+          </div>
+        )}
+
         {loading && messages.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-            <p className="text-sm">No messages yet</p>
-            <p className="text-xs">Start the conversation!</p>
+            <p className="text-sm">Chưa có tin nhắn</p>
+            <p className="text-xs">Hãy bắt đầu cuộc trò chuyện!</p>
           </div>
         ) : (
-          messages.map((message, index) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              currentUserId={currentUserId}
-              isConsecutive={isConsecutiveMessage(message, messages[index - 1])}
-              onEdit={handleEditMessage}
-              onDelete={handleDeleteMessage}
-              onReply={handleReplyMessage}
-              onReact={handleReactMessage}
-            />
-          ))
+          messages.map((message, index) => {
+            const prev = messages[index - 1]
+            const showDateDivider = !prev || new Date(message.createdAt).toDateString() !== new Date(prev.createdAt).toDateString()
+            return (
+              <div key={message.id}>
+                {showDateDivider && (
+                  <div className="flex items-center justify-center py-2">
+                    <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      {new Date(message.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                <MessageBubble
+                  message={message}
+                  currentUserId={currentUserId}
+                  isConsecutive={isConsecutiveMessage(message, prev)}
+                  onEdit={handleEditMessage}
+                  onDelete={handleDeleteMessage}
+                  onReply={handleReplyMessage}
+                  onReact={handleReactMessage}
+                />
+              </div>
+            )
+          })
         )}
         
-        {loading && messages.length > 0 && (
+        {/* Bottom subtle loader (e.g., after send) */}
+        {loading && messages.length > 0 && page === 0 && (
           <div className="flex items-center justify-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
           </div>
@@ -321,7 +358,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onStartTyping={() => propOnTyping?.(true)}
         onStopTyping={() => propOnTyping?.(false)}
         disabled={sending}
-        placeholder={`Message ${getConversationTitle()}...`}
+        placeholder={`Nhập tin nhắn tới ${getConversationTitle()}...`}
       />
     </div>
   )

@@ -127,151 +127,235 @@ export const FriendsPage: React.FC = () => {
   const isCurrentUserProfile = !userId || userId === currentUser.id.toString();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
       <Header showSearch={false} showUserMenu={true} onLogout={handleLogout} />
       
-      <main className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Hero Header */}
         <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isCurrentUserProfile ? 'Bạn bè của bạn' : 'Bạn bè'}
-            </h1>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-3 hover:bg-white/80 rounded-xl transition-all shadow-sm hover:shadow-md border border-gray-200/50 backdrop-blur-sm group"
+              >
+                <svg className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-gray-900 bg-clip-text text-transparent">
+                  {isCurrentUserProfile ? 'Bạn bè của bạn' : 'Danh sách bạn bè'}
+                </h1>
+                <p className="text-gray-600 mt-1 flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                  <span>{friends.length} bạn bè</span>
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600">
-            {isCurrentUserProfile 
-              ? 'Danh sách bạn bè của bạn' 
-              : 'Danh sách bạn bè của người dùng này'
-            }
-          </p>
-        </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex space-x-4 mb-8">
-          <Link to="/friend-requests">
-            <Button className="flex-1">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18M3 12h18M3 21h18" />
-              </svg>
-              Lời mời kết bạn
-            </Button>
-          </Link>
-          <Link to="/blocked-users">
-            <Button className="flex-1">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h18M3 12h18M3 21h18" />
-              </svg>
-              Người dùng bị chặn
-            </Button>
-          </Link>
+          {/* Navigation Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to="/friend-requests" className="group">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg group-hover:shadow-blue-200 transition-shadow">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">Lời mời kết bạn</h3>
+                    <p className="text-sm text-gray-500">Quản lý lời mời</p>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-primary-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/blocked-users" className="group">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-lg hover:border-red-300 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg group-hover:shadow-red-200 transition-shadow">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 group-hover:text-red-600 transition-colors">Người bị chặn</h3>
+                    <p className="text-sm text-gray-500">Danh sách chặn</p>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-primary-100 mb-1">Tổng số</p>
+                  <p className="text-3xl font-bold">{friends.length}</p>
+                  <p className="text-sm text-primary-100 mt-1">Bạn bè</p>
+                </div>
+                <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Content */}
         {isLoading && friends.length === 0 ? (
-          <EmptyState type="loading" title="Đang tải danh sách bạn bè..." />
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-primary-600 mb-4"></div>
+              <p className="text-gray-500 font-medium">Đang tải danh sách bạn bè...</p>
+            </div>
+          </div>
         ) : friends.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {friends.map((friend) => (
-              <div key={friend.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-4">
-                  <div 
-                    className="cursor-pointer"
-                    onClick={() => handleUserClick(friend.id)}
-                  >
-                    <Avatar
-                      user={friend}
-                      size="lg"
-                      className="w-16 h-16"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
+              <div 
+                key={friend.id} 
+                className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 hover:shadow-xl hover:border-primary-200 transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
+              >
+                <div className="p-6">
+                  <div className="flex items-start space-x-4">
+                    {/* Avatar */}
                     <div 
-                      className="cursor-pointer"
+                      className="cursor-pointer relative"
                       onClick={() => handleUserClick(friend.id)}
                     >
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                        {friend.displayName}
-                      </h3>
-                      <p className="text-sm text-gray-500">@{friend.username}</p>
+                      <Avatar
+                        user={friend}
+                        size="lg"
+                        className="w-20 h-20 ring-4 ring-white shadow-lg"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></div>
                     </div>
                     
-                    {friend.bio && (
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                        {friend.bio}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center space-x-4 mt-2">
-                      {friend.isVerified && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Đã xác thực
-                        </span>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => handleUserClick(friend.id)}
+                      >
+                        <h3 className="text-lg font-bold text-gray-900 hover:text-primary-600 transition-colors truncate">
+                          {friend.displayName}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">@{friend.username}</p>
+                      </div>
+                      
+                      {friend.bio && (
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                          {friend.bio}
+                        </p>
                       )}
-                      {friend.isPrivate && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        {friend.isVerified && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                            <svg className="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Verified
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                          <svg className="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
-                          Riêng tư
+                          Bạn bè
                         </span>
-                      )}
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
-                        Bạn bè
-                      </span>
+                      </div>
                     </div>
                   </div>
                   
+                  {/* Action Buttons */}
                   {isCurrentUserProfile && friend.id !== currentUser.id && (
-                    <div className="flex space-x-3">
-                      <Button
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex space-x-3">
+                      <button
+                        onClick={() => navigate(`/messages?userId=${friend.id}`)}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center space-x-2 font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>Nhắn tin</span>
+                      </button>
+                      <button
                         onClick={() => handleRemoveFriend(friend.id)}
                         disabled={isProcessing === friend.id}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all duration-300 border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-medium"
                       >
-                        {isProcessing === friend.id ? 'Đang xử lý...' : 'Xóa bạn bè'}
-                      </Button>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                        </svg>
+                        <span>{isProcessing === friend.id ? '...' : 'Xóa'}</span>
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
-            
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="text-center py-6">
-                <Button
-                  onClick={handleLoadMore}
-                  disabled={isLoading}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {isLoading ? 'Đang tải...' : 'Tải thêm'}
-                </Button>
-              </div>
-            )}
           </div>
         ) : (
-          <EmptyState 
-            type="no-friends" 
-            title="Chưa có bạn bè"
-            description={isCurrentUserProfile 
-              ? "Bạn chưa có bạn bè nào." 
-              : "Người dùng này chưa có bạn bè nào."
-            }
-          />
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50 p-12 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-6">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Chưa có bạn bè</h3>
+            <p className="text-gray-500 mb-6">
+              {isCurrentUserProfile 
+                ? "Hãy kết nối với mọi người để mở rộng mạng lưới bạn bè của bạn!" 
+                : "Người dùng này chưa có bạn bè nào."
+              }
+            </p>
+            {isCurrentUserProfile && (
+              <button
+                onClick={() => navigate('/search')}
+                className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg font-medium"
+              >
+                Tìm kiếm bạn bè
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* Load More Button */}
+        {hasMore && friends.length > 0 && (
+          <div className="text-center py-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoading}
+              className="px-8 py-3 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary-600 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {isLoading ? (
+                <span className="flex items-center space-x-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Đang tải...</span>
+                </span>
+              ) : (
+                'Tải thêm bạn bè'
+              )}
+            </button>
+          </div>
         )}
       </main>
     </div>

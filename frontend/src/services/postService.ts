@@ -490,15 +490,19 @@ class PostService {
 
   async toggleLike(postId: number): Promise<void> {
     try {
-      await this.reactToPost(postId, { type: 'like' });
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        await this.unreactPost(postId);
-      } else {
+        const post = await this.getPost(postId);
+        const currentUserReacted = post.reactions?.currentUserReacted;
+
+        if (currentUserReacted) {
+            await this.unreactPost(postId);
+        } else {
+            await this.reactToPost(postId, { type: 'like' });
+        }
+    } catch (error) {
+        debugLogger.log('PostService', 'Error toggling like', { postId, error });
         throw error;
-      }
     }
-  }
+}
 }
 
 export const postService = new PostService();

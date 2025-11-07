@@ -12,7 +12,7 @@ export const usePosts = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const loadPosts = useCallback(async (page = 0, reset = false) => {
     if (isLoading) return;
@@ -26,12 +26,13 @@ export const usePosts = () => {
       let posts: any[] = [];
       
       try {
-        // Try getting posts from personalized feed endpoint
+        if (!isAuthenticated) {
+          throw new Error('Not authenticated');
+        }
         response = await postService.getFeedPosts(page, 5);
         posts = (response.content || []).map(transformPost);
         console.log('Loaded posts from personalized feed endpoint');
         
-        // Debug: Check first post reaction state after transformation
         if (posts.length > 0) {
           const firstPost = posts[0];
           debugLogger.log('usePosts', 'First post after transformation', {
@@ -125,7 +126,7 @@ export const usePosts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, isAuthenticated]);
 
   const loadMorePosts = useCallback(() => {
     if (hasMore && !isLoading) {
@@ -355,7 +356,7 @@ export const usePosts = () => {
 
   useEffect(() => {
     loadPosts(0, true);
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     posts,

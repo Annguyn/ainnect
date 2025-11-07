@@ -15,6 +15,7 @@ export { ReactionsModal } from './ReactionsModal';
 export { ProfileSettingsModal } from './ProfileSettingsModal';
 export { SocialButton } from './SocialButton';
 export { UserProfileCard } from './UserProfileCard';
+export { NotificationDropdown } from './NotificationDropdown';
 
 // Messaging components
 export { MessagingLink } from './MessagingLink';

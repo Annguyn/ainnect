@@ -6,7 +6,6 @@ import { ConversationList } from './ConversationList'
 import { ChatInterface } from './ChatInterface'
 import { CreateConversationModal } from './CreateConversationModal'
 import { WebSocketStatus } from './WebSocketStatus'
-import { WebSocketTest } from './WebSocketTest'
 import { socialService } from '../../services/socialService'
 import { cn } from '../../lib/utils'
 
@@ -136,15 +135,7 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
         />
       </div>
 
-      {/* WebSocket Test Button */}
-      <div className="absolute top-4 left-4 z-50">
-        <button
-          onClick={() => setShowWebSocketTest(!showWebSocketTest)}
-          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
-        >
-          {showWebSocketTest ? 'Hide' : 'Show'} WS Test
-        </button>
-      </div>
+      {/* WebSocket Test Button removed */}
 
       {/* Conversation List - Hidden on mobile when chat is open */}
       <div className={cn(
@@ -209,27 +200,7 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
         loadingFriends={loadingFriends}
       />
 
-      {/* WebSocket Test Modal */}
-      {showWebSocketTest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">WebSocket Test</h2>
-                <button
-                  onClick={() => setShowWebSocketTest(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            <div className="p-4">
-              <WebSocketTest />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* WebSocket Test Modal removed */}
     </div>
   )
 }

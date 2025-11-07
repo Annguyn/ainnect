@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from './ui';
 import { Button } from './ui';
 import { AnimatedLogo } from './AnimatedLogo';
+import { websocketService } from '../services/websocketService';
+import { WebSocketMessage } from '../types/messaging';
+import { notificationService, NotificationResponse, NotificationStatsDto } from '../services/notificationService';
+import { NotificationDropdown } from './NotificationDropdown';
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -13,7 +17,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  showSearch = false,
+  showSearch = true,
   showUserMenu = true,
   onLogout,
   className = ''
@@ -24,6 +28,11 @@ export const Header: React.FC<HeaderProps> = ({
   const [highlightIndex, setHighlightIndex] = useState<number>(-1);
   const [showHistory, setShowHistory] = useState(false);
   const [showSocialMenu, setShowSocialMenu] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationStats, setNotificationStats] = useState<NotificationStatsDto>({ unreadCount: 0, totalCount: 0 });
+  const notificationRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,21 +40,127 @@ export const Header: React.FC<HeaderProps> = ({
     if (saved) setRecentSearches(JSON.parse(saved));
   }, []);
 
+  // Load notifications and stats on mount
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showSocialMenu) {
-        setShowSocialMenu(false);
+    const loadNotifications = async () => {
+      try {
+        const [notificationsData, stats] = await Promise.all([
+          notificationService.getUserNotifications(0, 10),
+          notificationService.getNotificationStats()
+        ]);
+        setNotifications(notificationsData.content);
+        setNotificationStats(stats);
+        setUnreadCount(stats.unreadCount);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
       }
     };
 
-    if (showSocialMenu) {
-      document.addEventListener('click', handleClickOutside);
+    if (user) {
+      loadNotifications();
+    }
+  }, [user]);
+
+  // Subscribe to realtime notifications via WebSocket
+  useEffect(() => {
+    const handleNotificationMessage = (message: WebSocketMessage) => {
+      console.log('Received notification:', message);
+      
+      // Add new notification to the list
+      if (message.data) {
+        const newNotification = message.data as NotificationResponse;
+        console.log('New notification createdAt:', newNotification.createdAt, typeof newNotification.createdAt);
+        setNotifications((prev) => [newNotification, ...prev.slice(0, 9)]); // Keep only latest 10
+        setUnreadCount((prev) => prev + 1);
+        setNotificationStats(prev => ({
+          ...prev,
+          unreadCount: prev.unreadCount + 1,
+          totalCount: prev.totalCount + 1
+        }));
+      }
+    };
+
+    if (user) {
+      // Subscribe to notifications (will auto-connect if needed)
+      websocketService.subscribeToNotifications(handleNotificationMessage);
     }
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      if (user) {
+        websocketService.unsubscribeFromNotifications();
+      }
     };
-  }, [showSocialMenu]);
+  }, [user]);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
+
+  const handleNotificationClick = () => {
+    setShowNotifications((prev) => !prev);
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotificationStats(prev => ({
+        ...prev,
+        unreadCount: Math.max(0, prev.unreadCount - 1)
+      }));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      setNotificationStats(prev => ({ ...prev, unreadCount: 0 }));
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    try {
+      await notificationService.deleteNotification(id);
+      const notification = notifications.find(n => n.id === id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      if (notification && !notification.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        setNotificationStats(prev => ({
+          unreadCount: Math.max(0, prev.unreadCount - 1),
+          totalCount: Math.max(0, prev.totalCount - 1)
+        }));
+      } else {
+        setNotificationStats(prev => ({
+          ...prev,
+          totalCount: Math.max(0, prev.totalCount - 1)
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
 
   const runSearch = (q: string) => {
     const keyword = q.trim();
@@ -74,23 +189,42 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Search Bar */}
           {/* Main Navigation */}
-          <div className="hidden md:flex flex-1 justify-center space-x-2">
+          <div className="hidden md:flex flex-1 justify-center space-x-1 max-w-md">
             <Link
-              to="/messages"
-              className="px-6 py-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium"
+              to="/"
+              title="Trang chủ"
+              className="p-3 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium relative group"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Trang chủ
+              </span>
+            </Link>
+            <Link
+              to="/messages"
+              title="Tin nhắn"
+              className="p-3 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium relative group"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Tin nhắn
+              </span>
             </Link>
             <Link
               to="/groups"
-              className="px-6 py-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium"
+              title="Nhóm"
+              className="p-3 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary-600 transition-colors font-medium relative group"
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Nhóm
+              </span>
             </Link>
           </div>
 
@@ -168,25 +302,34 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           
           {/* Search Page Link */}
-          <Link
-            to="/search"
-            className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </Link>
+          {!showSearch && (
+            <Link
+              to="/search"
+              title="Tìm kiếm"
+              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative group"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                Tìm kiếm
+              </span>
+            </Link>
+          )}
 
           {/* Quick Social Shortcuts */}
-          <div className="hidden sm:flex items-center space-x-2 mr-2">
+          <div className="hidden sm:flex items-center space-x-1 mr-2">
             <Link
               to="/friends"
               title="Danh sách bạn bè"
-              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative group"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                Bạn bè
+              </span>
             </Link>
           </div>
           
@@ -196,24 +339,50 @@ export const Header: React.FC<HeaderProps> = ({
               {user ? (
                 <>
                   {/* Notifications */}
-                  <button className="p-2 hover:bg-gray-100 rounded-full relative text-gray-600 hover:text-primary-600">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                    </svg>
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                      3
-                    </span>
-                  </button>
+                  <div className="relative" ref={notificationRef}>
+                    <button
+                      onClick={handleNotificationClick}
+                      title="Thông báo"
+                      className="p-2 hover:bg-gray-100 rounded-full relative text-gray-600 hover:text-primary-600 group transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full animate-pulse">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                        Thông báo
+                      </span>
+                    </button>
+
+                    {/* Notification Dropdown */}
+                    {showNotifications && (
+                      <NotificationDropdown
+                        notifications={notifications}
+                        onClose={() => setShowNotifications(false)}
+                        onMarkAsRead={handleMarkAsRead}
+                        onMarkAllAsRead={handleMarkAllAsRead}
+                        onDelete={handleDeleteNotification}
+                      />
+                    )}
+                  </div>
 
                   {/* Social Menu */}
                   <div className="relative">
                     <button
                       onClick={() => setShowSocialMenu(!showSocialMenu)}
-                      className="p-2 hover:bg-gray-100 rounded-full text-gray-600 hover:text-primary-600"
+                      title="Menu"
+                      className="p-2 hover:bg-gray-100 rounded-full text-gray-600 hover:text-primary-600 group"
                     >
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                       </svg>
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                        Menu
+                      </span>
                     </button>
                     
                     {showSocialMenu && (
@@ -346,14 +515,19 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* Messages Button with Counter */}
                   <button
                     onClick={() => navigate('/messages')}
-                    className="p-2 hover:bg-gray-100 rounded-full relative text-gray-600 hover:text-primary-600"
+                    title="Tin nhắn"
+                    className="p-2 hover:bg-gray-100 rounded-full relative text-gray-600 hover:text-primary-600 group"
                   >
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
-                      <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                      2
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      Tin nhắn
                     </span>
                   </button>
 

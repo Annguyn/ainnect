@@ -16,6 +16,8 @@ import { GroupsPage } from './pages/GroupsPage';
 import { GroupPage } from './pages/GroupPage';
 import MessagingPage from './pages/MessagingPage';
 import ConversationPage from './pages/ConversationPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { PostDetailPage } from './pages/PostDetailPage';
 import './App.css';
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<SearchPage />} />
         
+        <Route path="/posts/:postId" element={<PostDetailPage />} />
+        
         <Route path="/friend-requests" element={<FriendRequestsPage />} />
         <Route path="/followers" element={<FollowersPage />} />
         <Route path="/followers/:userId" element={<FollowersPage />} />
@@ -40,6 +44,8 @@ function App() {
         <Route path="/friends/:userId" element={<FriendsPage />} />
         <Route path="/blocked-users" element={<BlockedUsersPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+
+        <Route path="/notifications" element={<NotificationsPage />} />
 
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupPage />} />

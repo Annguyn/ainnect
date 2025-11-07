@@ -13,6 +13,7 @@ import { PostSkeleton } from '../components/PostSkeleton';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { debugLogger } from '../utils/debugLogger';
 import { postService, Post } from '../services/postService';
+import { groupService } from '../services/groupService';
 
 
 const HomePage: React.FC = () => {
@@ -27,6 +28,10 @@ const HomePage: React.FC = () => {
   const [hasMorePublicPosts, setHasMorePublicPosts] = useState(true);
   const [publicPostsRetryCount, setPublicPostsRetryCount] = useState(0);
   const [isRetryingPublicPosts, setIsRetryingPublicPosts] = useState(false);
+
+  const [suggestedGroups, setSuggestedGroups] = useState<any[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
     debugLogger.logButtonClick('Auth Modal Open', { mode });
@@ -49,67 +54,56 @@ const HomePage: React.FC = () => {
 
   const loadPublicPosts = useCallback(async (page = 0, reset = false, isRetry = false) => {
     if (publicPostsLoading || !hasMorePublicPosts) return;
-    
+
     setPublicPostsLoading(true);
     if (!isRetry) {
       setPublicPostsError(null);
     }
-    
+
     try {
-      const response = await postService.getPublicPosts(page, 5);
+      const response = await postService.getPublicPosts(page, 3); // Fetch 3 posts per request
       debugLogger.log('HomePage', 'Public posts loaded successfully', {
         page,
         count: response.content.length,
         totalPages: response.page.totalPages,
         isRetry: isRetry ? `(retry ${publicPostsRetryCount + 1}/3)` : ''
       });
-      
+
       if (reset || page === 0) {
         setPublicPosts(response.content);
       } else {
         setPublicPosts(prev => {
           const existingIds = new Set(prev.map(post => post.id));
           const newPosts = response.content.filter(post => !existingIds.has(post.id));
-          
+
           if (newPosts.length !== response.content.length) {
             console.warn(`Filtered out ${response.content.length - newPosts.length} duplicate posts on page ${page}`);
           }
-          
+
           return [...prev, ...newPosts];
         });
       }
-      
+
       setPublicPostsPage(page);
       const hasMore = response.page.number < response.page.totalPages - 1;
-      console.log('Public posts pagination debug:', {
-        currentPage: response.page.number,
-        totalPages: response.page.totalPages,
-        hasMore,
-        page
-      });
       setHasMorePublicPosts(hasMore);
-      
-      // Reset retry count on successful load
+
       setPublicPostsRetryCount(0);
     } catch (error) {
       console.error('Failed to fetch public posts:', error);
       debugLogger.log('HomePage', 'Failed to fetch public posts', error);
-      
+
       if (publicPostsRetryCount < 2) {
-        // Retry up to 3 times (0, 1, 2)
         const newRetryCount = publicPostsRetryCount + 1;
         setPublicPostsRetryCount(newRetryCount);
         setIsRetryingPublicPosts(true);
-        
-        console.log(`Retrying public posts load (attempt ${newRetryCount + 1}/3) in 2 seconds...`);
-        
+
         setTimeout(() => {
           setIsRetryingPublicPosts(false);
           loadPublicPosts(page, reset, true);
         }, 2000);
       } else {
-        // Max retries reached, show error
-        setPublicPostsError('Không thể tải nội dung công khai. Vui lòng thử lại sau.');
+        setPublicPostsError('Unable to load public posts. Please try again later.');
         setPublicPostsRetryCount(0);
       }
     } finally {
@@ -155,6 +149,26 @@ const HomePage: React.FC = () => {
       throw error;
     }
   };
+
+  useEffect(() => {
+    const fetchSuggestedGroups = async () => {
+      setLoadingGroups(true);
+      setGroupsError(null);
+      try {
+        const response = await groupService.getSuggestedGroups(0, 10);
+        setSuggestedGroups(response.content);
+      } catch (error) {
+        console.error('Failed to fetch suggested groups:', error);
+        setGroupsError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+
+    fetchSuggestedGroups();
+  }, []);
+
+  // Notifications are now handled in Header component, no need for duplicate logic here
 
   if (!isAuthenticated) {
     return (
@@ -286,7 +300,9 @@ const HomePage: React.FC = () => {
             </div>
             
             <div className="hidden lg:block lg:col-span-3">
-              <RightSidebar />
+              <div className="space-y-4">
+                <RightSidebar suggestedGroups={suggestedGroups} />
+              </div>
             </div>
           </div>
         </main>
@@ -311,12 +327,18 @@ const HomePage: React.FC = () => {
           
           <div className="lg:col-span-7">
             <CreatePost onCreatePost={handleCreatePost} />
-            <UserFeed className="space-y-4" />
+            <UserFeed
+              className="space-y-4"
+              posts={publicPosts}
+              onDeletePost={(postId) => {
+                setPublicPosts((prev) => prev.filter((post) => post.id !== postId));
+              }}
+            />
           </div>
           
           <div className="hidden lg:block lg:col-span-3">
             <div className="space-y-4">
-              <RightSidebar />
+              <RightSidebar suggestedGroups={suggestedGroups} />
               {isAuthenticated && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">Quick Messages</h3>

@@ -164,11 +164,12 @@ export const Comments: React.FC<CommentsProps> = ({ postId, isVisible, initialCo
                 {/* Comment Actions */}
                 <div className="flex items-center space-x-4 mt-2">
                   <ReactionButton
+                    postId={comment.postId} // Added postId prop
                     currentReaction={comment.userReaction as any}
                     onReaction={(reaction) => reactToComment(comment.id, reaction)}
                     onUnreact={() => unreactComment(comment.id)}
-                    reactionCount={comment.reactionsCount?.total || 0}
-                    className="text-sm px-2 py-1"
+                    reactionCount={comment.reactionsCount.total} // Extracted total count
+                    className="reaction-button"
                   />
                   <button className="text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1 rounded hover:bg-gray-100">
                     Trả lời

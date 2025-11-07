@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import { PostCard } from '../PostCard';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { Post, postService } from '../../services/postService';
@@ -8,10 +9,18 @@ import type { ReactionType } from '../ReactionPicker';
 
 interface UserFeedProps {
   className?: string;
+  posts?: Post[]; // Allow external posts
+  onDeletePost?: (postId: number) => void; // Callback for post deletion
 }
 
-export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
-  const [posts, setPosts] = useState<Post[]>([]);
+export const UserFeed: React.FC<UserFeedProps> = ({
+  className = '',
+  posts: externalPosts,
+  onDeletePost
+}) => {
+  const { isAuthenticated } = useAuth();
+  const [internalPosts, setInternalPosts] = useState<Post[]>([]);
+  const posts = externalPosts || internalPosts; // Use external posts if provided
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +29,9 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
   const [isRetrying, setIsRetrying] = useState(false);
 
   const loadPosts = useCallback(async (isRetry = false) => {
+    if (!isAuthenticated) {
+      return;
+    }
     console.log('loadPosts called:', { isLoading, hasMore, page, isRetry });
     
     if (isLoading || !hasMore) {
@@ -42,7 +54,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
         fullResponse: response
       });
       
-      setPosts(prev => {
+      setInternalPosts(prev => {
         const existingIds = new Set(prev.map(post => post.id));
         const newPosts = response.content.filter(post => !existingIds.has(post.id));
         
@@ -87,7 +99,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore, retryCount]);
+  }, [page, isLoading, hasMore, retryCount, isAuthenticated]);
 
   const loadMorePosts = useCallback(() => {
     console.log('loadMorePosts called:', { isLoading, hasMore, page });
@@ -97,8 +109,10 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
   }, [isLoading, hasMore, page, loadPosts]);
 
   React.useEffect(() => {
-    loadPosts();
-  }, []); // Only run once on mount
+    if (isAuthenticated) {
+      loadPosts();
+    }
+  }, [isAuthenticated, loadPosts]);
 
   React.useEffect(() => {
     const logScrollPosition = () => {
@@ -132,7 +146,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
   const handleReaction = async (postId: number, reaction: ReactionType) => {
     try {
       await postService.reactToPost(postId, { type: reaction });
-      setPosts(prev => prev.map(post => {
+      setInternalPosts(prev => prev.map(post => {
         if (post.id === postId) {
           const updatedPost = { ...post };
           if (!updatedPost.reactions) {
@@ -159,7 +173,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
   const handleUnreact = async (postId: number) => {
     try {
       await postService.unreactPost(postId);
-      setPosts(prev => prev.map(post => {
+      setInternalPosts(prev => prev.map(post => {
         if (post.id === postId) {
           const updatedPost = { ...post };
           if (!updatedPost.reactions) {
@@ -185,7 +199,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
 
   const handleComment = async (postId: number, content: string) => {
     try {
-      setPosts(prev => prev.map(post => {
+      setInternalPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
             ...post,
@@ -202,7 +216,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
   const handleShare = async (postId: number) => {
     try {
       await postService.sharePost(postId, {});
-      setPosts(prev => prev.map(post => {
+      setInternalPosts(prev => prev.map(post => {
         if (post.id === postId) {
           return {
             ...post,
@@ -220,9 +234,17 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
     setError(null);
     setRetryCount(0);
     setPage(0);
-    setPosts([]);
+    setInternalPosts([]);
     setHasMore(true);
     loadPosts();
+  };
+
+  const handleDelete = (postId: number) => {
+    if (onDeletePost) {
+      onDeletePost(postId);
+    } else {
+      setInternalPosts((prev) => prev.filter((post) => post.id !== postId));
+    }
   };
 
   if (error) {
@@ -265,6 +287,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({ className = '' }) => {
           onUnreact={handleUnreact}
           onComment={handleComment}
           onShare={handleShare}
+          onDelete={() => handleDelete(post.id)}
         />
       ))}
       {hasMore && !isLoading && (

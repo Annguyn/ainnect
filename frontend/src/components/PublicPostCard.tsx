@@ -139,7 +139,7 @@ export const PublicPostCard: React.FC<PublicPostCardProps> = ({ post }) => {
                 </svg>
               </div>
             </div>
-            <span className="text-sm text-gray-500">{post.reactions?.totalCount || post.reactionCount || 0}</span>
+            <span className="text-sm text-gray-500">{post.reactions?.totalCount || 0}</span>
           </div>
           <div className="space-x-3 text-gray-500">
             <span>{post.commentCount || 0} bình luận</span>

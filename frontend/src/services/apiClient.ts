@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import { ApiErrorResponse } from '../types';
 import { debugLogger } from '../utils/debugLogger';
 
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 class ApiClient {
   private client: AxiosInstance;

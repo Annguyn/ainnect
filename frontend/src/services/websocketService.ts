@@ -20,9 +20,23 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+  private outboundQueue: Array<{ destination: string; body: string; headers?: Record<string, string> }>= [];
 
   constructor() {
     this.initializeClient();
+  }
+
+  private buildSocketUrl(): string {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const baseUrl = `${apiUrl}/ws`;
+    const token = authService.getAccessToken();
+    if (token) {
+      const urlWithToken = `${baseUrl}?token=${encodeURIComponent(token)}`;
+      const masked = token.length > 12 ? `${token.substring(0, 6)}...${token.substring(token.length - 6)}` : '***';
+      debugLogger.log('WebSocket', `Building SockJS URL with token param (masked): ${baseUrl}?token=${masked}`);
+      return urlWithToken;
+    }
+    return baseUrl;
   }
 
   private getConnectionHeaders(): { [key: string]: string } {
@@ -31,7 +45,8 @@ class WebSocketService {
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      debugLogger.log('WebSocket', 'Added Authorization header to WebSocket connection');
+      const masked = token.length > 12 ? `${token.substring(0, 6)}...${token.substring(token.length - 6)}` : '***';
+      debugLogger.log('WebSocket', `Added Authorization header to WebSocket connection (masked): Bearer ${masked}`);
     } else {
       debugLogger.log('WebSocket', 'No access token available for WebSocket connection');
     }
@@ -40,14 +55,21 @@ class WebSocketService {
   }
 
   private initializeClient() {
-    const socketUrl = 'http://localhost:8080/ws'; 
+    const socketUrl = this.buildSocketUrl();
     console.log('🔌 Initializing WebSocket client with URL:', socketUrl);
 
-    const socket = new SockJS(socketUrl);
-
     this.client = new Client({
-      webSocketFactory: () => socket,
+      webSocketFactory: () => new SockJS(this.buildSocketUrl()),
       connectHeaders: this.getConnectionHeaders(),
+      beforeConnect: () => {
+        if (this.client) {
+          const headers = this.getConnectionHeaders();
+          debugLogger.log('WebSocket', 'beforeConnect - STOMP connectHeaders to be sent:', {
+            Authorization: headers['Authorization'] ? `${(headers['Authorization'] as string).substring(0, 13)}...masked` : undefined
+          });
+          this.client.connectHeaders = headers;
+        }
+      },
       debug: (str) => {
         if (process.env.NODE_ENV === 'development') {
           console.log('🔌 WebSocket Debug:', str);
@@ -65,6 +87,25 @@ class WebSocketService {
       this.isConnected = true;
       this.reconnectAttempts = 0;
       this.callbacks.onConnected?.();
+
+      if (this.outboundQueue.length > 0) {
+        const queued = [...this.outboundQueue];
+        this.outboundQueue = [];
+        queued.forEach((req) => {
+          try {
+            this.client?.publish(req);
+          } catch (e) {
+            debugLogger.log('WebSocket', 'Failed to flush queued frame:', e);
+          }
+        });
+        debugLogger.log('WebSocket', `Flushed ${queued.length} queued frames after connect`);
+      }
+    };
+
+    this.client.onDisconnect = (frame) => {
+      console.log('🔌 STOMP disconnected:', frame);
+      this.isConnected = false;
+      this.callbacks.onDisconnected?.();
     };
 
     this.client.onStompError = (frame) => {
@@ -89,8 +130,13 @@ class WebSocketService {
     };
 
     this.client.onWebSocketClose = (event) => {
-      console.log('🔌 WebSocket connection closed:', event.code);
-      debugLogger.log('WebSocket', 'WebSocket connection closed: ' + event.code);
+      const stillActive = !!this.client?.active;
+      console.log('🔌 WebSocket transport closed:', { code: event.code, stillActive });
+      debugLogger.log('WebSocket', 'WebSocket transport closed: ' + event.code + `, stillActive=${stillActive}`);
+      // SockJS may close an underlying transport during upgrade; avoid flipping state if client remains active
+      if (stillActive) {
+        return;
+      }
       this.isConnected = false;
       this.callbacks.onDisconnected?.();
       this.handleReconnect();
@@ -122,6 +168,13 @@ class WebSocketService {
 
       this.callbacks = { ...this.callbacks, ...callbacks };
 
+      if (this.isConnected) {
+        debugLogger.log('WebSocket', 'Already connected - skipping activate and notifying listeners');
+        this.callbacks.onConnected?.();
+        resolve();
+        return;
+      }
+
       const originalOnConnect = this.client.onConnect;
       this.client.onConnect = (frame) => {
         debugLogger.log('WebSocket', 'Connection established successfully');
@@ -136,8 +189,11 @@ class WebSocketService {
         reject(new Error(frame.headers['message'] || 'STOMP connection failed'));
       };
 
-      this.client.connectHeaders = this.getConnectionHeaders();
-      debugLogger.log('WebSocket', 'Attempting to connect with updated headers...');
+      const headers = this.getConnectionHeaders();
+      this.client.connectHeaders = headers;
+      debugLogger.log('WebSocket', 'Attempting to connect with updated headers:', {
+        Authorization: headers['Authorization'] ? `${(headers['Authorization'] as string).substring(0, 13)}...masked` : undefined
+      });
       this.client.activate();
     });
   }
@@ -248,11 +304,20 @@ class WebSocketService {
     debugLogger.log('WebSocket', `Sending message to ${destination}:`, message);
     
     try {
-      this.client.publish({
+      const token = authService.getAccessToken();
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const frame = {
         destination,
-        body: JSON.stringify(message)
-      });
-      debugLogger.log('WebSocket', 'Message published successfully');
+        body: JSON.stringify(message),
+        headers
+      };
+      if (!this.isConnected) {
+        this.outboundQueue.push(frame);
+        debugLogger.log('WebSocket', 'Queued SEND frame until connected');
+      } else {
+        this.client.publish(frame);
+        debugLogger.log('WebSocket', 'Message published successfully');
+      }
     } catch (error) {
       debugLogger.log('WebSocket', 'Failed to publish message:', error);
       throw error;
@@ -267,24 +332,66 @@ class WebSocketService {
     const destination = `/app/conversations/${conversationId}/typing`;
     debugLogger.log('WebSocket', `Sending typing indicator to ${destination}:`, typingData);
     
-    this.client.publish({
+    const token = authService.getAccessToken();
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const frame = {
       destination,
-      body: JSON.stringify(typingData)
-    });
+      body: JSON.stringify(typingData),
+      headers
+    };
+    if (!this.isConnected) {
+      this.outboundQueue.push(frame);
+      debugLogger.log('WebSocket', 'Queued TYPING frame until connected');
+    } else {
+      this.client.publish(frame);
+    }
   }
 
   markAsRead(conversationId: number, readData: MarkAsReadRequest) {
     if (!this.client || !this.isConnected) {
-      throw new Error('WebSocket not connected');
+      console.error('WebSocket not connected');
+      return;
     }
 
     const destination = `/app/conversations/${conversationId}/read`;
-    debugLogger.log('WebSocket', `Marking as read to ${destination}:`, readData);
-    
-    this.client.publish({
-      destination,
-      body: JSON.stringify(readData)
-    });
+    console.log(`Marking messages as read for conversation ${conversationId}`);
+
+    try {
+      const token = authService.getAccessToken();
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const frame = {
+        destination,
+        body: JSON.stringify(readData),
+        headers,
+      };
+
+      this.client.publish(frame);
+      console.log('MarkAsRead frame published successfully');
+    } catch (error) {
+      console.error('Failed to publish markAsRead frame:', error);
+    }
+  }
+
+  async getUnreadCount(): Promise<{ unreadCount: number }> {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiUrl}/api/messages/unread-count`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${authService.getAccessToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch unread count');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      throw error;
+    }
   }
 
   getConnectionStatus(): boolean {
@@ -305,6 +412,95 @@ class WebSocketService {
           debugLogger.log('WebSocket', 'Failed to reconnect after token refresh:', error);
         });
       }, 1000);
+    }
+  }
+
+  subscribe(callback: (message: WebSocketMessage) => void) {
+    const subscriptionId = 'notification-subscription';
+    if (this.client && this.isConnected) {
+      const subscription = this.client.subscribe('/topic/notifications', (message: IMessage) => {
+        const parsedMessage: WebSocketMessage = JSON.parse(message.body);
+        callback(parsedMessage);
+      });
+      this.subscriptions.set(subscriptionId, subscription);
+    }
+  }
+
+  unsubscribe(callback: (message: WebSocketMessage) => void) {
+    const subscriptionId = 'notification-subscription';
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(subscriptionId);
+    }
+  }
+
+  // Subscribe to user-specific notifications
+  subscribeToNotifications(callback: (message: WebSocketMessage) => void) {
+    const notificationPath = `/user/queue/notifications`;
+    
+    const doSubscribe = () => {
+      if (!this.client || !this.isConnected) {
+        debugLogger.log('WebSocket', 'WebSocket not connected, cannot subscribe to notifications');
+        return;
+      }
+
+      // Check if already subscribed
+      if (this.subscriptions.has('user_notifications')) {
+        debugLogger.log('WebSocket', 'Already subscribed to user notifications');
+        return;
+      }
+
+      try {
+        const subscription = this.client.subscribe(notificationPath, (message: IMessage) => {
+          try {
+            const wsMessage: WebSocketMessage = JSON.parse(message.body);
+            debugLogger.log('WebSocket', 'Received notification:', wsMessage);
+            callback(wsMessage);
+          } catch (error) {
+            debugLogger.log('WebSocket', 'Error parsing notification:', error);
+          }
+        });
+
+        this.subscriptions.set('user_notifications', subscription);
+        debugLogger.log('WebSocket', 'Subscribed to user notifications');
+      } catch (error) {
+        debugLogger.log('WebSocket', 'Error subscribing to notifications:', error);
+      }
+    };
+
+    // If already connected, subscribe immediately
+    if (this.isConnected) {
+      doSubscribe();
+    } else {
+      // Otherwise, connect first then subscribe
+      debugLogger.log('WebSocket', 'WebSocket not connected, connecting first...');
+      this.connect();
+      
+      // Wait for connection then subscribe
+      const checkConnection = setInterval(() => {
+        if (this.isConnected) {
+          clearInterval(checkConnection);
+          doSubscribe();
+        }
+      }, 100);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkConnection);
+        if (!this.isConnected) {
+          debugLogger.log('WebSocket', 'Failed to connect WebSocket within timeout');
+        }
+      }, 10000);
+    }
+  }
+
+  unsubscribeFromNotifications() {
+    const subscription = this.subscriptions.get('user_notifications');
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete('user_notifications');
+      debugLogger.log('WebSocket', 'Unsubscribed from user notifications');
     }
   }
 }

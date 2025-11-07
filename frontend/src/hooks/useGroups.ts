@@ -256,16 +256,23 @@ export const useGroups = (): UseGroupsResult => {
     setError(null);
     try {
       const response = await groupService.listMemberGroups(userId, page, size);
-      setState(prev => ({
-        ...prev,
-        groups: page === 0 ? response.content : [...prev.groups, ...response.content],
-        pagination: {
-          totalPages: response.totalPages,
-          currentPage: response.number,
-          totalElements: response.totalElements,
-        },
-        isLoading: false,
-      }));
+      
+      if (response && Array.isArray(response.content)) {
+          setState(prev => ({
+              ...prev,
+              groups: page === 0 ? response.content : [...prev.groups, ...response.content],
+              pagination: {
+                  totalPages: response.totalPages || 0,
+                  currentPage: response.number || 0,
+                  totalElements: response.totalElements || 0,
+              },
+              isLoading: false,
+          }));
+      } else {
+          debugLogger.log('useGroups', '❌ Invalid response structure', { response });
+          setError('Failed to load member groups: Invalid response structure');
+          setLoading(false);
+      }
       debugLogger.log('useGroups', '✅ Member groups loaded successfully', { 
         userId, 
         page, 

@@ -663,6 +663,24 @@ class GroupService {
     const role = await this.getUserRoleInGroup(groupId);
     return role === 'owner';
   }
+
+  /**
+   * Fetch suggested groups
+   */
+  async getSuggestedGroups(page = 0, size = 10): Promise<GroupsResponse> {
+    const endpoint = `${this.baseUrl}`;
+    debugLogger.logApiCall('GET', endpoint, { page, size });
+    try {
+      const response = await apiClient.get<GroupsResponse>(endpoint, {
+        params: { page, size }
+      });
+      debugLogger.logApiResponse('GET', endpoint, response);
+      return response;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      throw error;
+    }
+  }
 }
 
 export const groupService = new GroupService();
