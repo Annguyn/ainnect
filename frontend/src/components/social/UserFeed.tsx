@@ -20,7 +20,8 @@ export const UserFeed: React.FC<UserFeedProps> = ({
 }) => {
   const { isAuthenticated } = useAuth();
   const [internalPosts, setInternalPosts] = useState<Post[]>([]);
-  const posts = externalPosts || internalPosts; // Use external posts if provided
+  // Use external posts if provided AND it's a valid array, otherwise use internal
+  const posts = (externalPosts && Array.isArray(externalPosts)) ? externalPosts : internalPosts;
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,11 +50,17 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     try {
       const response = await postService.getFeedPosts(pageToLoad, 5);
       console.log('Got response:', {
-        content: response.content.length,
-        totalPages: response.page.totalPages,
-        currentPage: response.page.number,
+        content: response.content?.length || 0,
+        totalPages: response.page?.totalPages || 0,
+        currentPage: response.page?.number || 0,
         fullResponse: response
       });
+      
+      // Validate response structure
+      if (!response || !response.content || !Array.isArray(response.content)) {
+        console.error('Invalid response structure:', response);
+        throw new Error('Invalid response from server');
+      }
       
       setInternalPosts(prev => {
         const existingIds = new Set(prev.map(post => post.id));
@@ -66,10 +73,10 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         return [...prev, ...newPosts];
       });
       
-      const newHasMore = response.page.number < response.page.totalPages - 1;
+      const newHasMore = response.page?.number < response.page?.totalPages - 1;
       console.log('Pagination debug:', {
-        currentPage: response.page.number,
-        totalPages: response.page.totalPages,
+        currentPage: response.page?.number || 0,
+        totalPages: response.page?.totalPages || 0,
         hasMore: newHasMore,
         nextPage: pageToLoad + 1
       });
@@ -110,10 +117,18 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   }, [isLoading, hasMore, page, loadPosts]);
 
   React.useEffect(() => {
-    if (isAuthenticated && !initialLoadDone && !isLoading) {
+    // Only load posts if we're not using external posts
+    if (isAuthenticated && !initialLoadDone && !isLoading && !externalPosts) {
       loadPosts(0);
     }
-  }, [isAuthenticated, initialLoadDone, isLoading, loadPosts]);
+  }, [isAuthenticated, initialLoadDone, isLoading, externalPosts, loadPosts]);
+
+  // Mark as loaded if using external posts
+  React.useEffect(() => {
+    if (externalPosts) {
+      setInitialLoadDone(true);
+    }
+  }, [externalPosts]);
 
   React.useEffect(() => {
     const logScrollPosition = () => {
@@ -277,7 +292,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     );
   }
 
-  if (!isLoading && posts.length === 0 && initialLoadDone) {
+  if (!isLoading && (!posts || posts.length === 0) && initialLoadDone) {
     return (
       <EmptyState
         type="empty"
@@ -289,7 +304,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
 
   return (
     <div className={className}>
-      {posts.map((post, index) => (
+      {posts && Array.isArray(posts) && posts.map((post, index) => (
         <PostCard
           key={`feed-post-${post.id}-${index}`}
           post={post}

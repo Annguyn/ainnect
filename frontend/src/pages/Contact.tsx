@@ -135,7 +135,7 @@ const Contact: React.FC = () => {
                   <Box>
                     <Typography variant="h6">Email</Typography>
                     <Typography color="text.secondary">
-                      contact@ainnect.com
+                      nbxan04@gmail.com
                     </Typography>
                   </Box>
                 </CardContent>
@@ -147,7 +147,7 @@ const Contact: React.FC = () => {
                   <Box>
                     <Typography variant="h6">Điện thoại</Typography>
                     <Typography color="text.secondary">
-                      +84 123 456 789
+                      0818573466
                     </Typography>
                   </Box>
                 </CardContent>
@@ -159,9 +159,9 @@ const Contact: React.FC = () => {
                   <Box>
                     <Typography variant="h6">Địa chỉ</Typography>
                     <Typography color="text.secondary">
-                      Đại học Công nghệ Thông tin
+                      Đại học Bách Khoa Đà Nẵng
                       <br />
-                      Đại học Quốc gia TP.HCM
+                      Khoa Công nghệ thông tin
                     </Typography>
                   </Box>
                 </CardContent>

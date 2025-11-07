@@ -62,10 +62,17 @@ const HomePage: React.FC = () => {
 
     try {
       const response = await postService.getPublicPosts(page, 3); // Fetch 3 posts per request
+      
+      // Validate response structure
+      if (!response || !response.content || !Array.isArray(response.content)) {
+        console.error('Invalid response structure:', response);
+        throw new Error('Invalid response from server');
+      }
+      
       debugLogger.log('HomePage', 'Public posts loaded successfully', {
         page,
         count: response.content.length,
-        totalPages: response.page.totalPages,
+        totalPages: response.page?.totalPages || 0,
         isRetry: isRetry ? `(retry ${publicPostsRetryCount + 1}/3)` : ''
       });
 
@@ -85,7 +92,7 @@ const HomePage: React.FC = () => {
       }
 
       setPublicPostsPage(page);
-      const hasMore = response.page.number < response.page.totalPages - 1;
+      const hasMore = response.page?.number < response.page?.totalPages - 1;
       setHasMorePublicPosts(hasMore);
 
       setPublicPostsRetryCount(0);
@@ -232,7 +239,7 @@ const HomePage: React.FC = () => {
                       Thử lại
                     </button>
                   </div>
-                ) : publicPosts.length === 0 && !publicPostsLoading ? (
+                ) : (!publicPosts || publicPosts.length === 0) && !publicPostsLoading ? (
                   <EmptyState
                     type="empty"
                     title="Chưa có bài viết công khai"
@@ -242,7 +249,7 @@ const HomePage: React.FC = () => {
                   />
                 ) : (
                   <>
-                    {publicPosts.map((post, index) => (
+                    {publicPosts && Array.isArray(publicPosts) && publicPosts.map((post, index) => (
                       <div
                         key={`public-post-${post.id}-${index}`}
                         className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 max-w-2xl mx-auto p-4 cursor-pointer hover:shadow-md transition-shadow"
@@ -260,7 +267,7 @@ const HomePage: React.FC = () => {
                           </div>
                         </div>
                         <p className="text-gray-800">{post.content}</p>
-                        {post.media && post.media.length > 0 && (
+                        {post.media && Array.isArray(post.media) && post.media.length > 0 && (
                           <div className="mt-4">
                             {post.media.map((media, index) => (
                               <img
@@ -274,8 +281,8 @@ const HomePage: React.FC = () => {
                         )}
                         <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
                           <span>{post.reactions?.totalCount || 0} reactions</span>
-                          <span>{post.commentCount} comments</span>
-                          <span>{post.shareCount} shares</span>
+                          <span>{post.commentCount || 0} comments</span>
+                          <span>{post.shareCount || 0} shares</span>
                         </div>
                       </div>
                     ))}
@@ -329,9 +336,9 @@ const HomePage: React.FC = () => {
             <CreatePost onCreatePost={handleCreatePost} />
             <UserFeed
               className="space-y-4"
-              posts={publicPosts}
               onDeletePost={(postId) => {
-                setPublicPosts((prev) => prev.filter((post) => post.id !== postId));
+                // This will be handled internally by UserFeed for authenticated users
+                console.log('Post deleted:', postId);
               }}
             />
           </div>
