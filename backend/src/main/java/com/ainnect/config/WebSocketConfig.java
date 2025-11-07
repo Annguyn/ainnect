@@ -30,9 +30,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .addInterceptors(new HttpHandshakeInterceptor())
                 .setHandshakeHandler(new JwtHandshakeHandler(jwtUtil))
                 .setAllowedOriginPatterns(
+                    "https://*.ainnect.me",
                     "https://ainnect.me",
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000"
+                    "http://192.168.*.*",
+                    "http://192.168.*.*:*",
+                    "http://10.0.2.2",
+                    "http://10.0.2.2:*",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*"
                 )
                 .withSockJS();
 
@@ -40,9 +45,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .addInterceptors(new HttpHandshakeInterceptor())
                 .setHandshakeHandler(new JwtHandshakeHandler(jwtUtil))
                 .setAllowedOriginPatterns(
+                    "https://*.ainnect.me",
                     "https://ainnect.me",
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000"
+                    "http://192.168.*.*",
+                    "http://192.168.*.*:*",
+                    "http://10.0.2.2",
+                    "http://10.0.2.2:*",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*"
                 )
                 .withSockJS();
     }

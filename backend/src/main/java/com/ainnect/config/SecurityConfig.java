@@ -64,9 +64,14 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         configuration.setAllowedOriginPatterns(Arrays.asList(
+            "https://*.ainnect.me",
             "https://ainnect.me",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000"
+            "http://192.168.*.*",
+            "http://192.168.*.*:*",
+            "http://10.0.2.2",
+            "http://10.0.2.2:*",
+            "http://localhost:*",
+            "http://127.0.0.1:*"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
