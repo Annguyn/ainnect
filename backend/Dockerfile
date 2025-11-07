@@ -1,13 +1,14 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 COPY pom.xml .
-RUN mvn -q -DskipTests dependency:go-offline
-COPY . .
-RUN mvn -q -DskipTests package
+RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests -B dependency:go-offline
+COPY src ./src
+# đảm bảo repackage chạy
+RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests -B clean package spring-boot:repackage
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-ENV JAVA_OPTS="-Xms256m -Xmx1024m"
+# copy đúng file jar đã repackage (thường chỉ có 1 cái trong target)
 COPY --from=build /app/target/*.jar /app/app.jar
 EXPOSE 8080
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]
