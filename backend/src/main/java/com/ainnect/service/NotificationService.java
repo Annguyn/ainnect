@@ -24,7 +24,6 @@ public interface NotificationService {
     
     void deleteOldNotifications(Long userId);
     
-    // Specific notification creation methods for different events
     void createLikeNotification(Long postId, Long actorId, Long recipientId, NotificationType notificationType);
     
     void createCommentNotification(Long postId, Long actorId, Long recipientId);
