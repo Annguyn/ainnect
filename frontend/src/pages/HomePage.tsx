@@ -163,10 +163,19 @@ const HomePage: React.FC = () => {
       setGroupsError(null);
       try {
         const response = await groupService.getSuggestedGroups(0, 10);
-        setSuggestedGroups(response.content);
+        // Ensure we have a valid array
+        if (response && Array.isArray(response.content)) {
+          setSuggestedGroups(response.content);
+        } else if (Array.isArray(response)) {
+          setSuggestedGroups(response);
+        } else {
+          console.warn('Suggested groups response is not in expected format:', response);
+          setSuggestedGroups([]);
+        }
       } catch (error) {
         console.error('Failed to fetch suggested groups:', error);
         setGroupsError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
+        setSuggestedGroups([]); // Set empty array on error
       } finally {
         setLoadingGroups(false);
       }

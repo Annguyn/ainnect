@@ -20,13 +20,26 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '', sugg
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [showFriendRequests, setShowFriendRequests] = useState(true);
 
+  // Ensure suggestedGroups is always an array
+  const safeGroups = Array.isArray(suggestedGroups) ? suggestedGroups : [];
+
   useEffect(() => {
     const loadFriendRequests = async () => {
       try {
         const data = await fetchFriendRequests();
-        setFriendRequests(data);
+        // Ensure data is an array before setting state
+        if (Array.isArray(data)) {
+          setFriendRequests(data);
+        } else if (data && typeof data === 'object' && 'content' in data && Array.isArray((data as any).content)) {
+          // Handle paginated response structure
+          setFriendRequests((data as any).content);
+        } else {
+          console.warn('Friend requests response is not an array:', data);
+          setFriendRequests([]);
+        }
       } catch (error) {
         console.error('Failed to fetch friend requests:', error);
+        setFriendRequests([]); // Set empty array on error
       }
     };
 
@@ -52,27 +65,33 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '', sugg
         </div>
         {showFriendRequests && (
           <div className="space-y-2">
-            {friendRequests.map((request) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{request.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {request.mutualFriends} bạn chung
-                  </p>
+            {Array.isArray(friendRequests) && friendRequests.length > 0 ? (
+              friendRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{request.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {request.mutualFriends} bạn chung
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" className="text-xs">
+                      Chấp nhận
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs">
+                      Từ chối
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" className="text-xs">
-                    Chấp nhận
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs">
-                    Từ chối
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-2">
+                Không có lời mời kết bạn
+              </p>
+            )}
           </div>
         )}
       </Card>
@@ -84,22 +103,28 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '', sugg
           <h3 className="font-semibold text-gray-900">Nhóm gợi ý</h3>
         </div>
         <div className="space-y-2">
-          {suggestedGroups.map((group) => (
-            <div key={group.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <img
-                src={group.avatarUrl || '/default-group-avatar.png'}
-                alt={group.name}
-                className="w-10 h-10 rounded-full"
-              />
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
-                <p className="text-xs text-gray-500">{group.description}</p>
+          {safeGroups.length > 0 ? (
+            safeGroups.map((group) => (
+              <div key={group.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <img
+                  src={group.avatarUrl || '/default-group-avatar.png'}
+                  alt={group.name}
+                  className="w-10 h-10 rounded-full"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-gray-900 truncate">{group.name}</h4>
+                  <p className="text-xs text-gray-500">{group.description}</p>
+                </div>
+                <Button size="sm" variant="outline" className="text-xs">
+                  Tham gia
+                </Button>
               </div>
-              <Button size="sm" variant="outline" className="text-xs">
-                Tham gia
-              </Button>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 text-center py-2">
+              Không có nhóm gợi ý
+            </p>
+          )}
         </div>
         <div className="mt-4 pt-3 border-t border-gray-200">
           <Link
