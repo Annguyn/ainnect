@@ -18,15 +18,17 @@ import MessagingPage from './pages/MessagingPage';
 import ConversationPage from './pages/ConversationPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/register" element={<AuthPage />} />
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/register" element={<AuthPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/about" element={<About />} />
@@ -59,6 +61,7 @@ function App() {
         <Route path="/messaging/:conversationId" element={<Navigate to="/messages/:conversationId" replace />} />
       </Routes>
     </Router>
+    </ErrorBoundary>
   );
 }
 

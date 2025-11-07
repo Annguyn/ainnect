@@ -27,26 +27,27 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  const loadPosts = useCallback(async (isRetry = false) => {
+  const loadPosts = useCallback(async (pageToLoad: number, isRetry = false) => {
     if (!isAuthenticated) {
       return;
     }
-    console.log('loadPosts called:', { isLoading, hasMore, page, isRetry });
+    console.log('loadPosts called:', { isLoading, hasMore, page: pageToLoad, isRetry });
     
-    if (isLoading || !hasMore) {
-      console.log('Skipping loadPosts - isLoading:', isLoading, 'hasMore:', hasMore);
+    if (isLoading) {
+      console.log('Skipping loadPosts - isLoading:', isLoading);
       return;
     }
 
-    console.log('Loading posts for page:', page, isRetry ? `(retry ${retryCount + 1}/3)` : '');
+    console.log('Loading posts for page:', pageToLoad, isRetry ? `(retry ${retryCount + 1}/3)` : '');
     setIsLoading(true);
     if (!isRetry) {
       setError(null);
     }
 
     try {
-      const response = await postService.getFeedPosts(page, 5);
+      const response = await postService.getFeedPosts(pageToLoad, 5);
       console.log('Got response:', {
         content: response.content.length,
         totalPages: response.page.totalPages,
@@ -59,23 +60,22 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         const newPosts = response.content.filter(post => !existingIds.has(post.id));
         
         if (newPosts.length !== response.content.length) {
-          console.warn(`Filtered out ${response.content.length - newPosts.length} duplicate posts on page ${page}`);
+          console.warn(`Filtered out ${response.content.length - newPosts.length} duplicate posts on page ${pageToLoad}`);
         }
         
         return [...prev, ...newPosts];
       });
-      setPage(prev => {
-        const nextPage = prev + 1;
-        const hasMore = response.page.number < response.page.totalPages - 1;
-        console.log('Pagination debug:', {
-          currentPage: response.page.number,
-          totalPages: response.page.totalPages,
-          hasMore,
-          nextPage
-        });
-        setHasMore(hasMore);
-        return nextPage;
+      
+      const newHasMore = response.page.number < response.page.totalPages - 1;
+      console.log('Pagination debug:', {
+        currentPage: response.page.number,
+        totalPages: response.page.totalPages,
+        hasMore: newHasMore,
+        nextPage: pageToLoad + 1
       });
+      setPage(pageToLoad);
+      setHasMore(newHasMore);
+      setInitialLoadDone(true);
       
       setRetryCount(0);
     } catch (err) {
@@ -90,29 +90,30 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         
         setTimeout(() => {
           setIsRetrying(false);
-          loadPosts(true);
+          loadPosts(pageToLoad, true);
         }, 2000);
       } else {
         setError('Không thể tải bài viết. Vui lòng thử lại sau.');
         setRetryCount(0);
+        setInitialLoadDone(true);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore, retryCount, isAuthenticated]);
+  }, [isLoading, retryCount, isAuthenticated]);
 
   const loadMorePosts = useCallback(() => {
     console.log('loadMorePosts called:', { isLoading, hasMore, page });
     if (!isLoading && hasMore) {
-      loadPosts();
+      loadPosts(page + 1);
     }
   }, [isLoading, hasMore, page, loadPosts]);
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      loadPosts();
+    if (isAuthenticated && !initialLoadDone && !isLoading) {
+      loadPosts(0);
     }
-  }, [isAuthenticated, loadPosts]);
+  }, [isAuthenticated, initialLoadDone, isLoading, loadPosts]);
 
   React.useEffect(() => {
     const logScrollPosition = () => {
@@ -236,7 +237,8 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     setPage(0);
     setInternalPosts([]);
     setHasMore(true);
-    loadPosts();
+    setInitialLoadDone(false);
+    loadPosts(0);
   };
 
   const handleDelete = (postId: number) => {
@@ -267,12 +269,20 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     );
   }
 
-  if (!isLoading && posts.length === 0) {
+  if (!isLoading && !initialLoadDone) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isLoading && posts.length === 0 && initialLoadDone) {
     return (
       <EmptyState
         type="empty"
-        title="No posts yet"
-        description="Start following people or join groups to see posts in your feed"
+        title="Chưa có bài viết nào"
+        description="Hãy theo dõi người khác hoặc tham gia nhóm để xem bài viết trong feed của bạn"
       />
     );
   }

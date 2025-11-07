@@ -16,6 +16,7 @@ export { ProfileSettingsModal } from './ProfileSettingsModal';
 export { SocialButton } from './SocialButton';
 export { UserProfileCard } from './UserProfileCard';
 export { NotificationDropdown } from './NotificationDropdown';
+export { ErrorBoundary } from './ErrorBoundary';
 
 // Messaging components
 export { MessagingLink } from './MessagingLink';
