@@ -29,13 +29,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .addInterceptors(new HttpHandshakeInterceptor())
                 .setHandshakeHandler(new JwtHandshakeHandler(jwtUtil))
-                .setAllowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .setAllowedOriginPatterns(
+                    "https://ainnect.me",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000"
+                )
                 .withSockJS();
 
         registry.addEndpoint("/ws-messaging")
                 .addInterceptors(new HttpHandshakeInterceptor())
                 .setHandshakeHandler(new JwtHandshakeHandler(jwtUtil))
-                .setAllowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .setAllowedOriginPatterns(
+                    "https://ainnect.me",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000"
+                )
                 .withSockJS();
     }
 }
