@@ -6,6 +6,8 @@ import { useSocial } from '../hooks/useSocial';
 import { userService } from '../services/userService';
 import { profileService } from '../services/profileService';
 import { socialService } from '../services/socialService';
+import { messagingService } from '../services/messagingService';
+import { ConversationType } from '../types/messaging';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui';
 import { PostCard } from '../components/PostCard';
@@ -288,6 +290,26 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleMessage = async () => {
+    if (!targetUserId) return;
+    
+    try {
+      // Create or get existing direct conversation
+      const conversation = await messagingService.createConversation({
+        type: ConversationType.DIRECT,
+        participantIds: [targetUserId]
+      });
+      
+      // Navigate to the conversation
+      navigate(`/messages/${conversation.id}`);
+    } catch (err) {
+      console.error('Failed to create conversation:', err);
+      // If conversation already exists, backend might return error
+      // In that case, could navigate to messages page
+      navigate('/messages');
+    }
+  };
+
   const handleBlock = async () => {
     if (!targetUserId) return;
     
@@ -509,6 +531,19 @@ const ProfilePage: React.FC = () => {
                               )}
                             </>
                           )}
+                        </Button>
+
+                        <Button
+                          onClick={handleMessage}
+                          disabled={!!isBlocked}
+                          variant="outline"
+                          size="md"
+                          className="border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          Nhắn tin
                         </Button>
 
                         {!isFriend ? (

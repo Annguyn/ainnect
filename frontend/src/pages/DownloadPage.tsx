@@ -1,17 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, CheckCircle, Star, Users, MessageCircle, Shield, Zap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { apkVersionService } from '../services/apkVersionService';
 
 const DownloadPage: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [apkUrl, setApkUrl] = useState('https://cdn.ainnect.me/apk/app-release.apk');
+  const [versionInfo, setVersionInfo] = useState<{
+    versionName: string;
+    fileSize: number;
+    description: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadActiveVersion = async () => {
+      try {
+        const activeVersion = await apkVersionService.getActiveVersion();
+        setApkUrl(activeVersion.apkUrl);
+        setVersionInfo({
+          versionName: activeVersion.versionName,
+          fileSize: activeVersion.fileSize,
+          description: activeVersion.description
+        });
+      } catch (err) {
+        console.error('Failed to load active APK version:', err);
+        // Keep default URL if API fails
+      }
+    };
+
+    loadActiveVersion();
+  }, []);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
 
   const handleDownload = () => {
     setIsDownloading(true);
-    // Trigger download
     const link = document.createElement('a');
-    link.href = 'https://cdn.ainnect.me/apk/app-release.apk';
-    link.download = 'ainnect-app.apk';
+    link.href = apkUrl;
+    link.download = `ainnect-${versionInfo?.versionName || 'app'}.apk`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -309,7 +342,16 @@ const DownloadPage: React.FC = () => {
           </Button>
           
           <p className="text-sm text-blue-100 mt-6">
-            Tệp APK • Kích thước: ~15MB • Yêu cầu Android 5.0 trở lên
+            Tệp APK • 
+            {versionInfo ? (
+              <>
+                Version {versionInfo.versionName} • 
+                Kích thước: {formatFileSize(versionInfo.fileSize)}
+              </>
+            ) : (
+              <>Kích thước: ~15MB</>
+            )}
+            {' '}• Yêu cầu Android 5.0 trở lên
           </p>
         </div>
       </div>

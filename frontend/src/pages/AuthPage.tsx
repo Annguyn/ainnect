@@ -162,7 +162,7 @@ const AuthPage: React.FC = () => {
                       <h3 className="text-base sm:text-lg font-bold">Tải ứng dụng Android</h3>
                     </div>
                     <p className="text-xs sm:text-sm text-blue-100 mb-3 sm:mb-4">
-                      Trải nghiệm Ainnect mọi lúc, mọi nơi trên thiết bị di động của bạn
+                      Trải nghiệm ainnect mọi lúc, mọi nơi trên thiết bị di động của bạn
                     </p>
                     <Link
                       to="/download"

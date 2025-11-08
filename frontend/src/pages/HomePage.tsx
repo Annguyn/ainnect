@@ -79,7 +79,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const response = await postService.getPublicPosts(page, 3);
+      const response = await postService.getPublicPosts(page, 10);
       
       if (!response || !response.content || !Array.isArray(response.content)) {
         console.error('Invalid response structure:', response);
@@ -156,7 +156,8 @@ const HomePage: React.FC = () => {
     } finally {
       setPublicPostsLoading(false);
     }
-  }, [publicPostsLoading, hasMorePublicPosts, publicPostsRetryCount, publicPostsError, hasInitialLoadAttempted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - use refs for values to prevent re-creation
 
   const loadMorePublicPosts = useCallback(() => {
     if (hasMorePublicPosts && !publicPostsLoading) {
@@ -166,11 +167,11 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     // Only load once when component mounts for non-authenticated users
-    if (!isAuthenticated && !hasInitialLoadAttempted) {
+    if (!isAuthenticated) {
       loadPublicPosts(0, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]); // Removed loadPublicPosts from dependencies to prevent loop
+  }, [isAuthenticated]); // Load when authentication status changes
 
   useInfiniteScroll({
     hasMore: hasMorePublicPosts,

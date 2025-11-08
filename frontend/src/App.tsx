@@ -26,6 +26,7 @@ import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminGroupsPage } from './pages/admin/AdminGroupsPage';
 import { AdminPostsPage } from './pages/admin/AdminPostsPage';
 import { AdminLogsPage } from './pages/admin/AdminLogsPage';
+import { AdminApkVersionsPage } from './pages/admin/AdminApkVersionsPage';
 import { AdminProtectedRoute } from './components/admin';
 import './App.css';
 
@@ -108,6 +109,14 @@ function App() {
           element={
             <AdminProtectedRoute>
               <AdminLogsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/apk-versions"
+          element={
+            <AdminProtectedRoute>
+              <AdminApkVersionsPage />
             </AdminProtectedRoute>
           }
         />

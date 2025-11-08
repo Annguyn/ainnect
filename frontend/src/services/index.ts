@@ -5,6 +5,7 @@ export * from './commentService';
 export * from './fileService';
 export * from './suggestionService';
 export * from './socialService';
+export * from './apkVersionService';
 
 // Profile service exports (avoiding conflicts with userService)
 export {
