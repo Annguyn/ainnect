@@ -39,6 +39,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/login").permitAll()
                 .requestMatchers("/api/admin/**").authenticated()
@@ -50,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").permitAll() 
                 .requestMatchers("/api/profile/suggestions/**").permitAll() 
                 .requestMatchers("/api/social/stats/**").permitAll() 
+                .requestMatchers("/api/apk-versions/active").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
@@ -70,6 +72,8 @@ public class SecurityConfig {
         
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "https://*.ainnect.me",
+            "https://www.ainnect.me",
+            "https://api.ainnect.me",
             "https://ainnect.me",
             "http://192.168.*.*",
             "http://192.168.*.*:*",

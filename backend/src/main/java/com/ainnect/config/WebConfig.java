@@ -24,6 +24,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOriginPatterns(
                     "https://*.ainnect.me",
+                    "https://www.ainnect.me",
+                    "https://api.ainnect.me",
                     "https://ainnect.me",
                     "http://192.168.*.*",
                     "http://192.168.*.*:*",
@@ -35,7 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD")
                 .allowedHeaders("*")
                 .allowCredentials(true)
-                .exposedHeaders("Authorization", "Content-Type")
+                .exposedHeaders("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers")
                 .maxAge(3600);
     }
 

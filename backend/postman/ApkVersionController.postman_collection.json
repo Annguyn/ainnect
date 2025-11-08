@@ -1,0 +1,259 @@
+{
+	"info": {
+		"_postman_id": "apk-version-api-collection",
+		"name": "ApkVersionController",
+		"description": "API endpoints for managing APK versions (Admin only)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create APK Version",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"versionName\": \"1.0.0\",\n    \"versionCode\": 1,\n    \"apkUrl\": \"https://cdn.ainnect.me/apk/ainnect-v1.0.0.apk\",\n    \"description\": \"Initial release with basic features\",\n    \"fileSize\": 25000000,\n    \"fileName\": \"ainnect-v1.0.0.apk\",\n    \"isActive\": true\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions"]
+				},
+				"description": "Create a new APK version (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Update APK Version",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"versionName\": \"1.0.1\",\n    \"apkUrl\": \"https://cdn.ainnect.me/apk/ainnect-v1.0.1.apk\",\n    \"description\": \"Bug fixes and performance improvements\",\n    \"isActive\": true\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions/:versionId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions", ":versionId"],
+					"variable": [
+						{
+							"key": "versionId",
+							"value": "1",
+							"description": "APK version ID"
+						}
+					]
+				},
+				"description": "Update an existing APK version (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete APK Version",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions/:versionId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions", ":versionId"],
+					"variable": [
+						{
+							"key": "versionId",
+							"value": "1",
+							"description": "APK version ID"
+						}
+					]
+				},
+				"description": "Delete an APK version (Admin only, cannot delete active version)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get APK Version by ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions/:versionId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions", ":versionId"],
+					"variable": [
+						{
+							"key": "versionId",
+							"value": "1",
+							"description": "APK version ID"
+						}
+					]
+				},
+				"description": "Get APK version details by ID (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Active APK Version (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions/active",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions", "active"]
+				},
+				"description": "Get the currently active APK version (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All APK Versions",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions?page=0&size=20",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions"],
+					"query": [
+						{
+							"key": "page",
+							"value": "0",
+							"description": "Page number (0-indexed)"
+						},
+						{
+							"key": "size",
+							"value": "20",
+							"description": "Page size"
+						}
+					]
+				},
+				"description": "Get all APK versions with pagination (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Set Active APK Version",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/apk-versions/:versionId/activate",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "admin", "apk-versions", ":versionId", "activate"],
+					"variable": [
+						{
+							"key": "versionId",
+							"value": "1",
+							"description": "APK version ID to set as active"
+						}
+					]
+				},
+				"description": "Set an APK version as active (will deactivate current active version) (Admin only)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Active APK Version (Public)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/apk-versions/active",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "apk-versions", "active"]
+				},
+				"description": "Get the currently active APK version (Public - no authentication required)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/apk-versions/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "apk-versions", "active"]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Active APK version retrieved successfully\",\n    \"data\": {\n        \"id\": 1,\n        \"versionName\": \"1.0.0\",\n        \"versionCode\": 1,\n        \"apkUrl\": \"https://cdn.ainnect.me/apk/ainnect-v1.0.0.apk\",\n        \"description\": \"Initial release with basic features\",\n        \"fileSize\": 25000000,\n        \"fileName\": \"ainnect-v1.0.0.apk\",\n        \"releaseDate\": \"2025-11-08T16:00:00\",\n        \"isActive\": true,\n        \"createdById\": 1,\n        \"createdByUsername\": \"admin\",\n        \"createdAt\": \"2025-11-08T16:00:00\",\n        \"updatedAt\": null\n    }\n}"
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
