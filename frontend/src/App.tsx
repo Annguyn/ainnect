@@ -19,6 +19,13 @@ import ConversationPage from './pages/ConversationPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminGroupsPage } from './pages/admin/AdminGroupsPage';
+import { AdminPostsPage } from './pages/admin/AdminPostsPage';
+import { AdminLogsPage } from './pages/admin/AdminLogsPage';
+import { AdminProtectedRoute } from './components/admin';
 import './App.css';
 
 function App() {
@@ -59,6 +66,50 @@ function App() {
         {/* Backward compatibility - redirect old messaging route */}
         <Route path="/messaging" element={<Navigate to="/messages" replace />} />
         <Route path="/messaging/:conversationId" element={<Navigate to="/messages/:conversationId" replace />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminProtectedRoute>
+              <AdminUsersPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/groups"
+          element={
+            <AdminProtectedRoute>
+              <AdminGroupsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/posts"
+          element={
+            <AdminProtectedRoute>
+              <AdminPostsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminProtectedRoute>
+              <AdminLogsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
     </Router>
     </ErrorBoundary>

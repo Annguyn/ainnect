@@ -34,5 +34,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, GroupM
 	 * Delete group member
 	 */
 	void deleteByGroupIdAndUserId(Long groupId, Long userId);
+	
+	Long countByUserId(Long userId);
+	
+	@Query("SELECT COUNT(gm) FROM GroupMember gm WHERE gm.group.id = :communityId")
+	Long countByCommunityId(@Param("communityId") Long communityId);
 }
 

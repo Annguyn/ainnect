@@ -40,6 +40,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/admin/login").permitAll()
+                .requestMatchers("/api/admin/**").authenticated()
                 .requestMatchers("/api/users/check-username/**").permitAll()
                 .requestMatchers("/api/users/check-email/**").permitAll()
                 .requestMatchers("/api/files/**").permitAll() 

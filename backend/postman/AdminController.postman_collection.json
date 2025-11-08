@@ -1,0 +1,975 @@
+{
+	"info": {
+		"_postman_id": "admin-panel-collection",
+		"name": "Admin Panel - Ainnect",
+		"description": "Complete Admin Panel API Collection for Ainnect Backend\n\nDefault Admin Credentials:\n- Username: admin\n- Password: admin\n\n⚠️ Change password after first login!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Admin Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.result === 'SUCCESS') {",
+									"        pm.environment.set('adminToken', jsonData.data.accessToken);",
+									"        pm.environment.set('adminRefreshToken', jsonData.data.refreshToken);",
+									"        pm.environment.set('adminId', jsonData.data.userId);",
+									"        pm.environment.set('adminUsername', jsonData.data.username);",
+									"        console.log('Admin logged in successfully');",
+									"        console.log('Admin ID:', jsonData.data.userId);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has token', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.accessToken).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "login"]
+						},
+						"description": "Login as admin to get access token"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "dashboard"]
+						},
+						"description": "Get overall system statistics including users, posts, groups, reports, and growth charts"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of all users"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/active?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "active"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of active users only"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inactive Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/inactive?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "inactive"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of locked/inactive users"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/search?keyword=john&page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", "search"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "john"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Search users by username, display name, or bio"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to get details"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Lock User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Vi phạm quy định cộng đồng\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId/lock",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId", "lock"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to lock"
+								}
+							]
+						},
+						"description": "Lock a user account with reason"
+					},
+					"response": []
+				},
+				{
+					"name": "Unlock User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId/unlock",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId", "unlock"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to unlock"
+								}
+							]
+						},
+						"description": "Unlock a previously locked user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to delete (soft delete)"
+								}
+							]
+						},
+						"description": "Soft delete a user account"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Post Management",
+			"item": [
+				{
+					"name": "Get All Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/posts?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "posts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of all posts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Posts By User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/posts/user/:userId?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "posts", "user", ":userId"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to get posts from"
+								}
+							]
+						},
+						"description": "Get all posts created by a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1",
+									"description": "Post ID to get details"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific post"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/posts/:postId?reason=Nội dung không phù hợp",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "posts", ":postId"],
+							"query": [
+								{
+									"key": "reason",
+									"value": "Nội dung không phù hợp",
+									"description": "Reason for deletion"
+								}
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1",
+									"description": "Post ID to delete"
+								}
+							]
+						},
+						"description": "Delete a post with reason (soft delete)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Community Management",
+			"item": [
+				{
+					"name": "Get All Communities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/communities?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "communities"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of all communities/groups"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Communities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/communities/search?keyword=tech&page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "communities", "search"],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "tech"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Search communities by name or description"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Community By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/communities/:communityId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "communities", ":communityId"],
+							"variable": [
+								{
+									"key": "communityId",
+									"value": "1",
+									"description": "Community ID to get details"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific community"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Community",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/communities/:communityId?reason=Vi phạm chính sách",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "communities", ":communityId"],
+							"query": [
+								{
+									"key": "reason",
+									"value": "Vi phạm chính sách",
+									"description": "Reason for deletion"
+								}
+							],
+							"variable": [
+								{
+									"key": "communityId",
+									"value": "1",
+									"description": "Community ID to delete"
+								}
+							]
+						},
+						"description": "Delete a community with reason (soft delete)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Report Management",
+			"item": [
+				{
+					"name": "Get All Reports",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reports?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "reports"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of all reports"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Reports",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reports/pending?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "reports", "pending"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get paginated list of pending reports only"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Report By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reports/:reportId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "reports", ":reportId"],
+							"variable": [
+								{
+									"key": "reportId",
+									"value": "1",
+									"description": "Report ID to get details"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific report"
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reports/:reportId/resolve?resolution=Đã xử lý và xóa nội dung vi phạm",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "reports", ":reportId", "resolve"],
+							"query": [
+								{
+									"key": "resolution",
+									"value": "Đã xử lý và xóa nội dung vi phạm",
+									"description": "Resolution note"
+								}
+							],
+							"variable": [
+								{
+									"key": "reportId",
+									"value": "1",
+									"description": "Report ID to resolve"
+								}
+							]
+						},
+						"description": "Mark report as resolved with resolution note"
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "X-Admin-Id",
+								"value": "{{adminId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/reports/:reportId/reject?reason=Nội dung không vi phạm quy định",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "reports", ":reportId", "reject"],
+							"query": [
+								{
+									"key": "reason",
+									"value": "Nội dung không vi phạm quy định",
+									"description": "Reason for rejection"
+								}
+							],
+							"variable": [
+								{
+									"key": "reportId",
+									"value": "1",
+									"description": "Report ID to reject"
+								}
+							]
+						},
+						"description": "Reject a report with reason"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Activity Logs",
+			"item": [
+				{
+					"name": "Get All Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/logs?page=0&size=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "logs"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Get paginated list of all activity logs"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Logs By User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/logs/user/:userId?page=0&size=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "logs", "user", ":userId"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "50"
+								}
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "User ID to get logs"
+								}
+							]
+						},
+						"description": "Get activity logs for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Logs By Action",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/logs/action/:action?page=0&size=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "logs", "action", ":action"],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "50"
+								}
+							],
+							"variable": [
+								{
+									"key": "action",
+									"value": "USER_LOCKED",
+									"description": "Action type: USER_LOGIN, USER_LOCKED, POST_DELETED, etc."
+								}
+							]
+						},
+						"description": "Get logs filtered by action type"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/logs/filter?userId=2&action=USER_LOCKED&entityType=User&startDate=2024-11-01T00:00:00&endDate=2024-11-07T23:59:59&page=0&size=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "logs", "filter"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "2",
+									"description": "Optional: Filter by user ID"
+								},
+								{
+									"key": "action",
+									"value": "USER_LOCKED",
+									"description": "Optional: Filter by action"
+								},
+								{
+									"key": "entityType",
+									"value": "User",
+									"description": "Optional: Filter by entity type"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-11-01T00:00:00",
+									"description": "Optional: Start date (ISO format)"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-11-07T23:59:59",
+									"description": "Optional: End date (ISO format)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Filter logs by multiple criteria"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminRefreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminUsername",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

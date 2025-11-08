@@ -385,6 +385,28 @@ class ProfileService {
     }
   }
 
+  async getUserEducations(userId: number): Promise<Education[]> {
+    const endpoint = `${this.baseUrl}/${userId}/education`;
+    debugLogger.logApiCall('GET', endpoint);
+    try {
+      const response = await apiClient.get<{
+        result: 'SUCCESS' | 'ERROR';
+        message: string;
+        data: Education[];
+      }>(endpoint);
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      throw error;
+    }
+  }
+
   async updateEducation(id: number, data: UpdateEducationRequest): Promise<Education> {
     const endpoint = `${this.baseUrl}/education/${id}`;
     debugLogger.logApiCall('PUT', endpoint, data);
@@ -552,6 +574,20 @@ class ProfileService {
         endpoint,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+      throw error;
+    }
+  }
+
+  async getUserWorkExperiences(userId: number): Promise<WorkExperience[]> {
+    const endpoint = `${this.baseUrl}/${userId}/work-experience`;
+    debugLogger.logApiCall('GET', endpoint);
+    try {
+      const response = await apiClient.get<{ result: string; message: string; data: WorkExperience[] }>(endpoint);
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      return response.data || [];
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;
     }
   }
@@ -728,6 +764,28 @@ class ProfileService {
         endpoint,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+      throw error;
+    }
+  }
+
+  async getUserInterests(userId: number): Promise<Interest[]> {
+    const endpoint = `${this.baseUrl}/${userId}/interest`;
+    debugLogger.logApiCall('GET', endpoint);
+    try {
+      const response = await apiClient.get<{
+        result: 'SUCCESS' | 'ERROR';
+        message: string;
+        data: Interest[];
+      }>(endpoint);
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;
     }
   }
@@ -917,6 +975,28 @@ class ProfileService {
     }
   }
 
+  async getUserLocations(userId: number): Promise<Location[]> {
+    const endpoint = `${this.baseUrl}/${userId}/location`;
+    debugLogger.logApiCall('GET', endpoint);
+    try {
+      const response = await apiClient.get<{
+        result: 'SUCCESS' | 'ERROR';
+        message: string;
+        data: Location[];
+      }>(endpoint);
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      throw error;
+    }
+  }
+
   async updateLocation(id: number, data: UpdateLocationRequest): Promise<Location> {
     const endpoint = `${this.baseUrl}/location/${id}`;
     debugLogger.logApiCall('PUT', endpoint, data);
@@ -1084,3 +1164,8 @@ export const updateLocation = (id: number, data: UpdateLocationRequest) => profi
 export const deleteLocation = (id: number) => profileService.deleteLocation(id);
 
 export const getCompleteProfile = () => profileService.getCompleteProfile();
+
+export const getUserEducations = (userId: number) => profileService.getUserEducations(userId);
+export const getUserWorkExperiences = (userId: number) => profileService.getUserWorkExperiences(userId);
+export const getUserInterests = (userId: number) => profileService.getUserInterests(userId);
+export const getUserLocations = (userId: number) => profileService.getUserLocations(userId);

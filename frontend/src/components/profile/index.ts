@@ -1,12 +1,12 @@
-export { ProfileCard } from './ProfileCard'
-export { ProfileEditModal } from './ProfileEditModal'
-export { ProfileEditModalV2 } from './ProfileEditModalV2'
-export { ConnectionsList } from './ConnectionsList'
-export { SocialStatsCard } from './SocialStatsCard'
-export { EducationSection } from './EducationSection'
-export { WorkExperienceSection } from './WorkExperienceSection'
-export { InterestsSection } from './InterestsSection'
-export { LocationsSection } from './LocationsSection'
-export { InterestForm } from './InterestForm'
-export { LocationForm } from './LocationForm'
-export { ProfileOverview } from './ProfileOverview'
+export { EducationSection } from './EducationSection';
+export { WorkExperienceSection } from './WorkExperienceSection';
+export { InterestsSection } from './InterestsSection';
+export { LocationsSection } from './LocationsSection';
+export { ProfileOverview } from './ProfileOverview';
+export { ProfileEditModalV2 } from './ProfileEditModalV2';
+
+export { EducationCard } from './EducationCard';
+export { WorkExperienceCard } from './WorkExperienceCard';
+export { InterestCard } from './InterestCard';
+export { LocationCard } from './LocationCard';
+export { ProfileDetailsSection } from './ProfileDetailsSection';

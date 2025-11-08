@@ -1,0 +1,171 @@
+{
+	"info": {
+		"_postman_id": "suggestion-api-collection",
+		"name": "SuggestionController",
+		"description": "API endpoints for autocomplete/suggestions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Suggest Schools",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/suggestions/schools?q=đại&limit=10",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "suggestions", "schools"],
+					"query": [
+						{
+							"key": "q",
+							"value": "đại",
+							"description": "Search query"
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Maximum number of suggestions"
+						}
+					]
+				},
+				"description": "Get school name suggestions based on query"
+			},
+			"response": []
+		},
+		{
+			"name": "Suggest Companies",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/suggestions/companies?q=google&limit=10",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "suggestions", "companies"],
+					"query": [
+						{
+							"key": "q",
+							"value": "google",
+							"description": "Search query"
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Maximum number of suggestions"
+						}
+					]
+				},
+				"description": "Get company name suggestions based on query"
+			},
+			"response": []
+		},
+		{
+			"name": "Suggest Interests",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/suggestions/interests?q=photo&limit=10",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "suggestions", "interests"],
+					"query": [
+						{
+							"key": "q",
+							"value": "photo",
+							"description": "Search query"
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Maximum number of suggestions"
+						}
+					]
+				},
+				"description": "Get interest suggestions based on query"
+			},
+			"response": []
+		},
+		{
+			"name": "Suggest Locations",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/suggestions/locations?q=hà&limit=10",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "suggestions", "locations"],
+					"query": [
+						{
+							"key": "q",
+							"value": "hà",
+							"description": "Search query"
+						},
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Maximum number of suggestions"
+						}
+					]
+				},
+				"description": "Get location suggestions based on query"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Interest Categories",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/suggestions/interest-categories",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "suggestions", "interest-categories"]
+				},
+				"description": "Get all available interest categories"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

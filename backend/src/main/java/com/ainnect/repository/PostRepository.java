@@ -8,9 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+
+@Repository
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = {"author", "group", "media"})
@@ -88,5 +91,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 	List<Post> findLatestPostsByAuthor(@Param("authorId") Long authorId, Pageable pageable);
 	
 	long countByAuthor_IdAndDeletedAtIsNull(Long authorId);
+	
+	@EntityGraph(attributePaths = {"author", "media"})
+	Page<Post> findAllByOrderByCreatedAtDesc(Pageable pageable);
+	
+	@EntityGraph(attributePaths = {"author", "media"})
+	Page<Post> findByAuthor_IdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
+	
+	Long countByAuthorId(Long authorId);
+	
+	@Query("SELECT COUNT(p) FROM Post p WHERE p.group.id = :communityId AND p.deletedAt IS NULL")
+	Long countByCommunityId(@Param("communityId") Long communityId);
+	
+	@Query("SELECT COUNT(p) FROM Post p WHERE p.createdAt >= :since AND p.deletedAt IS NULL")
+	Long countNewPostsSince(@Param("since") java.time.LocalDateTime since);
+	
+	@Query("SELECT DATE(p.createdAt) as date, COUNT(p) as count FROM Post p " +
+		   "WHERE p.createdAt >= :since AND p.deletedAt IS NULL " +
+		   "GROUP BY DATE(p.createdAt) " +
+		   "ORDER BY DATE(p.createdAt)")
+	java.util.List<Object[]> getPostGrowthStats(@Param("since") java.time.LocalDateTime since);
 }
 

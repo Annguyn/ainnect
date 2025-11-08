@@ -729,6 +729,94 @@ public class ProfileController {
         }
     }
 
+    @GetMapping("/{userId}/education")
+    public ResponseEntity<ApiResponse<java.util.List<EducationDtos.Response>>> getOtherUserEducations(
+            @PathVariable("userId") Long userId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            extractUserIdFromToken(authHeader);
+            java.util.List<EducationDtos.Response> response = profileService.getUserEducations(userId);
+            return ResponseEntity.ok(ApiResponse.<java.util.List<EducationDtos.Response>>builder()
+                    .result("SUCCESS")
+                    .message("User educations retrieved successfully")
+                    .data(response)
+                    .build());
+        } catch (Exception e) {
+            log.error("Error getting user educations: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.<java.util.List<EducationDtos.Response>>builder()
+                    .result("ERROR")
+                    .message("Failed to get user educations: " + e.getMessage())
+                    .data(null)
+                    .build());
+        }
+    }
+
+    @GetMapping("/{userId}/work-experience")
+    public ResponseEntity<ApiResponse<java.util.List<WorkExperienceDtos.Response>>> getOtherUserWorkExperiences(
+            @PathVariable("userId") Long userId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            extractUserIdFromToken(authHeader);
+            java.util.List<WorkExperienceDtos.Response> response = profileService.getUserWorkExperiences(userId);
+            return ResponseEntity.ok(ApiResponse.<java.util.List<WorkExperienceDtos.Response>>builder()
+                    .result("SUCCESS")
+                    .message("User work experiences retrieved successfully")
+                    .data(response)
+                    .build());
+        } catch (Exception e) {
+            log.error("Error getting user work experiences: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.<java.util.List<WorkExperienceDtos.Response>>builder()
+                    .result("ERROR")
+                    .message("Failed to get user work experiences: " + e.getMessage())
+                    .data(null)
+                    .build());
+        }
+    }
+
+    @GetMapping("/{userId}/interest")
+    public ResponseEntity<ApiResponse<java.util.List<InterestDtos.Response>>> getOtherUserInterests(
+            @PathVariable("userId") Long userId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            extractUserIdFromToken(authHeader);
+            java.util.List<InterestDtos.Response> response = profileService.getUserInterests(userId);
+            return ResponseEntity.ok(ApiResponse.<java.util.List<InterestDtos.Response>>builder()
+                    .result("SUCCESS")
+                    .message("User interests retrieved successfully")
+                    .data(response)
+                    .build());
+        } catch (Exception e) {
+            log.error("Error getting user interests: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.<java.util.List<InterestDtos.Response>>builder()
+                    .result("ERROR")
+                    .message("Failed to get user interests: " + e.getMessage())
+                    .data(null)
+                    .build());
+        }
+    }
+
+    @GetMapping("/{userId}/location")
+    public ResponseEntity<ApiResponse<java.util.List<LocationDtos.Response>>> getOtherUserLocations(
+            @PathVariable("userId") Long userId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            extractUserIdFromToken(authHeader);
+            java.util.List<LocationDtos.Response> response = profileService.getUserLocations(userId);
+            return ResponseEntity.ok(ApiResponse.<java.util.List<LocationDtos.Response>>builder()
+                    .result("SUCCESS")
+                    .message("User locations retrieved successfully")
+                    .data(response)
+                    .build());
+        } catch (Exception e) {
+            log.error("Error getting user locations: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.<java.util.List<LocationDtos.Response>>builder()
+                    .result("ERROR")
+                    .message("Failed to get user locations: " + e.getMessage())
+                    .data(null)
+                    .build());
+        }
+    }
+
     private Long extractUserIdFromToken(String authHeader) {
         return 1L;
     }

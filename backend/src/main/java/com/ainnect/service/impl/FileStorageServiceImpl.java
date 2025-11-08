@@ -1,7 +1,9 @@
 package com.ainnect.service.impl;
 
+import com.ainnect.service.CloudflareStorageService;
 import com.ainnect.service.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,16 +23,11 @@ import java.util.UUID;
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final Path fileStorageLocation;
-    private final String baseUrl;
+    private final String cdnUrl;
+    private final boolean useCdn;
     
-    private static final List<String> SUPPORTED_IMAGE_TYPES = Arrays.asList(
-        "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
-    );
-    
-    private static final List<String> SUPPORTED_VIDEO_TYPES = Arrays.asList(
-        "video/mp4", "video/avi", "video/mov", "video/wmv", "video/flv", 
-        "video/webm", "video/mkv", "video/3gp", "video/quicktime"
-    );
+    @Autowired
+    private CloudflareStorageService cloudflareStorageService;
     
     private static final List<String> SUPPORTED_MEDIA_TYPES = Arrays.asList(
         "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp",
@@ -46,8 +43,10 @@ public class FileStorageServiceImpl implements FileStorageService {
     private static final long MAX_FILE_SIZE = 100 * 1024 * 1024;
 
     public FileStorageServiceImpl(@Value("${app.file.upload-dir:uploads}") String uploadDir,
-                                @Value("${app.file.base-url:http://localhost:8080}") String baseUrl) {
-        this.baseUrl = baseUrl;
+                                @Value("${app.file.cdn-url:}") String cdnUrl,
+                                @Value("${app.file.use-cdn:false}") boolean useCdn) {
+        this.cdnUrl = cdnUrl;
+        this.useCdn = useCdn && cdnUrl != null && !cdnUrl.trim().isEmpty();
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         
         try {
@@ -75,19 +74,12 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new IllegalArgumentException("Category không hợp lệ. Các category được hỗ trợ: " + SUPPORTED_CATEGORIES);
         }
 
-        String fileName = generateFileName(file);
-        
-        try {
-            Path categoryPath = this.fileStorageLocation.resolve(category);
-            Files.createDirectories(categoryPath);
-            
-            Path targetLocation = categoryPath.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            
-            return "/api/files/" + category + "/" + fileName;
-        } catch (IOException ex) {
-            log.error("Could not store file {}. Error: {}", fileName, ex.getMessage());
-            throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
+        if (cloudflareStorageService.isEnabled()) {
+            String fileUrl = cloudflareStorageService.uploadFile(file, category);
+            log.info("File uploaded to Cloudflare R2: {}", fileUrl);
+            return fileUrl;
+        } else {
+            throw new IllegalStateException("Cloudflare R2 is not enabled. Please configure R2 storage.");
         }
     }
 
@@ -97,19 +89,12 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new IllegalArgumentException("File avatar không hợp lệ");
         }
 
-        String fileName = "avatar_" + userId + "_" + UUID.randomUUID().toString() + getFileExtension(file);
-        
-        try {
-            Path avatarPath = this.fileStorageLocation.resolve("avatars");
-            Files.createDirectories(avatarPath);
-            
-            Path targetLocation = avatarPath.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            
-            return "/api/files/avatars/" + fileName;
-        } catch (IOException ex) {
-            log.error("Could not store avatar file for user {}. Error: {}", userId, ex.getMessage());
-            throw new RuntimeException("Không thể lưu file avatar. Vui lòng thử lại!", ex);
+        if (cloudflareStorageService.isEnabled()) {
+            String fileUrl = cloudflareStorageService.uploadFile(file, "avatars");
+            log.info("Avatar uploaded to Cloudflare R2 for user {}: {}", userId, fileUrl);
+            return fileUrl;
+        } else {
+            throw new IllegalStateException("Cloudflare R2 is not enabled. Please configure R2 storage.");
         }
     }
 
@@ -119,19 +104,12 @@ public class FileStorageServiceImpl implements FileStorageService {
             throw new IllegalArgumentException("File cover không hợp lệ");
         }
 
-        String fileName = "cover_" + userId + "_" + UUID.randomUUID().toString() + getFileExtension(file);
-        
-        try {
-            Path coverPath = this.fileStorageLocation.resolve("avatars"); // Store in avatars folder for now
-            Files.createDirectories(coverPath);
-            
-            Path targetLocation = coverPath.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            
-            return "/api/files/avatars/" + fileName;
-        } catch (IOException ex) {
-            log.error("Could not store cover file for user {}. Error: {}", userId, ex.getMessage());
-            throw new RuntimeException("Không thể lưu file cover. Vui lòng thử lại!", ex);
+        if (cloudflareStorageService.isEnabled()) {
+            String fileUrl = cloudflareStorageService.uploadFile(file, "avatars");
+            log.info("Cover uploaded to Cloudflare R2 for user {}: {}", userId, fileUrl);
+            return fileUrl;
+        } else {
+            throw new IllegalStateException("Cloudflare R2 is not enabled. Please configure R2 storage.");
         }
     }
 
@@ -178,6 +156,22 @@ public class FileStorageServiceImpl implements FileStorageService {
     
     private boolean isValidCategory(String category) {
         return category != null && SUPPORTED_CATEGORIES.contains(category.toLowerCase());
+    }
+    
+    /**
+     * Build file URL based on CDN configuration
+     * If CDN is enabled and configured, return CDN URL
+     * Otherwise return API endpoint URL
+     */
+    private String buildFileUrl(String category, String fileName) {
+        if (useCdn) {
+            // Remove trailing slash from CDN URL if exists
+            String cdn = cdnUrl.endsWith("/") ? cdnUrl.substring(0, cdnUrl.length() - 1) : cdnUrl;
+            return cdn + "/" + category + "/" + fileName;
+        } else {
+            // Return API endpoint URL (served by FileController)
+            return "/api/files/" + category + "/" + fileName;
+        }
     }
 
     private String generateFileName(MultipartFile file) {

@@ -1,7 +1,7 @@
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ainnect?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${SPRING_DATASOURCE_USERNAME:root}
+    username: ${SPRING_DATASOURCE_USERNAME:}
     password: ${SPRING_DATASOURCE_PASSWORD:}
 
   jpa:
@@ -39,6 +39,8 @@ logging:
   level:
     org.hibernate.SQL: ${LOGGING_LEVEL_ORG_HIBERNATE_SQL:info}
     org.hibernate.orm.jdbc.bind: ${LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_BIND:info}
+    com.ainnect.service.impl.CloudflareStorageServiceImpl: DEBUG
+    software.amazon.awssdk: DEBUG
 
 # JWT
 jwt:
@@ -50,5 +52,17 @@ app:
   file:
     upload-dir: ${UPLOAD_DIR:uploads}
     base-url: ${BASE_URL:http://localhost:8080}
+    cdn-url: ${CDN_URL:https://cdn.ainnect.me}
+    use-cdn: ${USE_CDN:true}
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+
+# Cloudflare R2 Configuration
+cloudflare:
+  r2:
+    enabled: ${CLOUDFLARE_R2_ENABLED:true}
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID:}
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:}
+    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:}
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME:}
+    public-url: ${CLOUDFLARE_R2_PUBLIC_URL:}
