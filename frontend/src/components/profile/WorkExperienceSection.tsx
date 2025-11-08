@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
 import { WorkExperience, CreateWorkExperienceRequest } from '../../services/profileService';
+import { getCompanySuggestions, getLocationSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { Textarea } from '../ui/Textarea';
 import { debugLogger } from '../../utils/debugLogger';
 
@@ -22,14 +24,11 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
     loadCompleteProfile, 
     createWorkExperience,
     updateWorkExperience,
-    deleteWorkExperience,
-    getSuggestions 
+    deleteWorkExperience
   } = useProfile();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [companySuggestions, setCompanySuggestions] = useState<any[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<CreateWorkExperienceRequest>({
@@ -51,20 +50,25 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
 
   const handleInputChange = (field: keyof CreateWorkExperienceRequest, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Get company suggestions when typing company name
-    if (field === 'companyName' && typeof value === 'string' && value.length > 2) {
-      getCompanySuggestions(value);
+  };
+
+  const fetchCompanySuggestions = async (query: string): Promise<string[]> => {
+    try {
+      const suggestions = await getCompanySuggestions(query, 10);
+      return suggestions.map(s => s.companyName);
+    } catch (error) {
+      debugLogger.log('WorkExperienceSection', 'Failed to get company suggestions', { error });
+      return [];
     }
   };
 
-  const getCompanySuggestions = async (query: string) => {
+  const fetchLocationSuggestions = async (query: string): Promise<string[]> => {
     try {
-      const suggestions = await getSuggestions(query);
-      setCompanySuggestions(suggestions);
-      setShowSuggestions(true);
+      const suggestions = await getLocationSuggestions(query, 10);
+      return suggestions.map(s => s.locationName);
     } catch (error) {
-      debugLogger.log('WorkExperienceSection', 'Failed to get company suggestions', { error });
+      debugLogger.log('WorkExperienceSection', 'Failed to get location suggestions', { error });
+      return [];
     }
   };
 
@@ -98,7 +102,6 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
     });
     setShowAddForm(false);
     setEditingId(null);
-    setShowSuggestions(false);
   };
 
   const handleEdit = (experience: any) => {
@@ -187,35 +190,19 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Company Name with Suggestions */}
-              <div className="relative">
+              {/* Company Name with Autocomplete */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Công ty *
                 </label>
-                <Input
-                  type="text"
+                <AutocompleteInput
                   value={formData.companyName}
-                  onChange={(e) => handleInputChange('companyName', e.target.value)}
+                  onChange={(value) => handleInputChange('companyName', value)}
+                  onFetch={fetchCompanySuggestions}
                   placeholder="Nhập tên công ty"
                   required
+                  minChars={2}
                 />
-                {showSuggestions && companySuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {companySuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion.id}
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
-                        onClick={() => {
-                          handleInputChange('companyName', suggestion.name);
-                          setShowSuggestions(false);
-                        }}
-                      >
-                        {suggestion.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div>
@@ -235,11 +222,12 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Địa điểm
                 </label>
-                <Input
-                  type="text"
+                <AutocompleteInput
                   value={formData.location || ''}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  onChange={(value) => handleInputChange('location', value)}
+                  onFetch={fetchLocationSuggestions}
                   placeholder="Ví dụ: Hồ Chí Minh, Việt Nam"
+                  minChars={2}
                 />
               </div>
 

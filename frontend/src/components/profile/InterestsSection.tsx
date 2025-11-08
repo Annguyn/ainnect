@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
 import { Interest, CreateInterestRequest, UpdateInterestRequest } from '../../services/profileService';
+import { getInterestCategories } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { InterestForm } from './InterestForm';
 import { debugLogger } from '../../utils/debugLogger';
@@ -21,8 +22,7 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
     loadCompleteProfile, 
     createInterest,
     updateInterest,
-    deleteInterest,
-    getSuggestionCategories 
+    deleteInterest
   } = useProfile();
   
   const [showAddForm, setShowAddForm] = useState(false);
@@ -39,8 +39,8 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
 
   const loadCategories = async () => {
     try {
-      const categoriesData = await getSuggestionCategories();
-      setCategories(categoriesData);
+      const categoriesData = await getInterestCategories();
+      setCategories(categoriesData.map((cat, index) => ({ id: index, name: cat.category })));
     } catch (error) {
       debugLogger.log('InterestsSection', 'Failed to load categories', { error });
     }

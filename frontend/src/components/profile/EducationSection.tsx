@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
 import { Education, CreateEducationRequest, UpdateEducationRequest } from '../../services/profileService';
+import { getSchoolSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
@@ -23,14 +24,11 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
     loadCompleteProfile, 
     createEducation, 
     updateEducation, 
-    deleteEducation,
-    getSuggestions 
+    deleteEducation
   } = useProfile();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [schoolSuggestions, setSchoolSuggestions] = useState<any[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<CreateEducationRequest>({
@@ -66,20 +64,15 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
 
   const handleInputChange = (field: keyof CreateEducationRequest, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Get school suggestions when typing school name
-    if (field === 'schoolName' && typeof value === 'string' && value.length > 2) {
-      getSchoolSuggestions(value);
-    }
   };
 
-  const getSchoolSuggestions = async (query: string) => {
+  const fetchSchoolSuggestions = async (query: string): Promise<string[]> => {
     try {
-      const suggestions = await getSuggestions(query);
-      setSchoolSuggestions(suggestions);
-      setShowSuggestions(true);
+      const suggestions = await getSchoolSuggestions(query, 10);
+      return suggestions.map(s => s.schoolName);
     } catch (error) {
       debugLogger.log('EducationSection', 'Failed to get school suggestions', { error });
+      return [];
     }
   };
 
@@ -140,7 +133,6 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
     });
     setEditingId(null);
     setShowAddForm(false);
-    setShowSuggestions(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -185,35 +177,19 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* School Name with Suggestions */}
-              <div className="relative">
+              {/* School Name with Autocomplete */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Trường học *
                 </label>
-                <Input
-                  type="text"
+                <AutocompleteInput
                   value={formData.schoolName}
-                  onChange={(e) => handleInputChange('schoolName', e.target.value)}
+                  onChange={(value) => handleInputChange('schoolName', value)}
+                  onFetch={fetchSchoolSuggestions}
                   placeholder="Nhập tên trường học"
                   required
+                  minChars={2}
                 />
-                {showSuggestions && schoolSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {schoolSuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion.id}
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
-                        onClick={() => {
-                          handleInputChange('schoolName', suggestion.name);
-                          setShowSuggestions(false);
-                        }}
-                      >
-                        {suggestion.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div>

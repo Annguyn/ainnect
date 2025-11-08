@@ -1,207 +1,165 @@
 import { apiClient } from './apiClient';
 import { debugLogger } from '../utils/debugLogger';
 
-// Suggestion Types
-export interface Suggestion {
-  id: number;
-  name: string;
-  category?: string;
-  description?: string | null;
-  imageUrl?: string | null;
-  usageCount?: number;
-  type: 'school' | 'company' | 'interest' | 'location';
+export interface SchoolSuggestion {
+  schoolName: string;
+  count: number;
 }
 
-export interface SuggestionCategory {
-  id: number;
-  name: string;
-  description?: string | null;
-  type: 'school' | 'company' | 'interest' | 'location';
+export interface CompanySuggestion {
+  companyName: string;
+  count: number;
 }
 
-export interface SuggestionResponse {
+export interface InterestSuggestion {
+  name: string;
+  count: number;
+}
+
+export interface LocationSuggestion {
+  locationName: string;
+  count: number;
+}
+
+export interface InterestCategorySuggestion {
+  category: string;
+}
+
+interface SuggestionResponse<T> {
   result: 'SUCCESS' | 'ERROR';
   message: string;
-  data: Suggestion[];
-}
-
-export interface SuggestionCategoryResponse {
-  result: 'SUCCESS' | 'ERROR';
-  message: string;
-  data: SuggestionCategory[];
-}
-
-// Request Types
-export interface SuggestionSearchParams {
-  type: 'school' | 'company' | 'interest' | 'location';
-  query?: string;
-  category?: string;
-  limit?: number;
-  offset?: number;
+  data: {
+    suggestions: T[];
+    total: number;
+  };
 }
 
 class SuggestionService {
-  private baseUrl = '/api/profile/suggestions';
+  private baseUrl = '/api/suggestions';
 
-  // Get suggestions with filtering
-  async getSuggestions(params: SuggestionSearchParams): Promise<Suggestion[]> {
-    const endpoint = this.baseUrl;
-    const queryParams = new URLSearchParams();
+  async getSchoolSuggestions(query: string, limit: number = 10): Promise<SchoolSuggestion[]> {
+    const endpoint = `${this.baseUrl}/schools`;
+    debugLogger.logApiCall('GET', endpoint, { query, limit });
     
-    queryParams.append('type', params.type);
-    if (params.query) queryParams.append('query', params.query);
-    if (params.category) queryParams.append('category', params.category);
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.offset) queryParams.append('offset', params.offset.toString());
-
-    const fullUrl = `${endpoint}?${queryParams.toString()}`;
-    
-    debugLogger.logApiCall('GET', fullUrl, params);
     try {
-      const response = await apiClient.get<Suggestion[]>(fullUrl);
-      debugLogger.logApiResponse('GET', fullUrl, response);
-      
-      debugLogger.log('SuggestionService', `💡 Get Suggestions API Success`, {
-        endpoint: fullUrl,
-        type: params.type,
-        query: params.query,
-        category: params.category,
-        count: response.length,
-        suggestions: response.map(s => ({
-          id: s.id,
-          name: s.name,
-          category: s.category,
-          usageCount: s.usageCount
-        }))
+      const response = await apiClient.get<SuggestionResponse<SchoolSuggestion>>(endpoint, {
+        params: { q: query, limit }
       });
       
-      return response;
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data.suggestions;
     } catch (error) {
-      debugLogger.logApiResponse('GET', fullUrl, null, error);
-      debugLogger.log('SuggestionService', `❌ Get Suggestions API Error`, {
-        endpoint: fullUrl,
-        params,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      console.error('Failed to get school suggestions:', error);
+      return [];
     }
   }
 
-  // Get suggestion categories
-  async getSuggestionCategories(type: 'school' | 'company' | 'interest' | 'location'): Promise<SuggestionCategory[]> {
-    const endpoint = `${this.baseUrl}/categories`;
-    const queryParams = new URLSearchParams();
-    queryParams.append('type', type);
+  async getCompanySuggestions(query: string, limit: number = 10): Promise<CompanySuggestion[]> {
+    const endpoint = `${this.baseUrl}/companies`;
+    debugLogger.logApiCall('GET', endpoint, { query, limit });
     
-    const fullUrl = `${endpoint}?${queryParams.toString()}`;
-    
-    debugLogger.logApiCall('GET', fullUrl, { type });
     try {
-      const response = await apiClient.get<SuggestionCategory[]>(fullUrl);
-      debugLogger.logApiResponse('GET', fullUrl, response);
-      
-      debugLogger.log('SuggestionService', `📂 Get Suggestion Categories API Success`, {
-        endpoint: fullUrl,
-        type,
-        count: response.length,
-        categories: response.map(c => ({
-          id: c.id,
-          name: c.name,
-          description: c.description
-        }))
+      const response = await apiClient.get<SuggestionResponse<CompanySuggestion>>(endpoint, {
+        params: { q: query, limit }
       });
       
-      return response;
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data.suggestions;
     } catch (error) {
-      debugLogger.logApiResponse('GET', fullUrl, null, error);
-      debugLogger.log('SuggestionService', `❌ Get Suggestion Categories API Error`, {
-        endpoint: fullUrl,
-        type,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      console.error('Failed to get company suggestions:', error);
+      return [];
     }
   }
 
-  // Search schools
-  async searchSchools(query: string, limit: number = 10): Promise<Suggestion[]> {
-    return this.getSuggestions({
-      type: 'school',
-      query,
-      limit
-    });
+  async getInterestSuggestions(query: string, limit: number = 10): Promise<InterestSuggestion[]> {
+    const endpoint = `${this.baseUrl}/interests`;
+    debugLogger.logApiCall('GET', endpoint, { query, limit });
+    
+    try {
+      const response = await apiClient.get<SuggestionResponse<InterestSuggestion>>(endpoint, {
+        params: { q: query, limit }
+      });
+      
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data.suggestions;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      console.error('Failed to get interest suggestions:', error);
+      return [];
+    }
   }
 
-  // Search companies
-  async searchCompanies(query: string, category?: string, limit: number = 10): Promise<Suggestion[]> {
-    return this.getSuggestions({
-      type: 'company',
-      query,
-      category,
-      limit
-    });
+  async getLocationSuggestions(query: string, limit: number = 10): Promise<LocationSuggestion[]> {
+    const endpoint = `${this.baseUrl}/locations`;
+    debugLogger.logApiCall('GET', endpoint, { query, limit });
+    
+    try {
+      const response = await apiClient.get<SuggestionResponse<LocationSuggestion>>(endpoint, {
+        params: { q: query, limit }
+      });
+      
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data.suggestions;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      console.error('Failed to get location suggestions:', error);
+      return [];
+    }
   }
 
-  // Search interests
-  async searchInterests(query: string, category?: string, limit: number = 10): Promise<Suggestion[]> {
-    return this.getSuggestions({
-      type: 'interest',
-      query,
-      category,
-      limit
-    });
-  }
-
-  // Search locations
-  async searchLocations(query: string, limit: number = 10): Promise<Suggestion[]> {
-    return this.getSuggestions({
-      type: 'location',
-      query,
-      limit
-    });
-  }
-
-  // Get popular suggestions (most used)
-  async getPopularSuggestions(type: 'school' | 'company' | 'interest' | 'location', limit: number = 20): Promise<Suggestion[]> {
-    return this.getSuggestions({
-      type,
-      limit
-    });
-  }
-
-  // Get school categories
-  async getSchoolCategories(): Promise<SuggestionCategory[]> {
-    return this.getSuggestionCategories('school');
-  }
-
-  // Get company categories
-  async getCompanyCategories(): Promise<SuggestionCategory[]> {
-    return this.getSuggestionCategories('company');
-  }
-
-  // Get interest categories
-  async getInterestCategories(): Promise<SuggestionCategory[]> {
-    return this.getSuggestionCategories('interest');
-  }
-
-  // Get location categories
-  async getLocationCategories(): Promise<SuggestionCategory[]> {
-    return this.getSuggestionCategories('location');
+  async getInterestCategories(): Promise<InterestCategorySuggestion[]> {
+    const endpoint = `${this.baseUrl}/interest-categories`;
+    debugLogger.logApiCall('GET', endpoint);
+    
+    try {
+      const response = await apiClient.get<SuggestionResponse<InterestCategorySuggestion>>(endpoint);
+      
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      if (response.result === 'ERROR') {
+        throw new Error(response.message);
+      }
+      
+      return response.data.suggestions;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      console.error('Failed to get interest categories:', error);
+      return [];
+    }
   }
 }
 
-// Export service instance
 export const suggestionService = new SuggestionService();
 
-// Export convenience functions
-export const getSuggestions = (params: SuggestionSearchParams) => suggestionService.getSuggestions(params);
-export const getSuggestionCategories = (type: 'school' | 'company' | 'interest' | 'location') => suggestionService.getSuggestionCategories(type);
-export const searchSchools = (query: string, limit?: number) => suggestionService.searchSchools(query, limit);
-export const searchCompanies = (query: string, category?: string, limit?: number) => suggestionService.searchCompanies(query, category, limit);
-export const searchInterests = (query: string, category?: string, limit?: number) => suggestionService.searchInterests(query, category, limit);
-export const searchLocations = (query: string, limit?: number) => suggestionService.searchLocations(query, limit);
-export const getPopularSuggestions = (type: 'school' | 'company' | 'interest' | 'location', limit?: number) => suggestionService.getPopularSuggestions(type, limit);
-export const getSchoolCategories = () => suggestionService.getSchoolCategories();
-export const getCompanyCategories = () => suggestionService.getCompanyCategories();
-export const getInterestCategories = () => suggestionService.getInterestCategories();
-export const getLocationCategories = () => suggestionService.getLocationCategories();
+export const getSchoolSuggestions = (query: string, limit?: number) => 
+  suggestionService.getSchoolSuggestions(query, limit);
+export const getCompanySuggestions = (query: string, limit?: number) => 
+  suggestionService.getCompanySuggestions(query, limit);
+export const getInterestSuggestions = (query: string, limit?: number) => 
+  suggestionService.getInterestSuggestions(query, limit);
+export const getLocationSuggestions = (query: string, limit?: number) => 
+  suggestionService.getLocationSuggestions(query, limit);
+export const getInterestCategories = () => 
+  suggestionService.getInterestCategories();

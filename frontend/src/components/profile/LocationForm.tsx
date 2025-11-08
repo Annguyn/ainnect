@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Location, CreateLocationRequest } from '../../services/profileService';
+import { getLocationSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
@@ -56,6 +58,16 @@ export const LocationForm: React.FC<LocationFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const fetchLocationSuggestions = async (query: string): Promise<string[]> => {
+    try {
+      const suggestions = await getLocationSuggestions(query, 10);
+      return suggestions.map(s => s.locationName);
+    } catch (error) {
+      debugLogger.log('LocationForm', 'Failed to get location suggestions', { error });
+      return [];
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -93,12 +105,13 @@ export const LocationForm: React.FC<LocationFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tên địa điểm *
             </label>
-            <Input
-              type="text"
+            <AutocompleteInput
               value={formData.locationName}
-              onChange={(e) => handleInputChange('locationName', e.target.value)}
+              onChange={(value) => handleInputChange('locationName', value)}
+              onFetch={fetchLocationSuggestions}
               placeholder="Nhập tên địa điểm"
               required
+              minChars={2}
             />
           </div>
 

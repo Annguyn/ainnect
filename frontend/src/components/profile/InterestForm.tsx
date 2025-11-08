@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Interest, CreateInterestRequest } from '../../services/profileService';
+import { getInterestSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { AutocompleteInput } from '../ui/AutocompleteInput';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
@@ -48,6 +49,16 @@ export const InterestForm: React.FC<InterestFormProps> = ({
 
   const handleInputChange = (field: keyof CreateInterestRequest, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const fetchInterestSuggestions = async (query: string): Promise<string[]> => {
+    try {
+      const suggestions = await getInterestSuggestions(query, 10);
+      return suggestions.map(s => s.name);
+    } catch (error) {
+      debugLogger.log('InterestForm', 'Failed to get interest suggestions', { error });
+      return [];
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,12 +115,13 @@ export const InterestForm: React.FC<InterestFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tên sở thích *
             </label>
-            <Input
-              type="text"
+            <AutocompleteInput
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(value) => handleInputChange('name', value)}
+              onFetch={fetchInterestSuggestions}
               placeholder="Nhập tên sở thích"
               required
+              minChars={2}
             />
           </div>
 
