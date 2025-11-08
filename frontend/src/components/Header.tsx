@@ -319,18 +319,33 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Social Shortcuts */}
           <div className="hidden sm:flex items-center space-x-1 mr-2">
-            <Link
-              to="/friends"
-              title="Danh sách bạn bè"
-              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative group"
+            {user && (
+              <Link
+                to="/friends"
+                title="Danh sách bạn bè"
+                className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative group"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                  Bạn bè
+                </span>
+              </Link>
+            )}
+            
+            {/* Download App Link */}
+            <a
+              href="https://ainnect.me/download"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:flex items-center space-x-2 px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-full transition-all transform hover:scale-105 shadow-md"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                Bạn bè
-              </span>
-            </Link>
+              <span>Tải ứng dụng</span>
+            </a>
           </div>
           
           {/* User Menu or Auth Buttons */}
@@ -562,26 +577,22 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 /* Auth Buttons for non-authenticated users */
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const event = new CustomEvent('openAuthModal', { detail: { mode: 'login' } });
-                      window.dispatchEvent(event);
-                    }}
-                  >
-                    Đăng nhập
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      const event = new CustomEvent('openAuthModal', { detail: { mode: 'register' } });
-                      window.dispatchEvent(event);
-                    }}
-                  >
-                    Đăng ký
-                  </Button>
+                  <Link to="/auth?mode=login">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Đăng nhập
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=register">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                    >
+                      Đăng ký
+                    </Button>
+                  </Link>
                 </div>
               )}
             </div>

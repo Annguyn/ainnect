@@ -122,7 +122,7 @@ export interface CreateEducationRequest {
   endDate?: string | null;
   isCurrent: boolean;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface UpdateEducationRequest {
@@ -133,7 +133,7 @@ export interface UpdateEducationRequest {
   endDate?: string | null;
   isCurrent?: boolean;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface CreateWorkExperienceRequest {
@@ -144,7 +144,7 @@ export interface CreateWorkExperienceRequest {
   endDate?: string | null;
   isCurrent: boolean;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface UpdateWorkExperienceRequest {
@@ -155,14 +155,14 @@ export interface UpdateWorkExperienceRequest {
   endDate?: string | null;
   isCurrent?: boolean;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface UpdateInterestRequest {
   name?: string;
   category?: string;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface UpdateLocationRequest {
@@ -172,7 +172,7 @@ export interface UpdateLocationRequest {
   latitude?: number | null;
   longitude?: number | null;
   description?: string | null;
-  image?: File;
+  image?: File | string;
   isCurrent?: boolean;
 }
 
@@ -180,7 +180,7 @@ export interface CreateInterestRequest {
   name: string;
   category: string;
   description?: string | null;
-  image?: File;
+  image?: File | string;
 }
 
 export interface CreateLocationRequest {
@@ -190,7 +190,7 @@ export interface CreateLocationRequest {
   latitude?: number | null;
   longitude?: number | null;
   description?: string | null;
-  image?: File;
+  image?: File | string;
   isCurrent: boolean;
 }
 
@@ -305,7 +305,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.post<{
@@ -442,7 +446,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.put<Education>(endpoint, formData, {
@@ -518,7 +526,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.post<WorkExperience>(endpoint, formData, {
@@ -627,7 +639,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.put<WorkExperience>(endpoint, formData, {
@@ -692,7 +708,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.post<{
@@ -809,7 +829,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.put<{
@@ -897,7 +921,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.post<{
@@ -1032,7 +1060,11 @@ class ProfileService {
       }
       
       if (data.image) {
-        formData.append('image', data.image);
+        if (typeof data.image === 'string') {
+          formData.append('imageUrl', data.image);
+        } else {
+          formData.append('image', data.image);
+        }
       }
 
       const response = await apiClient.put<{

@@ -4,7 +4,7 @@ import { useGroups } from '../hooks/useGroups';
 import { useAuth } from '../hooks/useAuth';
 import { apiClient } from '../services/apiClient';
 import { groupService } from '../services/groupService';
-import { GroupForm, GroupPostCard, CreateGroupPost } from '../components/groups';
+import { GroupForm, GroupPostCard, CreateGroupPost, JoinRequestsModal } from '../components/groups';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Avatar } from '../components/Avatar';
@@ -18,7 +18,8 @@ import {
   Calendar,
   ArrowLeft,
   MessageSquare,
-  Image
+  Image,
+  UserCheck
 } from 'lucide-react';
 import { UpdateGroupRequest } from '../types';
 import { Post } from '../services/postService';
@@ -46,10 +47,12 @@ export const GroupPage: React.FC = () => {
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showJoinRequestsModal, setShowJoinRequestsModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
   const [joinedGroupsLoading, setJoinedGroupsLoading] = useState(false);
   const [joinedGroupsError, setJoinedGroupsError] = useState<string | null>(null);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   const groupIdNum = groupId ? parseInt(groupId, 10) : null;
 
@@ -62,8 +65,20 @@ export const GroupPage: React.FC = () => {
         console.error('Failed to load members:', error);
       });
       loadGroupPosts();
+      loadPendingRequestsCount();
     }
   }, [groupIdNum]);
+
+  // Load pending requests count for owner/moderator
+  const loadPendingRequestsCount = async () => {
+    if (!groupIdNum) return;
+    try {
+      const response = await groupService.getPendingJoinRequests(groupIdNum, 0, 1);
+      setPendingRequestsCount(response.totalElements || 0);
+    } catch (error) {
+      console.error('Failed to load pending requests count:', error);
+    }
+  };
 
   // Fetch joined groups
   useEffect(() => {
@@ -382,14 +397,29 @@ export const GroupPage: React.FC = () => {
                 )}
                 
                 {canManage && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEditForm(true)}
-                    className="flex items-center"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowJoinRequestsModal(true)}
+                      className="flex items-center relative"
+                    >
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Yêu cầu tham gia
+                      {pendingRequestsCount > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {pendingRequestsCount}
+                        </span>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowEditForm(true)}
+                      className="flex items-center"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -579,6 +609,17 @@ export const GroupPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Join Requests Modal */}
+        <JoinRequestsModal
+          isOpen={showJoinRequestsModal}
+          onClose={() => {
+            setShowJoinRequestsModal(false);
+            loadPendingRequestsCount();
+          }}
+          groupId={currentGroup.id}
+          groupName={currentGroup.name}
+        />
 
         {/* Edit Group Form */}
         {showEditForm && (

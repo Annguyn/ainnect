@@ -16,6 +16,7 @@ public class SuggestionDtos {
     public static class SchoolSuggestion {
         private String schoolName;
         private Long count;
+        private String imageUrl;
     }
 
     @Data
@@ -25,6 +26,7 @@ public class SuggestionDtos {
     public static class CompanySuggestion {
         private String companyName;
         private Long count;
+        private String imageUrl;
     }
 
     @Data
@@ -34,6 +36,7 @@ public class SuggestionDtos {
     public static class InterestSuggestion {
         private String name;
         private Long count;
+        private String imageUrl;
     }
 
     @Data
@@ -43,6 +46,7 @@ public class SuggestionDtos {
     public static class LocationSuggestion {
         private String locationName;
         private Long count;
+        private String imageUrl;
     }
 
     @Data

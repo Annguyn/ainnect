@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth, useFormValidation, validateEmail, validatePassword } from '../../hooks/useAuth';
 import { Button, Input, Alert } from '../ui';
 import { LoginFormData } from '../../types';
+import { QRLoginModal } from './QRLoginModal';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -14,6 +15,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const { login, isLoading, error } = useAuth();
   const [showAlert, setShowAlert] = useState(false);
+  const [showQRLogin, setShowQRLogin] = useState(false);
 
   const {
     values,
@@ -67,9 +69,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto animate-fadeIn">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2 animate-slideInDown">Đăng nhập</h2>
-        <p className="text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Chào mừng bạn trở lại với Ainnect</p>
+      <div className="text-center mb-4 sm:mb-6 md:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 animate-slideInDown">Đăng nhập</h2>
+        <p className="text-sm sm:text-base text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Chào mừng bạn trở lại với Ainnect</p>
       </div>
 
       {(error || showAlert) && (
@@ -85,7 +87,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
         <div className="animate-slideInLeft" style={{ animationDelay: '0.2s' }}>
           <Input
             type="text"
@@ -112,7 +114,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-between animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           <label className="flex items-center">
             <input
               type="checkbox"
@@ -120,12 +122,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               onChange={(e) => handleChange('rememberMe', e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded transition-colors"
             />
-            <span className="ml-2 text-sm text-gray-600">Ghi nhớ đăng nhập</span>
+            <span className="ml-2 text-xs sm:text-sm text-gray-600">Ghi nhớ đăng nhập</span>
           </label>
 
           <button
             type="button"
-            className="text-sm text-primary-600 hover:text-primary-500 transition-colors"
+            className="text-xs sm:text-sm text-primary-600 hover:text-primary-500 transition-colors text-left sm:text-right"
           >
             Quên mật khẩu?
           </button>
@@ -144,8 +146,34 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </Button>
         </div>
 
-        <div className="text-center animate-fadeIn" style={{ animationDelay: '0.6s' }}>
-          <p className="text-sm text-gray-600">
+        {/* Divider */}
+        <div className="relative animate-fadeIn" style={{ animationDelay: '0.55s' }}>
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">hoặc</span>
+          </div>
+        </div>
+
+        {/* QR Login Button */}
+        <div className="animate-slideInUp" style={{ animationDelay: '0.6s' }}>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => setShowQRLogin(true)}
+            className="w-full transform hover:scale-105 transition-transform border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            Đăng nhập bằng mã QR
+          </Button>
+        </div>
+
+        <div className="text-center animate-fadeIn" style={{ animationDelay: '0.7s' }}>
+          <p className="text-xs sm:text-sm text-gray-600">
             Chưa có tài khoản?{' '}
             <button
               type="button"
@@ -157,6 +185,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </p>
         </div>
       </form>
+
+      {/* QR Login Modal */}
+      <QRLoginModal
+        isOpen={showQRLogin}
+        onClose={() => setShowQRLogin(false)}
+        onSuccess={onSuccess}
+      />
     </div>
   );
 };

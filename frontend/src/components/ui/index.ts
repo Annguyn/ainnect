@@ -3,3 +3,8 @@ export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Select } from './Select';
 export { AutocompleteInput } from './AutocompleteInput';
+export { AutocompleteInputWithImage } from './AutocompleteInputWithImage';
+export type { SuggestionItem } from './AutocompleteInputWithImage';
+export { Alert } from './Alert';
+export { Modal } from './Modal';
+export { Card, CardHeader, CardTitle, CardContent, CardFooter } from './Card';

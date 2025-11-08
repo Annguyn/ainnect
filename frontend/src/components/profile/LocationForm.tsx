@@ -3,7 +3,7 @@ import { Location, CreateLocationRequest } from '../../services/profileService';
 import { getLocationSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { AutocompleteInput } from '../ui/AutocompleteInput';
+import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteInputWithImage';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
@@ -58,14 +58,25 @@ export const LocationForm: React.FC<LocationFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const fetchLocationSuggestions = async (query: string): Promise<string[]> => {
+  const fetchLocationSuggestions = async (query: string): Promise<SuggestionItem[]> => {
     try {
       const suggestions = await getLocationSuggestions(query, 10);
-      return suggestions.map(s => s.locationName);
+      return suggestions.map(s => ({
+        label: s.locationName,
+        imageUrl: s.imageUrl
+      }));
     } catch (error) {
       debugLogger.log('LocationForm', 'Failed to get location suggestions', { error });
       return [];
     }
+  };
+
+  const handleLocationSelect = (item: SuggestionItem) => {
+    setFormData(prev => ({
+      ...prev,
+      locationName: item.label,
+      image: item.imageUrl ? item.imageUrl : prev.image
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,9 +116,10 @@ export const LocationForm: React.FC<LocationFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tên địa điểm *
             </label>
-            <AutocompleteInput
+            <AutocompleteInputWithImage
               value={formData.locationName}
               onChange={(value) => handleInputChange('locationName', value)}
+              onSelect={handleLocationSelect}
               onFetch={fetchLocationSuggestions}
               placeholder="Nhập tên địa điểm"
               required

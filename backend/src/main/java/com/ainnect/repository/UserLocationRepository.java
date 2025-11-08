@@ -19,4 +19,7 @@ public interface UserLocationRepository extends JpaRepository<UserLocation, Long
     
     @Query("SELECT COUNT(l) FROM UserLocation l WHERE l.locationName = :locationName AND l.deletedAt IS NULL")
     Long countByLocationName(@Param("locationName") String locationName);
+    
+    @Query("SELECT l FROM UserLocation l WHERE l.locationName = :locationName AND l.deletedAt IS NULL AND l.imageUrl IS NOT NULL ORDER BY l.createdAt DESC")
+    List<UserLocation> findByLocationNameWithImage(@Param("locationName") String locationName);
 }

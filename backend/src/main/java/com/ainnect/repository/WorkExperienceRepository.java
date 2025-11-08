@@ -19,4 +19,7 @@ public interface WorkExperienceRepository extends JpaRepository<WorkExperience, 
     
     @Query("SELECT COUNT(w) FROM WorkExperience w WHERE w.companyName = :companyName AND w.deletedAt IS NULL")
     Long countByCompanyName(@Param("companyName") String companyName);
+    
+    @Query("SELECT w FROM WorkExperience w WHERE w.companyName = :companyName AND w.deletedAt IS NULL AND w.imageUrl IS NOT NULL ORDER BY w.createdAt DESC")
+    List<WorkExperience> findByCompanyNameWithImage(@Param("companyName") String companyName);
 }

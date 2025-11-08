@@ -26,6 +26,12 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, GroupM
 	Page<GroupMember> findByGroupId(@Param("groupId") Long groupId, Pageable pageable);
 	
 	/**
+	 * Get groups by user with pagination
+	 */
+	@Query("SELECT gm FROM GroupMember gm WHERE gm.user.id = :userId ORDER BY gm.joinedAt DESC")
+	Page<GroupMember> findByUserId(@Param("userId") Long userId, Pageable pageable);
+	
+	/**
 	 * Get group member by group and user
 	 */
 	Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);

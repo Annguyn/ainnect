@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
-import { Education, CreateEducationRequest, UpdateEducationRequest } from '../../services/profileService';
+import { 
+  Education, 
+  CreateEducationRequest, 
+  UpdateEducationRequest,
+  getUserEducations
+} from '../../services/profileService';
 import { getSchoolSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
-import { AutocompleteInput } from '../ui/AutocompleteInput';
+import { Input } from '../ui/Input';
+import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteInputWithImage';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
@@ -18,10 +24,6 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   isEditable = false 
 }) => {
   const { 
-    educations, 
-    isLoading, 
-    error, 
-    loadCompleteProfile, 
     createEducation, 
     updateEducation, 
     deleteEducation
@@ -29,6 +31,9 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [educations, setEducations] = useState<Education[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<CreateEducationRequest>({
@@ -43,37 +48,50 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
   });
 
   useEffect(() => {
-    if (userId) {
-      loadCompleteProfile(userId);
-    }
-  }, [userId, loadCompleteProfile]);
+    const loadEducations = async () => {
+      if (!userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Always use getUserEducations API with userId
+        const data = await getUserEducations(userId);
+        setEducations(data);
+      } catch (err) {
+        console.error('Failed to load educations:', err);
+        setError('Không thể tải thông tin học vấn');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Debug: Log education data when it changes
-  useEffect(() => {
-    if (educations.length > 0) {
-      console.log('Education data received:', educations);
-      educations.forEach((edu: any) => {
-        console.log(`Education ${edu.id}:`, {
-          schoolName: edu.schoolName,
-          imageUrl: edu.imageUrl,
-          hasImageUrl: !!edu.imageUrl
-        });
-      });
-    }
-  }, [educations]);
+    loadEducations();
+  }, [userId]);
 
   const handleInputChange = (field: keyof CreateEducationRequest, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const fetchSchoolSuggestions = async (query: string): Promise<string[]> => {
+  const fetchSchoolSuggestions = async (query: string): Promise<SuggestionItem[]> => {
     try {
       const suggestions = await getSchoolSuggestions(query, 10);
-      return suggestions.map(s => s.schoolName);
+      return suggestions.map(s => ({
+        label: s.schoolName,
+        imageUrl: s.imageUrl
+      }));
     } catch (error) {
       debugLogger.log('EducationSection', 'Failed to get school suggestions', { error });
       return [];
     }
+  };
+
+  const handleSchoolSelect = (item: SuggestionItem) => {
+    setFormData(prev => ({
+      ...prev,
+      schoolName: item.label,
+      image: item.imageUrl ? item.imageUrl : prev.image
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +107,12 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
       }
       
       resetForm();
+      
+      // Reload educations after save
+      if (userId) {
+        const data = await getUserEducations(userId);
+        setEducations(data);
+      }
     } catch (error) {
       debugLogger.log('EducationSection', 'Failed to save education', { error });
     }
@@ -114,6 +138,12 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
       try {
         await deleteEducation(id);
         debugLogger.log('EducationSection', 'Education deleted successfully', { educationId: id });
+        
+        // Reload educations after delete
+        if (userId) {
+          const data = await getUserEducations(userId);
+          setEducations(data);
+        }
       } catch (error) {
         debugLogger.log('EducationSection', 'Failed to delete education', { error });
       }
@@ -182,9 +212,10 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Trường học *
                 </label>
-                <AutocompleteInput
+                <AutocompleteInputWithImage
                   value={formData.schoolName}
                   onChange={(value) => handleInputChange('schoolName', value)}
+                  onSelect={handleSchoolSelect}
                   onFetch={fetchSchoolSuggestions}
                   placeholder="Nhập tên trường học"
                   required
@@ -281,7 +312,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
                 {formData.image && (
                   <div className="flex items-center space-x-2">
                     <img
-                      src={URL.createObjectURL(formData.image)}
+                      src={typeof formData.image === 'string' ? formData.image : URL.createObjectURL(formData.image)}
                       alt="Education preview"
                       className="w-16 h-16 object-cover rounded-md border"
                     />

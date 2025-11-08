@@ -117,6 +117,59 @@ class AuthService {
     }
   }
 
+  async loginWithToken(token: string): Promise<void> {
+    debugLogger.log('AuthService', `🔐 Login with Token (QR)`, {
+      hasToken: !!token,
+      tokenLength: token?.length
+    });
+
+    this.setState({
+      ...this.state,
+      isLoading: true,
+      error: null,
+    });
+
+    try {
+      // Store the token
+      localStorage.setItem('accessToken', token);
+      
+      // Get user info using the token
+      const userInfo = await apiAuthService.getCurrentUser();
+      
+      debugLogger.log('AuthService', `✅ QR Login Success`, {
+        userId: userInfo?.id,
+        username: userInfo?.username,
+        displayName: userInfo?.displayName
+      });
+      
+      this.setState({
+        ...this.state,
+        isAuthenticated: true,
+        user: userInfo,
+        accessToken: token,
+        refreshToken: null, // QR login might not provide refresh token
+        isLoading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      debugLogger.log('AuthService', `❌ QR Login Error`, {
+        error: error.message || 'QR login failed',
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+
+      // Clear the token if login failed
+      localStorage.removeItem('accessToken');
+
+      this.setState({
+        ...this.state,
+        isLoading: false,
+        error: error.message || 'QR login failed',
+      });
+      throw error;
+    }
+  }
+
   async register(userData: RegisterRequest): Promise<void> {
     this.setState({
       ...this.state,

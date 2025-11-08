@@ -189,15 +189,15 @@ public class GroupServiceImpl implements GroupService {
     @Override
     @Transactional(readOnly = true)
     public GroupDtos.GroupListResponse getGroupsByMember(Long userId, Pageable pageable) {
-        Page<Community> groupPage = communityRepository.findByMemberId(userId, pageable);
+        Page<GroupMember> memberPage = groupMemberRepository.findByUserId(userId, pageable);
         
-        List<GroupDtos.GroupResponse> groups = groupPage.getContent().stream()
-                .map(group -> {
+        List<GroupDtos.GroupResponse> groups = memberPage.getContent().stream()
+                .map(member -> {
+                    Community group = member.getGroup();
                     boolean isOwner = group.getOwner().getId().equals(userId);
-                    boolean isModerator = groupMemberRepository.existsByGroupIdAndUserIdAndRole(
-                            group.getId(), userId, GroupMemberRole.moderator);
+                    boolean isModerator = member.getRole() == GroupMemberRole.moderator;
                     int memberCount = groupMemberRepository.countByGroupId(group.getId());
-                    GroupMemberRole userRole = getUserRole(group.getId(), userId);
+                    GroupMemberRole userRole = member.getRole();
                     
                     return groupMapper.toResponse(group, userId, true, isOwner, isModerator, false, userRole, memberCount);
                 })
@@ -205,12 +205,12 @@ public class GroupServiceImpl implements GroupService {
 
         return GroupDtos.GroupListResponse.builder()
                 .groups(groups)
-                .currentPage(groupPage.getNumber())
-                .pageSize(groupPage.getSize())
-                .totalElements(groupPage.getTotalElements())
-                .totalPages(groupPage.getTotalPages())
-                .hasNext(groupPage.hasNext())
-                .hasPrevious(groupPage.hasPrevious())
+                .currentPage(memberPage.getNumber())
+                .pageSize(memberPage.getSize())
+                .totalElements(memberPage.getTotalElements())
+                .totalPages(memberPage.getTotalPages())
+                .hasNext(memberPage.hasNext())
+                .hasPrevious(memberPage.hasPrevious())
                 .build();
     }
 
@@ -421,14 +421,15 @@ public class GroupServiceImpl implements GroupService {
             throw new IllegalArgumentException("You already have a pending join request");
         }
 
-        if (!group.getRequiresApproval()) {
-            throw new IllegalArgumentException("This group does not require approval. You can join directly.");
-        }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         List<GroupJoinQuestion> questions = groupJoinQuestionRepository.findByGroupId(groupId);
+        
+        if (questions.isEmpty() && !group.getRequiresApproval()) {
+            throw new IllegalArgumentException("This group does not require approval. You can join directly.");
+        }
+        
         if (!questions.isEmpty() && (answers == null || answers.isEmpty())) {
             throw new IllegalArgumentException("Please answer the join questions");
         }

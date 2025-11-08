@@ -2,3 +2,4 @@ export { LoginForm } from './LoginForm';
 export { RegisterForm } from './RegisterForm';
 export { ProfileForm } from './ProfileForm';
 export { AuthModal } from './AuthModal';
+export { QRLoginModal } from './QRLoginModal';

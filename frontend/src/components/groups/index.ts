@@ -6,6 +6,7 @@ export { CreateGroupPost } from './CreateGroupPost';
 export { GroupMemberCard } from './GroupMemberCard';
 export { GroupMembersList } from './GroupMembersList';
 export { JoinRequestCard } from './JoinRequestCard';
+export { JoinRequestsModal } from './JoinRequestsModal';
 export { JoinRequestsList } from './JoinRequestsList';
 export { GroupPostCard } from './GroupPostCard';
 export { UserGroupHistory } from './UserGroupHistory';

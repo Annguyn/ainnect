@@ -22,4 +22,7 @@ public interface InterestRepository extends JpaRepository<Interest, Long> {
     
     @Query("SELECT COUNT(i) FROM Interest i WHERE i.name = :name AND i.deletedAt IS NULL")
     Long countByName(@Param("name") String name);
+    
+    @Query("SELECT i FROM Interest i WHERE i.name = :name AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL ORDER BY i.createdAt DESC")
+    List<Interest> findByNameWithImage(@Param("name") String name);
 }

@@ -341,11 +341,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {/* Typing Indicator */}
         {propTypingUsers && propTypingUsers.length > 0 && (
           <TypingIndicator 
-            users={propTypingUsers.map(t => ({
-              id: t.userId,
-              firstName: t.username,
-              lastName: ''
-            }))}
+            typingUsers={propTypingUsers}
+            participants={conversation.type === ConversationType.DIRECT
+              ? [
+                  {
+                    id: conversation.otherParticipantId || 0,
+                    displayName: conversation.otherParticipantDisplayName,
+                    username: conversation.otherParticipantUsername || ''
+                  }
+                ]
+              : conversation.participants?.map(p => ({
+                  id: p.id,
+                  displayName: p.displayName,
+                  username: p.username
+                }))}
           />
         )}
         

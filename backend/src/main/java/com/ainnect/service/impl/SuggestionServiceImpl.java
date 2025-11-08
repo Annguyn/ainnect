@@ -33,9 +33,16 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .limit(limit)
                 .map(schoolName -> {
                     Long count = educationRepository.countBySchoolName(schoolName);
+                    String imageUrl = educationRepository.findBySchoolNameWithImage(schoolName)
+                            .stream()
+                            .findFirst()
+                            .map(edu -> edu.getImageUrl())
+                            .orElse(null);
+                    
                     return SuggestionDtos.SchoolSuggestion.builder()
                             .schoolName(schoolName)
                             .count(count)
+                            .imageUrl(imageUrl)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -49,9 +56,16 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .limit(limit)
                 .map(companyName -> {
                     Long count = workExperienceRepository.countByCompanyName(companyName);
+                    String imageUrl = workExperienceRepository.findByCompanyNameWithImage(companyName)
+                            .stream()
+                            .findFirst()
+                            .map(work -> work.getImageUrl())
+                            .orElse(null);
+                    
                     return SuggestionDtos.CompanySuggestion.builder()
                             .companyName(companyName)
                             .count(count)
+                            .imageUrl(imageUrl)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -65,9 +79,16 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .limit(limit)
                 .map(name -> {
                     Long count = interestRepository.countByName(name);
+                    String imageUrl = interestRepository.findByNameWithImage(name)
+                            .stream()
+                            .findFirst()
+                            .map(interest -> interest.getImageUrl())
+                            .orElse(null);
+                    
                     return SuggestionDtos.InterestSuggestion.builder()
                             .name(name)
                             .count(count)
+                            .imageUrl(imageUrl)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -81,9 +102,16 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .limit(limit)
                 .map(locationName -> {
                     Long count = userLocationRepository.countByLocationName(locationName);
+                    String imageUrl = userLocationRepository.findByLocationNameWithImage(locationName)
+                            .stream()
+                            .findFirst()
+                            .map(location -> location.getImageUrl())
+                            .orElse(null);
+                    
                     return SuggestionDtos.LocationSuggestion.builder()
                             .locationName(locationName)
                             .count(count)
+                            .imageUrl(imageUrl)
                             .build();
                 })
                 .collect(Collectors.toList());

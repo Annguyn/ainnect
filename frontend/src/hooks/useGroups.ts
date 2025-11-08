@@ -293,11 +293,63 @@ export const useGroups = (): UseGroupsResult => {
     setLoading(true);
     setError(null);
     try {
+      // Check if group requires approval by looking at current state
+      const currentGroup = state.groups.find(g => g.id === groupId) || state.currentGroup;
+      const requiresApproval = currentGroup?.requiresApproval === true;
+      const isPrivate = currentGroup?.privacy === 'private_';
+      
+      // If has answers array (even if empty) for private groups or groups requiring approval
+      // Submit join request instead of direct join
+      if (answers !== undefined && (requiresApproval || isPrivate)) {
+        const joinRequest = await groupService.submitJoinRequest(groupId, { answers });
+        
+        // Update state to show pending status for both currentGroup and in groups list
+        setState(prev => ({
+          ...prev,
+          groups: prev.groups.map(g => 
+            g.id === groupId 
+              ? { ...g, userMembershipStatus: 'pending' as const, hasPendingRequest: true }
+              : g
+          ),
+          currentGroup: prev.currentGroup?.id === groupId 
+            ? { 
+                ...prev.currentGroup, 
+                userMembershipStatus: 'pending' as const,
+                hasPendingRequest: true
+              }
+            : prev.currentGroup,
+          isLoading: false,
+        }));
+        
+        debugLogger.log('useGroups', '📤 Join request submitted (pending approval)', { 
+          groupId,
+          requestId: joinRequest.id,
+          status: joinRequest.status,
+          answersCount: answers.length,
+          isPrivate,
+          requiresApproval
+        });
+        
+        // Return a compatible response
+        return {
+          groupId: joinRequest.groupId,
+          groupName: currentGroup?.name || '',
+          role: 'member',
+          joinedAt: joinRequest.createdAt
+        } as JoinGroupResponse;
+      }
+      
+      // Otherwise, direct join
       const joinResponse = await groupService.joinGroup(groupId, answers);
       
-      // Update the group's membership status if it's the current group
+      // Update the group's membership status in both groups list and currentGroup
       setState(prev => ({
         ...prev,
+        groups: prev.groups.map(g => 
+          g.id === groupId 
+            ? { ...g, userMembershipStatus: 'joined' as const, userRole: joinResponse.role, member: true }
+            : g
+        ),
         currentGroup: prev.currentGroup?.id === groupId 
           ? { 
               ...prev.currentGroup, 
@@ -325,7 +377,7 @@ export const useGroups = (): UseGroupsResult => {
       debugLogger.log('useGroups', '❌ Failed to join group', { groupId, error: errorMessage });
       throw error;
     }
-  }, [setLoading, setError]);
+  }, [setLoading, setError, state.groups, state.currentGroup]);
 
   const leaveGroup = useCallback(async (groupId: number): Promise<LeaveGroupResponse> => {
     setLoading(true);
@@ -335,6 +387,11 @@ export const useGroups = (): UseGroupsResult => {
       
       setState(prev => ({
         ...prev,
+        groups: prev.groups.map(g => 
+          g.id === groupId 
+            ? { ...g, userMembershipStatus: 'not_member' as const, userRole: null, member: false }
+            : g
+        ),
         currentGroup: prev.currentGroup?.id === groupId 
           ? { 
               ...prev.currentGroup, 

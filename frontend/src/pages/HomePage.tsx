@@ -28,6 +28,7 @@ const HomePage: React.FC = () => {
   const [hasMorePublicPosts, setHasMorePublicPosts] = useState(true);
   const [publicPostsRetryCount, setPublicPostsRetryCount] = useState(0);
   const [isRetryingPublicPosts, setIsRetryingPublicPosts] = useState(false);
+  const [hasInitialLoadAttempted, setHasInitialLoadAttempted] = useState(false);
 
   const [suggestedGroups, setSuggestedGroups] = useState<any[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
@@ -53,20 +54,36 @@ const HomePage: React.FC = () => {
   }, []);
 
   const loadPublicPosts = useCallback(async (page = 0, reset = false, isRetry = false) => {
-    if (publicPostsLoading || !hasMorePublicPosts) return;
+    // Prevent multiple simultaneous requests
+    if (publicPostsLoading) {
+      debugLogger.log('HomePage', 'Skipping load - already loading');
+      return;
+    }
+    
+    // Stop if we've already hit an error and haven't manually retried
+    if (!reset && !isRetry && publicPostsError && hasInitialLoadAttempted) {
+      debugLogger.log('HomePage', 'Skipping load - error state exists');
+      return;
+    }
+
+    if (!hasMorePublicPosts && page > 0) {
+      debugLogger.log('HomePage', 'Skipping load - no more posts');
+      return;
+    }
 
     setPublicPostsLoading(true);
+    setHasInitialLoadAttempted(true);
+    
     if (!isRetry) {
       setPublicPostsError(null);
     }
 
     try {
-      const response = await postService.getPublicPosts(page, 3); // Fetch 3 posts per request
+      const response = await postService.getPublicPosts(page, 3);
       
-      // Validate response structure
       if (!response || !response.content || !Array.isArray(response.content)) {
         console.error('Invalid response structure:', response);
-        throw new Error('Invalid response from server');
+        throw new Error('Phản hồi không hợp lệ từ server');
       }
       
       debugLogger.log('HomePage', 'Public posts loaded successfully', {
@@ -95,28 +112,51 @@ const HomePage: React.FC = () => {
       const hasMore = response.page?.number < response.page?.totalPages - 1;
       setHasMorePublicPosts(hasMore);
 
+      // Reset retry count on success
       setPublicPostsRetryCount(0);
-    } catch (error) {
+      setIsRetryingPublicPosts(false);
+      
+    } catch (error: any) {
       console.error('Failed to fetch public posts:', error);
-      debugLogger.log('HomePage', 'Failed to fetch public posts', error);
+      debugLogger.log('HomePage', 'Failed to fetch public posts', { error, retryCount: publicPostsRetryCount });
 
-      if (publicPostsRetryCount < 2) {
+      const isNetworkError = error?.message?.includes('Network') || 
+                            error?.message?.includes('fetch') ||
+                            error?.code === 'ERR_NETWORK' ||
+                            !error?.response;
+
+      // Retry logic - only retry on network errors, max 2 retries
+      if (isNetworkError && publicPostsRetryCount < 2 && !isRetry) {
         const newRetryCount = publicPostsRetryCount + 1;
         setPublicPostsRetryCount(newRetryCount);
         setIsRetryingPublicPosts(true);
 
+        debugLogger.log('HomePage', `Retrying in 2 seconds... (${newRetryCount}/3)`);
+
         setTimeout(() => {
-          setIsRetryingPublicPosts(false);
           loadPublicPosts(page, reset, true);
         }, 2000);
       } else {
-        setPublicPostsError('Unable to load public posts. Please try again later.');
+        // Stop retrying and show error
+        setIsRetryingPublicPosts(false);
+        
+        let errorMessage = 'Không thể kết nối đến server. ';
+        
+        if (isNetworkError) {
+          errorMessage += 'Vui lòng kiểm tra kết nối internet và thử lại.';
+        } else {
+          errorMessage += 'Đã xảy ra lỗi. Vui lòng thử lại sau.';
+        }
+        
+        setPublicPostsError(errorMessage);
         setPublicPostsRetryCount(0);
+        
+        debugLogger.log('HomePage', 'Stopped retrying - max attempts reached or non-network error');
       }
     } finally {
       setPublicPostsLoading(false);
     }
-  }, [publicPostsLoading, hasMorePublicPosts, publicPostsRetryCount]);
+  }, [publicPostsLoading, hasMorePublicPosts, publicPostsRetryCount, publicPostsError, hasInitialLoadAttempted]);
 
   const loadMorePublicPosts = useCallback(() => {
     if (hasMorePublicPosts && !publicPostsLoading) {
@@ -125,10 +165,12 @@ const HomePage: React.FC = () => {
   }, [hasMorePublicPosts, publicPostsLoading, publicPostsPage, loadPublicPosts]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Only load once when component mounts for non-authenticated users
+    if (!isAuthenticated && !hasInitialLoadAttempted) {
       loadPublicPosts(0, true);
     }
-  }, [isAuthenticated, loadPublicPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]); // Removed loadPublicPosts from dependencies to prevent loop
 
   useInfiniteScroll({
     hasMore: hasMorePublicPosts,
@@ -159,11 +201,18 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const fetchSuggestedGroups = async () => {
+      // Only fetch if authenticated
+      if (!isAuthenticated) {
+        setSuggestedGroups([]);
+        return;
+      }
+
       setLoadingGroups(true);
       setGroupsError(null);
+      
       try {
         const response = await groupService.getSuggestedGroups(0, 10);
-        // Ensure we have a valid array
+        
         if (response && Array.isArray(response.content)) {
           setSuggestedGroups(response.content);
         } else if (Array.isArray(response)) {
@@ -172,17 +221,31 @@ const HomePage: React.FC = () => {
           console.warn('Suggested groups response is not in expected format:', response);
           setSuggestedGroups([]);
         }
-      } catch (error) {
+        
+        debugLogger.log('HomePage', 'Suggested groups loaded', { count: response?.content?.length || 0 });
+      } catch (error: any) {
         console.error('Failed to fetch suggested groups:', error);
-        setGroupsError('Không thể tải danh sách nhóm. Vui lòng thử lại sau.');
-        setSuggestedGroups([]); // Set empty array on error
+        
+        const isNetworkError = error?.message?.includes('Network') || 
+                              error?.message?.includes('fetch') ||
+                              error?.code === 'ERR_NETWORK' ||
+                              !error?.response;
+        
+        const errorMessage = isNetworkError 
+          ? 'Không thể kết nối đến server để tải nhóm gợi ý.'
+          : 'Không thể tải danh sách nhóm. Vui lòng thử lại sau.';
+        
+        setGroupsError(errorMessage);
+        setSuggestedGroups([]);
+        
+        debugLogger.log('HomePage', 'Failed to load suggested groups', { error: error?.message });
       } finally {
         setLoadingGroups(false);
       }
     };
 
     fetchSuggestedGroups();
-  }, []);
+  }, [isAuthenticated]);
 
   // Notifications are now handled in Header component, no need for duplicate logic here
 
@@ -234,19 +297,24 @@ const HomePage: React.FC = () => {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Lỗi tải bài viết</h3>
                     <p className="text-gray-500 mb-4">{publicPostsError}</p>
-                    <button
+                    <Button
                       onClick={() => {
                         setPublicPostsError(null);
                         setPublicPostsRetryCount(0);
                         setPublicPostsPage(0);
                         setPublicPosts([]);
                         setHasMorePublicPosts(true);
+                        setIsRetryingPublicPosts(false);
+                        setHasInitialLoadAttempted(false);
                         loadPublicPosts(0, true);
                       }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
+                      <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
                       Thử lại
-                    </button>
+                    </Button>
                   </div>
                 ) : (!publicPosts || publicPosts.length === 0) && !publicPostsLoading ? (
                   <EmptyState
@@ -298,16 +366,23 @@ const HomePage: React.FC = () => {
                     
                     {publicPostsLoading && (
                       <>
-                        {isRetryingPublicPosts && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center">
-                            <div className="flex items-center justify-center space-x-2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-                              <span className="text-yellow-800">Đang thử lại... ({publicPostsRetryCount + 1}/3)</span>
+                        {isRetryingPublicPosts && publicPostsRetryCount > 0 && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-center justify-center space-x-3">
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
+                              <div className="text-sm text-yellow-800">
+                                <p className="font-medium">Kết nối thất bại. Đang thử lại...</p>
+                                <p className="text-xs mt-0.5">Lần thử {publicPostsRetryCount}/3</p>
+                              </div>
                             </div>
                           </div>
                         )}
+                        {!isRetryingPublicPosts && (
+                          <>
                         <PostSkeleton />
                         <PostSkeleton />
+                          </>
+                        )}
                       </>
                     )}
                   </>

@@ -186,16 +186,41 @@ class GroupService {
     const endpoint = `${this.baseUrl}/owner/${ownerId}`;
     debugLogger.logApiCall('GET', endpoint, { page, size });
     try {
-      const response = await apiClient.get<GroupsResponse>(endpoint, {
+      const response = await apiClient.get<{
+        result: string;
+        message: string;
+        data: {
+          groups: Group[];
+          currentPage: number;
+          pageSize: number;
+          totalElements: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        }
+      }>(endpoint, {
         params: { page, size }
       });
-      debugLogger.logApiResponse('GET', endpoint, response);
+
+      const transformedResponse: GroupsResponse = {
+        content: response.data.groups,
+        totalElements: response.data.totalElements,
+        totalPages: response.data.totalPages,
+        size: response.data.pageSize,
+        number: response.data.currentPage,
+        first: !response.data.hasPrevious,
+        last: !response.data.hasNext,
+        hasNext: response.data.hasNext,
+        hasPrevious: response.data.hasPrevious
+      };
+
+      debugLogger.logApiResponse('GET', endpoint, transformedResponse);
       debugLogger.log('GroupService', '👑 Owner groups loaded', {
         ownerId,
-        groupsCount: response.content?.length || 0,
-        totalElements: response.totalElements
+        groupsCount: transformedResponse.content?.length || 0,
+        totalElements: transformedResponse.totalElements
       });
-      return response;
+      return transformedResponse;
     } catch (error) {
       debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;
@@ -209,16 +234,41 @@ class GroupService {
     const endpoint = `${this.baseUrl}/member/${userId}`;
     debugLogger.logApiCall('GET', endpoint, { page, size });
     try {
-      const response = await apiClient.get<GroupsResponse>(endpoint, {
+      const response = await apiClient.get<{
+        result: string;
+        message: string;
+        data: {
+          groups: Group[];
+          currentPage: number;
+          pageSize: number;
+          totalElements: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        }
+      }>(endpoint, {
         params: { page, size }
       });
-      debugLogger.logApiResponse('GET', endpoint, response);
+
+      const transformedResponse: GroupsResponse = {
+        content: response.data.groups,
+        totalElements: response.data.totalElements,
+        totalPages: response.data.totalPages,
+        size: response.data.pageSize,
+        number: response.data.currentPage,
+        first: !response.data.hasPrevious,
+        last: !response.data.hasNext,
+        hasNext: response.data.hasNext,
+        hasPrevious: response.data.hasPrevious
+      };
+
+      debugLogger.logApiResponse('GET', endpoint, transformedResponse);
       debugLogger.log('GroupService', '👥 Member groups loaded', {
         userId,
-        groupsCount: response.content?.length || 0,
-        totalElements: response.totalElements
+        groupsCount: transformedResponse.content?.length || 0,
+        totalElements: transformedResponse.totalElements
       });
-      return response;
+      return transformedResponse;
     } catch (error) {
       debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;
@@ -472,15 +522,19 @@ class GroupService {
    */
   async submitJoinRequest(groupId: number, answers: SubmitJoinRequestData): Promise<JoinRequest> {
     const endpoint = `${this.baseUrl}/${groupId}/join-requests`;
-    debugLogger.logApiCall('POST', endpoint, answers);
+    debugLogger.logApiCall('POST', endpoint, answers.answers);
     try {
-      const response = await apiClient.post<JoinRequest>(endpoint, answers.answers);
-      debugLogger.logApiResponse('POST', endpoint, response);
+      // Send array of answers directly: [{ questionId, answer }, ...]
+      const response = await apiClient.post<ApiResponse<JoinRequest>>(endpoint, answers.answers);
+      const joinRequest = response.data;
+      debugLogger.logApiResponse('POST', endpoint, joinRequest);
       debugLogger.log('GroupService', '📤 Join request submitted', {
         groupId,
-        answersCount: answers.answers.length
+        answersCount: answers.answers.length,
+        requestId: joinRequest.id,
+        status: joinRequest.status
       });
-      return response;
+      return joinRequest;
     } catch (error) {
       debugLogger.logApiResponse('POST', endpoint, null, error);
       throw error;
@@ -494,16 +548,41 @@ class GroupService {
     const endpoint = `${this.baseUrl}/${groupId}/join-requests/pending`;
     debugLogger.logApiCall('GET', endpoint, { page, size });
     try {
-      const response = await apiClient.get<JoinRequestsResponse>(endpoint, {
+      const response = await apiClient.get<{
+        result: string;
+        message: string;
+        data: {
+          requests: JoinRequest[];
+          currentPage: number;
+          pageSize: number;
+          totalElements: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        }
+      }>(endpoint, {
         params: { page, size }
       });
-      debugLogger.logApiResponse('GET', endpoint, response);
+
+      const transformedResponse: JoinRequestsResponse = {
+        content: response.data.requests,
+        totalElements: response.data.totalElements,
+        totalPages: response.data.totalPages,
+        size: response.data.pageSize,
+        number: response.data.currentPage,
+        first: !response.data.hasPrevious,
+        last: !response.data.hasNext,
+        hasNext: response.data.hasNext,
+        hasPrevious: response.data.hasPrevious
+      };
+
+      debugLogger.logApiResponse('GET', endpoint, transformedResponse);
       debugLogger.log('GroupService', '⏳ Pending join requests loaded', {
         groupId,
-        requestsCount: response.content?.length || 0,
-        totalElements: response.totalElements
+        requestsCount: transformedResponse.content?.length || 0,
+        totalElements: transformedResponse.totalElements
       });
-      return response;
+      return transformedResponse;
     } catch (error) {
       debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;

@@ -19,4 +19,7 @@ public interface EducationRepository extends JpaRepository<Education, Long> {
     
     @Query("SELECT COUNT(e) FROM Education e WHERE e.schoolName = :schoolName AND e.deletedAt IS NULL")
     Long countBySchoolName(@Param("schoolName") String schoolName);
+    
+    @Query("SELECT e FROM Education e WHERE e.schoolName = :schoolName AND e.deletedAt IS NULL AND e.imageUrl IS NOT NULL ORDER BY e.createdAt DESC")
+    List<Education> findBySchoolNameWithImage(@Param("schoolName") String schoolName);
 }

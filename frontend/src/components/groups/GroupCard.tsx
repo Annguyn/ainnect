@@ -45,11 +45,12 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   const handleJoinClick = () => {
     if (isLoading) return;
     
-    // If group requires approval, show join questions modal
-    if (group.requiresApproval) {
+    // If group is private or requires approval, show join questions modal
+    // This will check if there are any questions to answer
+    if (group.requiresApproval || group.privacy === 'private_') {
       setShowJoinModal(true);
     } else {
-      // Direct join without questions
+      // Direct join without questions (public groups)
       if (onJoin) {
         onJoin(group.id);
       }

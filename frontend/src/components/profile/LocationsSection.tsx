@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
-import { Location, CreateLocationRequest, UpdateLocationRequest } from '../../services/profileService';
+import { 
+  Location, 
+  CreateLocationRequest, 
+  UpdateLocationRequest,
+  getUserLocations
+} from '../../services/profileService';
 import { Button } from '../ui/Button';
 import { LocationForm } from './LocationForm';
 import { debugLogger } from '../../utils/debugLogger';
@@ -15,24 +20,38 @@ export const LocationsSection: React.FC<LocationsSectionProps> = ({
   isEditable = false 
 }) => {
   const { 
-    locations, 
-    isLoading, 
-    error, 
-    loadCompleteProfile, 
     createLocation,
     updateLocation,
-    deleteLocation,
+    deleteLocation
   } = useProfile();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userId) {
-      loadCompleteProfile(userId);
-    }
-  }, [userId, loadCompleteProfile]);
+    const loadLocations = async () => {
+      if (!userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const data = await getUserLocations(userId);
+        setLocations(data);
+      } catch (err) {
+        console.error('Failed to load locations:', err);
+        setError('Không thể tải thông tin địa điểm');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLocations();
+  }, [userId]);
 
   const handleCreateLocation = async (data: CreateLocationRequest) => {
     setIsSubmitting(true);
@@ -40,6 +59,12 @@ export const LocationsSection: React.FC<LocationsSectionProps> = ({
       await createLocation(data);
       debugLogger.log('LocationsSection', 'Location created successfully');
       setShowAddForm(false);
+      
+      // Reload locations after save
+      if (userId) {
+        const fetchedData = await getUserLocations(userId);
+        setLocations(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('LocationsSection', 'Failed to create location', { error });
       throw error;
@@ -56,6 +81,12 @@ export const LocationsSection: React.FC<LocationsSectionProps> = ({
       await updateLocation(editingLocation.id, data);
       debugLogger.log('LocationsSection', 'Location updated successfully');
       setEditingLocation(null);
+      
+      // Reload locations after save
+      if (userId) {
+        const fetchedData = await getUserLocations(userId);
+        setLocations(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('LocationsSection', 'Failed to update location', { error });
       throw error;
@@ -72,6 +103,12 @@ export const LocationsSection: React.FC<LocationsSectionProps> = ({
     try {
       await deleteLocation(locationId);
       debugLogger.log('LocationsSection', 'Location deleted successfully');
+      
+      // Reload locations after delete
+      if (userId) {
+        const fetchedData = await getUserLocations(userId);
+        setLocations(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('LocationsSection', 'Failed to delete location', { error });
     }

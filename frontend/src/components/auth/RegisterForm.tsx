@@ -158,9 +158,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto animate-fadeIn">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2 animate-slideInDown">Đăng ký</h2>
-        <p className="text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Tạo tài khoản mới để tham gia Ainnect</p>
+      <div className="text-center mb-4 sm:mb-6 md:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 animate-slideInDown">Đăng ký</h2>
+        <p className="text-sm sm:text-base text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Tạo tài khoản mới để tham gia Ainnect</p>
       </div>
 
       {(showAlert || error) && (
@@ -176,7 +176,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
         <Input
           type="text"
           label="Tên đăng nhập"
@@ -247,22 +247,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         />
 
         <div className="flex items-start">
-          <div className="flex items-center h-5">
+          <div className="flex items-center h-5 pt-0.5">
             <input
               type="checkbox"
               checked={values.agreeToTerms}
               onChange={(e) => handleChange('agreeToTerms', e.target.checked)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded flex-shrink-0"
             />
           </div>
-          <div className="ml-3 text-sm">
-            <label className="text-gray-600">
+          <div className="ml-2 sm:ml-3 text-xs sm:text-sm">
+            <label className="text-gray-600 leading-relaxed">
               Tôi đồng ý với{' '}
-              <button type="button" className="text-primary-600 hover:text-primary-500">
+              <button type="button" className="text-primary-600 hover:text-primary-500 underline">
                 Điều khoản sử dụng
               </button>{' '}
               và{' '}
-              <button type="button" className="text-primary-600 hover:text-primary-500">
+              <button type="button" className="text-primary-600 hover:text-primary-500 underline">
                 Chính sách bảo mật
               </button>
             </label>
@@ -284,7 +284,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </Button>
 
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-gray-600">
             Đã có tài khoản?{' '}
             <button
               type="button"

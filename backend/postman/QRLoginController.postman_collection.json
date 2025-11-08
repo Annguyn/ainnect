@@ -1,0 +1,301 @@
+{
+	"info": {
+		"_postman_id": "qr-login-api-collection",
+		"name": "QRLoginController",
+		"description": "API endpoints for QR Code Login",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Generate QR Code (Web)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/qr-login/generate",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "qr-login", "generate"]
+				},
+				"description": "Generate a new QR code for login (Web - no authentication required)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "generate"]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"QR code generated successfully\",\n    \"data\": {\n        \"sessionId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"qrCodeData\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"qrCodeImage\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\",\n        \"expiresAt\": \"2025-11-08T15:30:00\",\n        \"expiresInSeconds\": 600\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Session Info (Mobile)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/qr-login/session/:sessionId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "qr-login", "session", ":sessionId"],
+					"variable": [
+						{
+							"key": "sessionId",
+							"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							"description": "Session ID from QR code"
+						}
+					]
+				},
+				"description": "Get session info after scanning QR code (Mobile - requires authentication)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/session/:sessionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "session", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Session info retrieved successfully\",\n    \"data\": {\n        \"sessionId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        \"status\": \"PENDING\",\n        \"user\": {\n            \"userId\": 1,\n            \"username\": \"john_doe\",\n            \"fullName\": \"John Doe\",\n            \"avatarUrl\": \"https://cdn.ainnect.me/avatars/avatar_1.jpg\",\n            \"email\": \"john@example.com\"\n        },\n        \"expiresAt\": \"2025-11-08T15:30:00\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Confirm Login (Mobile)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"sessionId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/qr-login/confirm",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "qr-login", "confirm"]
+				},
+				"description": "Confirm login for the QR session (Mobile - requires authentication)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sessionId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/confirm",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "confirm"]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Login confirmed successfully\",\n    \"data\": \"Login confirmed\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Check Login Status (Web)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/qr-login/status/:sessionId",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "qr-login", "status", ":sessionId"],
+					"variable": [
+						{
+							"key": "sessionId",
+							"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							"description": "Session ID to check status"
+						}
+					]
+				},
+				"description": "Check login status and get token if confirmed (Web - polling endpoint, no authentication required)"
+			},
+			"response": [
+				{
+					"name": "Pending Status",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/status/:sessionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "status", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Login status retrieved successfully\",\n    \"data\": {\n        \"status\": \"PENDING\",\n        \"token\": null,\n        \"user\": null\n    }\n}"
+				},
+				{
+					"name": "Confirmed Status",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/status/:sessionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "status", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Login status retrieved successfully\",\n    \"data\": {\n        \"status\": \"CONFIRMED\",\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"user\": {\n            \"userId\": 1,\n            \"username\": \"john_doe\",\n            \"fullName\": \"John Doe\",\n            \"avatarUrl\": \"https://cdn.ainnect.me/avatars/avatar_1.jpg\",\n            \"email\": \"john@example.com\"\n        }\n    }\n}"
+				},
+				{
+					"name": "Expired Status",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/qr-login/status/:sessionId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "qr-login", "status", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"result\": \"SUCCESS\",\n    \"message\": \"Login status retrieved successfully\",\n    \"data\": {\n        \"status\": \"EXPIRED\",\n        \"token\": null,\n        \"user\": null\n    }\n}"
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

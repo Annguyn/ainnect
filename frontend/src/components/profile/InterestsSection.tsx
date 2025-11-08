@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
-import { Interest, CreateInterestRequest, UpdateInterestRequest } from '../../services/profileService';
+import { 
+  Interest, 
+  CreateInterestRequest, 
+  UpdateInterestRequest,
+  getUserInterests
+} from '../../services/profileService';
 import { getInterestCategories } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { InterestForm } from './InterestForm';
@@ -16,10 +21,6 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
   isEditable = false 
 }) => {
   const { 
-    interests, 
-    isLoading, 
-    error, 
-    loadCompleteProfile, 
     createInterest,
     updateInterest,
     deleteInterest
@@ -29,13 +30,31 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
   const [editingInterest, setEditingInterest] = useState<Interest | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userId) {
-      loadCompleteProfile(userId);
-      loadCategories();
-    }
-  }, [userId, loadCompleteProfile]);
+    const loadInterests = async () => {
+      if (!userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const data = await getUserInterests(userId);
+        setInterests(data);
+        await loadCategories();
+      } catch (err) {
+        console.error('Failed to load interests:', err);
+        setError('Không thể tải thông tin sở thích');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInterests();
+  }, [userId]);
 
   const loadCategories = async () => {
     try {
@@ -52,6 +71,12 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
       await createInterest(data);
       debugLogger.log('InterestsSection', 'Interest created successfully');
       setShowAddForm(false);
+      
+      // Reload interests after save
+      if (userId) {
+        const fetchedData = await getUserInterests(userId);
+        setInterests(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('InterestsSection', 'Failed to create interest', { error });
       throw error;
@@ -68,6 +93,12 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
       await updateInterest(editingInterest.id, data);
       debugLogger.log('InterestsSection', 'Interest updated successfully');
       setEditingInterest(null);
+      
+      // Reload interests after save
+      if (userId) {
+        const fetchedData = await getUserInterests(userId);
+        setInterests(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('InterestsSection', 'Failed to update interest', { error });
       throw error;
@@ -84,6 +115,12 @@ export const InterestsSection: React.FC<InterestsSectionProps> = ({
     try {
       await deleteInterest(interestId);
       debugLogger.log('InterestsSection', 'Interest deleted successfully');
+      
+      // Reload interests after delete
+      if (userId) {
+        const fetchedData = await getUserInterests(userId);
+        setInterests(fetchedData);
+      }
     } catch (error) {
       debugLogger.log('InterestsSection', 'Failed to delete interest', { error });
     }

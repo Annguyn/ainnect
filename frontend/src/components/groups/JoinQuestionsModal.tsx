@@ -51,6 +51,14 @@ export const JoinQuestionsModal: React.FC<JoinQuestionsModalProps> = ({
       const fetchedQuestions = await groupService.getJoinQuestions(groupId);
       setQuestions(fetchedQuestions);
       
+      // If no questions, join directly
+      if (!fetchedQuestions || fetchedQuestions.length === 0) {
+        setLoadingQuestions(false);
+        await onJoin([]); // Join with empty answers
+        onClose();
+        return;
+      }
+      
       // Initialize answers object
       const initialAnswers: Record<number, string> = {};
       fetchedQuestions.forEach(q => {

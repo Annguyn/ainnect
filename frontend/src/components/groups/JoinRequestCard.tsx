@@ -3,181 +3,200 @@ import { JoinRequest } from '../../types';
 import { Avatar } from '../Avatar';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { Check, X, MessageSquare, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 interface JoinRequestCardProps {
   request: JoinRequest;
-  onApprove?: (requestId: number, message?: string) => void;
-  onReject?: (requestId: number, message?: string) => void;
+  onApprove: (requestId: number, message?: string) => void;
+  onReject: (requestId: number, message?: string) => void;
   isLoading?: boolean;
-  className?: string;
 }
 
 export const JoinRequestCard: React.FC<JoinRequestCardProps> = ({
   request,
   onApprove,
   onReject,
-  isLoading = false,
-  className = ''
+  isLoading = false
 }) => {
-  const [showMessage, setShowMessage] = useState(false);
-  const [responseMessage, setResponseMessage] = useState('');
+  const [showAnswers, setShowAnswers] = useState(false);
+  const [showMessageInput, setShowMessageInput] = useState(false);
+  const [message, setMessage] = useState('');
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
 
   const handleApprove = () => {
-    if (request.answers.length > 0) {
-      setActionType('approve');
-      setShowMessage(true);
-    } else {
-      onApprove?.(request.id);
-    }
+    setActionType('approve');
+    setShowMessageInput(true);
   };
 
   const handleReject = () => {
     setActionType('reject');
-    setShowMessage(true);
+    setShowMessageInput(true);
   };
 
-  const handleSubmitResponse = () => {
+  const handleConfirm = () => {
     if (actionType === 'approve') {
-      onApprove?.(request.id, responseMessage || undefined);
+      onApprove(request.id, message || undefined);
     } else if (actionType === 'reject') {
-      onReject?.(request.id, responseMessage || undefined);
+      onReject(request.id, message || undefined);
     }
-    setShowMessage(false);
-    setResponseMessage('');
+    setShowMessageInput(false);
+    setMessage('');
     setActionType(null);
   };
 
   const handleCancel = () => {
-    setShowMessage(false);
-    setResponseMessage('');
+    setShowMessageInput(false);
+    setMessage('');
     setActionType(null);
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
   return (
-    <Card className={`p-6 ${className}`}>
+    <Card className="p-6">
       <div className="flex items-start space-x-4">
-        {/* User Avatar */}
         <Avatar
           user={{
-            avatarUrl: request.user.avatarUrl,
-            displayName: request.user.displayName,
-            userId: request.user.id
+            avatarUrl: request.user?.avatarUrl,
+            displayName: request.user?.displayName || request.user?.username,
+            userId: request.user?.id
           }}
           size="lg"
         />
-
-        {/* Request Content */}
-        <div className="flex-1 min-w-0">
-          {/* User Info */}
-          <div className="flex items-center justify-between mb-3">
+        
+        <div className="flex-1">
+          <div className="flex items-start justify-between">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">
-                {request.user.displayName}
-              </h4>
-              <p className="text-sm text-gray-500">@{request.user.username || 'user'}</p>
+              <h3 className="font-semibold text-gray-900">
+                {request.user?.displayName || request.user?.username}
+              </h3>
+              <p className="text-sm text-gray-500">@{request.user?.username}</p>
+              <div className="flex items-center mt-2 text-sm text-gray-500">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{formatDate(request.createdAt)}</span>
+              </div>
             </div>
-            
-            <div className="flex items-center text-sm text-gray-500">
-              <Calendar className="w-4 h-4 mr-1" />
-              <span>{new Date(request.createdAt).toLocaleDateString()}</span>
-            </div>
+
+            {request.status === 'pending' && !showMessageInput && (
+              <div className="flex space-x-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleApprove}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Chấp nhận
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReject}
+                  disabled={isLoading}
+                  className="border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <XCircle className="w-4 h-4 mr-1" />
+                  Từ chối
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* User Bio */}
-          {request.user.bio && (
-            <p className="text-gray-600 mb-4">{request.user.bio}</p>
-          )}
+          {request.answers && request.answers.length > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={() => setShowAnswers(!showAnswers)}
+                className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                {showAnswers ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Ẩn câu trả lời
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    Xem {request.answers.length} câu trả lời
+                  </>
+                )}
+              </button>
 
-          {/* Answers to Questions */}
-          {request.answers.length > 0 && (
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center text-sm font-medium text-gray-700">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Answers to join questions
-              </div>
-              
-              <div className="space-y-3">
-                {request.answers.map((answer, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      {answer.question}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {answer.answer}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              {showAnswers && (
+                <div className="mt-3 space-y-3">
+                  {request.answers.map((answer, index) => (
+                    <div
+                      key={`${answer.questionId}-${index}`}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    >
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        {answer.question}
+                      </p>
+                      <p className="text-base text-gray-900">{answer.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Response Message Form */}
-          {showMessage && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          {showMessageInput && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {actionType === 'approve' ? 'Welcome message (optional)' : 'Rejection reason (optional)'}
+                Tin nhắn {actionType === 'approve' ? 'chào mừng' : 'từ chối'} (tùy chọn)
               </label>
               <textarea
-                value={responseMessage}
-                onChange={(e) => setResponseMessage(e.target.value)}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 placeholder={
-                  actionType === 'approve' 
-                    ? 'Welcome to the group! We\'re excited to have you...'
-                    : 'Sorry, but we cannot approve your request at this time...'
+                  actionType === 'approve'
+                    ? 'Chào mừng bạn đến với nhóm!'
+                    : 'Lý do từ chối...'
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
+                className={cn(
+                  'w-full px-3 py-2 border rounded-md',
+                  'focus:outline-none focus:ring-2',
+                  actionType === 'approve'
+                    ? 'border-green-300 focus:ring-green-500'
+                    : 'border-red-300 focus:ring-red-500'
+                )}
+                disabled={isLoading}
               />
-              
-              <div className="flex items-center justify-end space-x-2 mt-3">
+              <div className="flex justify-end space-x-2 mt-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCancel}
                   disabled={isLoading}
                 >
-                  Cancel
+                  Hủy
                 </Button>
                 <Button
-                  variant={actionType === 'approve' ? 'primary' : 'secondary'}
+                  variant="primary"
                   size="sm"
-                  onClick={handleSubmitResponse}
-                  isLoading={isLoading}
+                  onClick={handleConfirm}
                   disabled={isLoading}
-                  className={actionType === 'reject' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+                  isLoading={isLoading}
+                  className={cn(
+                    actionType === 'approve'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  )}
                 >
-                  {actionType === 'approve' ? 'Approve' : 'Reject'}
+                  {actionType === 'approve' ? 'Xác nhận chấp nhận' : 'Xác nhận từ chối'}
                 </Button>
               </div>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          {!showMessage && (
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleApprove}
-                disabled={isLoading}
-                className="flex items-center"
-              >
-                <Check className="w-4 h-4 mr-2" />
-                Approve
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReject}
-                disabled={isLoading}
-                className="flex items-center text-red-600 border-red-200 hover:bg-red-50"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Reject
-              </Button>
             </div>
           )}
         </div>

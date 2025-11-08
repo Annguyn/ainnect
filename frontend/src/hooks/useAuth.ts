@@ -71,14 +71,19 @@ export const useAuth = () => {
     return unsubscribe;
   }, []);
 
-  const login = useCallback(async (credentials: LoginFormData) => {
+  const login = useCallback(async (credentialsOrToken: LoginFormData | string) => {
     try {
-      const loginRequest: LoginRequest = {
-        usernameOrEmail: credentials.usernameOrEmail,
-        password: credentials.password,
-      };
-      
-      await authService.login(loginRequest);
+      // If it's a string, it's a token from QR login
+      if (typeof credentialsOrToken === 'string') {
+        await authService.loginWithToken(credentialsOrToken);
+      } else {
+        // Otherwise it's credentials
+        const loginRequest: LoginRequest = {
+          usernameOrEmail: credentialsOrToken.usernameOrEmail,
+          password: credentialsOrToken.password,
+        };
+        await authService.login(loginRequest);
+      }
       return { success: true, user: authService.getCurrentUser() };
     } catch (error: any) {
       const errorMessage = error.message || 'Đăng nhập thất bại';

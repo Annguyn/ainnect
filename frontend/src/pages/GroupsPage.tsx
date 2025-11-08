@@ -32,12 +32,6 @@ export const GroupsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load groups based on active tab
-  // Initial load
-  useEffect(() => {
-    loadGroups(0, 12);
-  }, []);
-
-  // Load groups based on active tab
   useEffect(() => {
     const loadGroupsData = async () => {
       try {
@@ -61,9 +55,7 @@ export const GroupsPage: React.FC = () => {
       }
     };
 
-    if (activeTab !== 'all') {
-      loadGroupsData();
-    }
+    loadGroupsData();
   }, [activeTab, user?.id, loadGroups, loadOwnerGroups, loadMemberGroups]);
 
   const handleCreateGroup = async (groupData: CreateGroupRequest | UpdateGroupRequest) => {

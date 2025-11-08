@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '../../hooks/useProfile';
-import { WorkExperience, CreateWorkExperienceRequest } from '../../services/profileService';
+import { 
+  WorkExperience, 
+  CreateWorkExperienceRequest,
+  getUserWorkExperiences
+} from '../../services/profileService';
 import { getCompanySuggestions, getLocationSuggestions } from '../../services/suggestionService';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { AutocompleteInput } from '../ui/AutocompleteInput';
+import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteInputWithImage';
 import { Textarea } from '../ui/Textarea';
 import { debugLogger } from '../../utils/debugLogger';
 
@@ -18,10 +22,6 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
   isEditable = false 
 }) => {
   const { 
-    workExperiences, 
-    isLoading, 
-    error, 
-    loadCompleteProfile, 
     createWorkExperience,
     updateWorkExperience,
     deleteWorkExperience
@@ -29,6 +29,9 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<CreateWorkExperienceRequest>({
@@ -43,33 +46,69 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
   });
 
   useEffect(() => {
-    if (userId) {
-      loadCompleteProfile(userId);
-    }
-  }, [userId, loadCompleteProfile]);
+    const loadWorkExperiences = async () => {
+      if (!userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const data = await getUserWorkExperiences(userId);
+        setWorkExperiences(data);
+      } catch (err) {
+        console.error('Failed to load work experiences:', err);
+        setError('Không thể tải thông tin kinh nghiệm làm việc');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWorkExperiences();
+  }, [userId]);
 
   const handleInputChange = (field: keyof CreateWorkExperienceRequest, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const fetchCompanySuggestions = async (query: string): Promise<string[]> => {
+  const fetchCompanySuggestions = async (query: string): Promise<SuggestionItem[]> => {
     try {
       const suggestions = await getCompanySuggestions(query, 10);
-      return suggestions.map(s => s.companyName);
+      return suggestions.map(s => ({
+        label: s.companyName,
+        imageUrl: s.imageUrl
+      }));
     } catch (error) {
       debugLogger.log('WorkExperienceSection', 'Failed to get company suggestions', { error });
       return [];
     }
   };
 
-  const fetchLocationSuggestions = async (query: string): Promise<string[]> => {
+  const fetchLocationSuggestions = async (query: string): Promise<SuggestionItem[]> => {
     try {
       const suggestions = await getLocationSuggestions(query, 10);
-      return suggestions.map(s => s.locationName);
+      return suggestions.map(s => ({
+        label: s.locationName,
+        imageUrl: s.imageUrl
+      }));
     } catch (error) {
       debugLogger.log('WorkExperienceSection', 'Failed to get location suggestions', { error });
       return [];
     }
+  };
+
+  const handleCompanySelect = (item: SuggestionItem) => {
+    setFormData(prev => ({
+      ...prev,
+      companyName: item.label,
+      image: item.imageUrl ? item.imageUrl : prev.image
+    }));
+  };
+
+  const handleLocationSelect = (item: SuggestionItem) => {
+    setFormData(prev => ({
+      ...prev,
+      location: item.label
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,6 +123,12 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
         debugLogger.log('WorkExperienceSection', 'Work experience created successfully');
       }
       resetForm();
+      
+      // Reload work experiences after save
+      if (userId) {
+        const data = await getUserWorkExperiences(userId);
+        setWorkExperiences(data);
+      }
     } catch (error) {
       debugLogger.log('WorkExperienceSection', 'Failed to save work experience', { error });
     }
@@ -124,6 +169,12 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
       try {
         await deleteWorkExperience(id);
         debugLogger.log('WorkExperienceSection', 'Work experience deleted successfully');
+        
+        // Reload work experiences after delete
+        if (userId) {
+          const data = await getUserWorkExperiences(userId);
+          setWorkExperiences(data);
+        }
       } catch (error) {
         debugLogger.log('WorkExperienceSection', 'Failed to delete work experience', { error });
       }
@@ -195,9 +246,10 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Công ty *
                 </label>
-                <AutocompleteInput
+                <AutocompleteInputWithImage
                   value={formData.companyName}
                   onChange={(value) => handleInputChange('companyName', value)}
+                  onSelect={handleCompanySelect}
                   onFetch={fetchCompanySuggestions}
                   placeholder="Nhập tên công ty"
                   required
@@ -222,9 +274,10 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Địa điểm
                 </label>
-                <AutocompleteInput
+                <AutocompleteInputWithImage
                   value={formData.location || ''}
                   onChange={(value) => handleInputChange('location', value)}
+                  onSelect={handleLocationSelect}
                   onFetch={fetchLocationSuggestions}
                   placeholder="Ví dụ: Hồ Chí Minh, Việt Nam"
                   minChars={2}
@@ -288,7 +341,7 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
                 {formData.image && (
                   <div className="flex items-center space-x-2">
                     <img
-                      src={URL.createObjectURL(formData.image)}
+                      src={typeof formData.image === 'string' ? formData.image : URL.createObjectURL(formData.image)}
                       alt="Work experience preview"
                       className="w-16 h-16 object-cover rounded-md border"
                     />

@@ -4,21 +4,25 @@ import { debugLogger } from '../utils/debugLogger';
 export interface SchoolSuggestion {
   schoolName: string;
   count: number;
+  imageUrl?: string | null;
 }
 
 export interface CompanySuggestion {
   companyName: string;
   count: number;
+  imageUrl?: string | null;
 }
 
 export interface InterestSuggestion {
   name: string;
   count: number;
+  imageUrl?: string | null;
 }
 
 export interface LocationSuggestion {
   locationName: string;
   count: number;
+  imageUrl?: string | null;
 }
 
 export interface InterestCategorySuggestion {

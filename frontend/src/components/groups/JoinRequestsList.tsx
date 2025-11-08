@@ -111,8 +111,8 @@ export const JoinRequestsList: React.FC<JoinRequestsListProps> = ({
           <JoinRequestCard
             key={request.id}
             request={request}
-            onApprove={onApprove}
-            onReject={onReject}
+            onApprove={onApprove || (() => {})}
+            onReject={onReject || (() => {})}
             isLoading={isLoading}
           />
         ))}

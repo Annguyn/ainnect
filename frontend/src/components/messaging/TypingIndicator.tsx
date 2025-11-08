@@ -1,28 +1,49 @@
 import React from 'react'
 import { cn } from '../../lib/utils'
+import { TypingRequest } from '../../types/messaging'
 
 interface TypingIndicatorProps {
-  users: Array<{
+  typingUsers: TypingRequest[]
+  participants?: Array<{
     id: number
-    firstName: string
-    lastName: string
+    displayName?: string
+    username: string
   }>
   className?: string
 }
 
 export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
-  users,
+  typingUsers,
+  participants,
   className
 }) => {
-  if (users.length === 0) return null
+  if (!typingUsers || typingUsers.length === 0) return null
+
+  const getDisplayName = (userId: number, username: string): string => {
+    if (participants) {
+      const participant = participants.find(p => p.id === userId)
+      if (participant?.displayName) {
+        return participant.displayName
+      }
+    }
+    return username
+  }
 
   const getTypingText = () => {
-    if (users.length === 1) {
-      return `${users[0].firstName} đang gõ...`
-    } else if (users.length === 2) {
-      return `${users[0].firstName} và ${users[1].firstName} đang gõ...`
+    if (typingUsers.length === 1) {
+      const user = typingUsers[0]
+      const displayName = getDisplayName(user.userId, user.username)
+      return `${displayName} đang gõ...`
+    } else if (typingUsers.length === 2) {
+      const user1 = typingUsers[0]
+      const user2 = typingUsers[1]
+      const displayName1 = getDisplayName(user1.userId, user1.username)
+      const displayName2 = getDisplayName(user2.userId, user2.username)
+      return `${displayName1} và ${displayName2} đang gõ...`
     } else {
-      return `${users[0].firstName} và ${users.length - 1} người khác đang gõ...`
+      const user1 = typingUsers[0]
+      const displayName1 = getDisplayName(user1.userId, user1.username)
+      return `${displayName1} và ${typingUsers.length - 1} người khác đang gõ...`
     }
   }
 
