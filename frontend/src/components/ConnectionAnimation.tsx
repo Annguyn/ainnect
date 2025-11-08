@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 interface ConnectionAnimationProps {
   className?: string;
@@ -9,182 +9,149 @@ export const ConnectionAnimation: React.FC<ConnectionAnimationProps> = ({
   className = '', 
   variant = 'login' 
 }) => {
-  const [activeConnections, setActiveConnections] = useState<number[]>([]);
-  const [pulseNodes, setPulseNodes] = useState<number[]>([]);
-
-  useEffect(() => {
-    const connectionInterval = setInterval(() => {
-      setActiveConnections((prev) => {
-        const newConnections = [...prev];
-        const randomConnection = Math.floor(Math.random() * connections.length);
-        if (!newConnections.includes(randomConnection)) {
-          newConnections.push(randomConnection);
-        }
-        if (newConnections.length > 2) {
-          newConnections.shift();
-        }
-        return newConnections;
-      });
-    }, 1200); 
-
-    const pulseInterval = setInterval(() => {
-      setPulseNodes((prev) => {
-        const newPulses = [...prev];
-        const randomNode = Math.floor(Math.random() * nodes.length);
-        if (!newPulses.includes(randomNode)) {
-          newPulses.push(randomNode);
-        }
-        if (newPulses.length > 1) {
-          newPulses.shift();
-        }
-        return newPulses;
-      });
-    }, 1800); // Điều chỉnh thời gian để chuyển động mượt mà hơn
-
-    return () => {
-      clearInterval(connectionInterval);
-      clearInterval(pulseInterval);
-    };
-  }, []);
-
-  const nodes = [
-    { id: 0, x: 50, y: 25, color: 'from-blue-400 to-blue-600', label: '' },
-    { id: 1, x: 20, y: 45, color: 'from-purple-400 to-purple-600', label: '' },
-    { id: 2, x: 80, y: 45, color: 'from-green-400 to-green-600', label: '' },
-    { id: 3, x: 30, y: 75, color: 'from-yellow-400 to-yellow-600', label: '' },
-    { id: 4, x: 70, y: 75, color: 'from-pink-400 to-pink-600', label: '' }
-  ];
-
-  const connections = [
-    { from: 0, to: 1, id: 0 },
-    { from: 0, to: 2, id: 1 },
-    { from: 0, to: 3, id: 2 },
-    { from: 0, to: 4, id: 3 },
-    { from: 1, to: 2, id: 4 },
-    { from: 1, to: 3, id: 5 },
-    { from: 2, to: 4, id: 6 },
-    { from: 3, to: 4, id: 7 }
-  ];
 
   return (
     <div className={`relative w-full h-full flex flex-col items-center justify-center p-8 ${className}`}>
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-secondary-100 to-tertiary-100 rounded-2xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"></div>
       
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden rounded-2xl">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1.5 h-1.5 bg-primary-200 rounded-full opacity-40 animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${3 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Subtle decorative circles */}
+      <div className="absolute top-10 right-10 w-64 h-64 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-64 h-64 bg-purple-200 rounded-full opacity-20 blur-3xl"></div>
 
       {/* Main content */}
-      <div className="relative z-10 text-center">
+      <div className="relative z-10 text-center w-full max-w-4xl">
         {/* Title */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-700 mb-2">
-            {variant === 'login' ? 'Chào mừng trở lại!' : 'Tham gia cộng đồng!'}
+          <h2 className="text-5xl font-bold text-gray-800 mb-4">
+            {variant === 'login' ? 'Chào mừng trở lại!' : 'Tham gia Ainnect!'}
           </h2>
-          <p className="text-gray-500 text-lg">
-            {variant === 'login' ? 'Đăng nhập tài khoản của bạn' : 'Tạo tài khoản mới'}
+          <p className="text-gray-600 text-2xl">
+            {variant === 'login' ? 'Kết nối với bạn bè mọi lúc, mọi nơi' : 'Trải nghiệm mạng xã hội thế hệ mới'}
           </p>
         </div>
 
-        {/* Network visualization */}
-        <div className="relative w-80 h-80 mx-auto mb-8">
-          <svg
-            viewBox="0 0 100 100"
-            className="w-full h-full"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Connection lines */}
-            <g className="opacity-50">
-              {connections.map((connection) => {
-                const fromNode = nodes[connection.from];
-                const toNode = nodes[connection.to];
-                const isActive = activeConnections.includes(connection.id);
-                
-                return (
-                  <line
-                    key={connection.id}
-                    x1={fromNode.x}
-                    y1={fromNode.y}
-                    x2={toNode.x}
-                    y2={toNode.y}
-                    stroke={isActive ? '#60A5FA' : '#D1D5DB'}
-                    strokeWidth={isActive ? '2.5' : '1.5'}
-                    className={`transition-all duration-700 ${isActive ? 'animate-pulse' : ''}`}
-                  />
-                );
-              })}
-            </g>
+        {/* Mobile App Preview - HIGHLIGHTED */}
+        <div className="relative flex justify-center items-center gap-8 mb-16 min-h-[600px]">
+          {/* Glow effect behind phones */}
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-400/40 to-transparent blur-3xl"></div>
+          
+          {/* Phone 1 - Left */}
+          <div className="transform hover:scale-105 transition-all duration-500 hover:-translate-y-4">
+            <div className="relative w-52 h-[450px] bg-gradient-to-br from-gray-900 to-gray-800 rounded-[3rem] p-3 shadow-2xl ring-4 ring-white/10">
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-full"></div>
+              <div className="absolute inset-3 bg-white rounded-[2.5rem] overflow-hidden">
+                <img
+                  src="/img_mobile_1.png"
+                  alt="Ainnect App - Feed"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              {/* Screen shine effect */}
+              <div className="absolute inset-3 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-[2.5rem] pointer-events-none"></div>
+            </div>
+          </div>
 
-            {/* Nodes */}
-            {nodes.map((node) => {
-              const isPulsing = pulseNodes.includes(node.id);
-              const isCenter = node.id === 0;
-              
-              return (
-                <g key={node.id}>
-                  {/* Pulse ring for center node */}
-                  {isCenter && (
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r="10"
-                      fill="none"
-                      stroke="#60A5FA"
-                      strokeWidth="1.5"
-                      opacity="0.4"
-                      className="animate-ping"
-                    />
-                  )}
-                  
-                  {/* Main node */}
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r={isCenter ? '7' : '5'}
-                    fill={`url(#nodeGradient${node.id})`}
-                    className={`transition-all duration-500 ${isPulsing ? 'animate-pulse' : ''}`}
-                  />
-                </g>
-              );
-            })}
+          {/* Phone 2 - Center (MAIN FOCUS - Larger) */}
+          <div className="transform scale-110 hover:scale-[1.18] transition-all duration-500 z-20 hover:-translate-y-6">
+            <div className="relative w-56 h-[480px] bg-gradient-to-br from-gray-900 to-gray-800 rounded-[3rem] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.5)] ring-4 ring-blue-500/40">
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-full"></div>
+              <div className="absolute inset-3 bg-white rounded-[2.5rem] overflow-hidden ring-2 ring-blue-500/30">
+                <img
+                  src="/img_mobile_2.png"
+                  alt="Ainnect App - Main"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              {/* Screen shine effect */}
+              <div className="absolute inset-3 bg-gradient-to-tr from-transparent via-white/10 to-transparent rounded-[2.5rem] pointer-events-none"></div>
+              {/* Floating badge */}
+              <div className="absolute -top-4 -right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl animate-pulse">
+                NEW
+              </div>
+            </div>
+          </div>
 
-            {/* Gradient definitions */}
-            <defs>
-              <radialGradient id="nodeGradient0" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#93C5FD" />
-                <stop offset="100%" stopColor="#3B82F6" />
-              </radialGradient>
-              <radialGradient id="nodeGradient1" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#C4B5FD" />
-                <stop offset="100%" stopColor="#8B5CF6" />
-              </radialGradient>
-              <radialGradient id="nodeGradient2" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#6EE7B7" />
-                <stop offset="100%" stopColor="#10B981" />
-              </radialGradient>
-              <radialGradient id="nodeGradient3" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#FDE68A" />
-                <stop offset="100%" stopColor="#F59E0B" />
-              </radialGradient>
-              <radialGradient id="nodeGradient4" cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#FCA5A5" />
-                <stop offset="100%" stopColor="#EF4444" />
-              </radialGradient>
-            </defs>
-          </svg>
+          {/* Phone 3 - Right */}
+          <div className="transform hover:scale-105 transition-all duration-500 hover:-translate-y-4">
+            <div className="relative w-52 h-[450px] bg-gradient-to-br from-gray-900 to-gray-800 rounded-[3rem] p-3 shadow-2xl ring-4 ring-white/10">
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-full"></div>
+              <div className="absolute inset-3 bg-white rounded-[2.5rem] overflow-hidden">
+                <img
+                  src="/img_mobile_3.png"
+                  alt="Ainnect App - Chat"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              {/* Screen shine effect */}
+              <div className="absolute inset-3 bg-gradient-to-tr from-transparent via-white/5 to-transparent rounded-[2.5rem] pointer-events-none"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Download CTA */}
+        <div className="mb-12">
+          <div className="inline-flex items-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-5 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <svg className="w-8 h-8 mr-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 0 0 1 18h22a10.81 10.81 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 2.5 0 1.25 1.25 0 0 1-2.5 0zm7.5 0a1.25 1.25 0 1 1 2.5 0 1.25 1.25 0 0 1-2.5 0z"/>
+            </svg>
+            <div className="text-left">
+              <div className="font-bold text-xl">Tải ứng dụng Android</div>
+              <div className="text-base text-blue-100">Miễn phí • 4.8★ • 10K+ tải xuống</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-4 gap-6 max-w-4xl mx-auto">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Nhắn tin</h3>
+            <p className="text-sm text-gray-600">Nhanh chóng</p>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Cộng đồng</h3>
+            <p className="text-sm text-gray-600">Kết nối</p>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Bảo mật</h3>
+            <p className="text-sm text-gray-600">An toàn</p>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Hiệu suất</h3>
+            <p className="text-sm text-gray-600">Mượt mà</p>
+          </div>
         </div>
       </div>
     </div>
