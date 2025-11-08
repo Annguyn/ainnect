@@ -6,6 +6,7 @@ import Contact from './pages/Contact';
 import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
 import SearchPage from './pages/SearchPage';
+import DownloadPage from './pages/DownloadPage';
 import FriendRequestsPage from './pages/FriendRequestsPage';
 import FollowersPage from './pages/FollowersPage';
 import FollowingPage from './pages/FollowingPage';
@@ -41,6 +42,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/download" element={<DownloadPage />} />
         
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         
