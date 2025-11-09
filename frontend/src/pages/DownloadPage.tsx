@@ -49,7 +49,6 @@ const DownloadPage: React.FC = () => {
     link.click();
     document.body.removeChild(link);
 
-    // Reset downloading state after 2 seconds
     setTimeout(() => {
       setIsDownloading(false);
     }, 2000);
@@ -100,9 +99,9 @@ const DownloadPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-500 text-white">
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -114,8 +113,9 @@ const DownloadPage: React.FC = () => {
               </div>
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                Tải xuống Ainnect
-                <span className="block text-yellow-300">cho Android</span>
+                Tải xuống 
+                <span className="block text-yellow-500">ainnect</span>
+                <span className="block text-green-500">Android</span>
               </h1>
               
               <p className="text-lg sm:text-xl text-blue-100 mb-8 max-w-2xl">
@@ -136,7 +136,7 @@ const DownloadPage: React.FC = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="!border-2 !border-white !text-white hover:!bg-white hover:!text-blue-600 !bg-transparent transition-all duration-200 text-lg px-8 py-6 font-semibold"
+                  className="!border-2 !border-white !text-white hover:!bg-white/10 hover:!text-white !bg-transparent transition-all duration-200 text-lg px-8 py-6 font-semibold backdrop-blur-sm"
                   onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
                 >
                   Tìm hiểu thêm
@@ -145,15 +145,15 @@ const DownloadPage: React.FC = () => {
 
               <div className="flex flex-wrap gap-6 justify-center lg:justify-start text-sm">
                 <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-300" />
+                  <CheckCircle className="w-5 h-5 mr-2 text-blue-200" />
                   <span>Miễn phí 100%</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-300" />
+                  <CheckCircle className="w-5 h-5 mr-2 text-blue-200" />
                   <span>Không quảng cáo</span>
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-green-300" />
+                  <CheckCircle className="w-5 h-5 mr-2 text-blue-200" />
                   <span>Cập nhật thường xuyên</span>
                 </div>
               </div>
@@ -213,7 +213,7 @@ const DownloadPage: React.FC = () => {
       </div>
 
       {/* Mobile Screenshots for smaller screens */}
-      <div className="lg:hidden py-12 bg-gradient-to-r from-blue-600 to-purple-600">
+      <div className="lg:hidden py-12 bg-gradient-to-r from-blue-600 to-blue-500">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
             {['/img_mobile_1.png', '/img_mobile_2.png', '/img_mobile_3.png'].map((img, index) => (
@@ -249,7 +249,7 @@ const DownloadPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
             <Card key={index} className="p-6 hover:shadow-xl transition-shadow duration-300 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl text-white mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl text-white mb-4">
                 {feature.icon}
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -264,7 +264,7 @@ const DownloadPage: React.FC = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
@@ -323,7 +323,7 @@ const DownloadPage: React.FC = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
             Sẵn sàng trải nghiệm?
