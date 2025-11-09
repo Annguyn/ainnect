@@ -8,113 +8,58 @@ import java.util.List;
 
 public interface GroupService {
     
-    /**
-     * Create a new group
-     */
+ 
     GroupDtos.GroupResponse createGroup(GroupDtos.CreateRequest request, Long ownerId);
-    
-    /**
-     * Update group information
-     */
+ 
     GroupDtos.GroupResponse updateGroup(Long groupId, GroupDtos.UpdateRequest request, Long currentUserId);
-    
-    /**
-     * Delete a group (only owner can delete)
-     */
+
     void deleteGroup(Long groupId, Long currentUserId);
     
-    /**
-     * Get group details
-     */
+
     GroupDtos.GroupResponse getGroupById(Long groupId, Long currentUserId);
     
-    /**
-     * Get all groups with pagination
-     */
     GroupDtos.GroupListResponse getAllGroups(Pageable pageable, Long currentUserId);
-    
-    /**
-     * Get groups owned by user
-     */
+
     GroupDtos.GroupListResponse getGroupsByOwner(Long ownerId, Pageable pageable);
-    
-    /**
-     * Get groups where user is a member
-     */
+
     GroupDtos.GroupListResponse getGroupsByMember(Long userId, Pageable pageable);
     
-    /**
-     * Join a group
-     */
+
     GroupDtos.JoinResponse joinGroup(Long groupId, Long userId);
-    
-    /**
-     * Leave a group
-     */
     GroupDtos.LeaveResponse leaveGroup(Long groupId, Long userId);
     
-    /**
-     * Get group members
-     */
+
     GroupDtos.MemberListResponse getGroupMembers(Long groupId, Pageable pageable, Long currentUserId);
     
-    /**
-     * Update member role (only owner/moderator can do this)
-     */
+
     GroupDtos.MemberResponse updateMemberRole(Long groupId, Long targetUserId, GroupMemberRole newRole, Long currentUserId);
     
-    /**
-     * Remove member from group (only owner/moderator can do this)
-     */
+
     void removeMember(Long groupId, Long targetUserId, Long currentUserId);
-    
-    /**
-     * Check if user is member of group
-     */
+
     boolean isMember(Long groupId, Long userId);
     
-    /**
-     * Check if user is owner of group
-     */
+
     boolean isOwner(Long groupId, Long userId);
     
-    /**
-     * Check if user is moderator of group
-     */
+
     boolean isModerator(Long groupId, Long userId);
-    
-    /**
-     * Get join questions for a group
-     */
+
     List<GroupDtos.JoinQuestionResponse> getJoinQuestions(Long groupId);
     
-    /**
-     * Update join questions for a group (only owner/admin)
-     */
+
     void updateJoinQuestions(Long groupId, List<GroupDtos.JoinQuestionRequest> questions, Long currentUserId);
     
-    /**
-     * Submit join request with answers
-     */
+ 
     GroupDtos.JoinRequestResponse submitJoinRequest(Long groupId, List<GroupDtos.JoinAnswerRequest> answers, Long userId);
     
-    /**
-     * Get pending join requests for a group (only owner/admin/moderator)
-     */
+
     GroupDtos.JoinRequestListResponse getPendingJoinRequests(Long groupId, Pageable pageable, Long currentUserId);
-    
-    /**
-     * Review join request (approve or reject)
-     */
+
     GroupDtos.JoinRequestResponse reviewJoinRequest(Long requestId, GroupDtos.ReviewJoinRequestRequest request, Long reviewerId);
     
-    /**
-     * Get user's join request status for a group
-     */
+
     GroupDtos.JoinRequestResponse getUserJoinRequest(Long groupId, Long userId);
-    
-    /**
-     * Cancel join request
-     */
+
     void cancelJoinRequest(Long requestId, Long userId);
 }

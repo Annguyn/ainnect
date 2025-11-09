@@ -11,7 +11,6 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Friendsh
 	List<Friendship> findByUserLow_IdOrUserHigh_Id(Long userIdLow, Long userIdHigh);
 	boolean existsByUserLow_IdAndUserHigh_IdAndStatus(Long userIdLow, Long userIdHigh, FriendshipStatus status);
 	
-	// Additional methods for profile
 	List<Friendship> findByUserLow_IdOrUserHigh_IdAndStatus(Long userId1, Long userId2, FriendshipStatus status);
 	long countByUserLow_IdOrUserHigh_IdAndStatus(Long userId1, Long userId2, FriendshipStatus status);
 }

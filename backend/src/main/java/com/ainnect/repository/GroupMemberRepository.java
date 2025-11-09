@@ -18,27 +18,18 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, GroupM
 	boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 	boolean existsByGroupIdAndUserIdAndRole(Long groupId, Long userId, GroupMemberRole role);
 	int countByGroupId(Long groupId);
-	
-	/**
-	 * Get group members with pagination
-	 */
+
 	@Query("SELECT gm FROM GroupMember gm WHERE gm.group.id = :groupId ORDER BY gm.joinedAt DESC")
 	Page<GroupMember> findByGroupId(@Param("groupId") Long groupId, Pageable pageable);
 	
-	/**
-	 * Get groups by user with pagination
-	 */
+
 	@Query("SELECT gm FROM GroupMember gm WHERE gm.user.id = :userId ORDER BY gm.joinedAt DESC")
 	Page<GroupMember> findByUserId(@Param("userId") Long userId, Pageable pageable);
 	
-	/**
-	 * Get group member by group and user
-	 */
+
 	Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
 	
-	/**
-	 * Delete group member
-	 */
+
 	void deleteByGroupIdAndUserId(Long groupId, Long userId);
 	
 	Long countByUserId(Long userId);
