@@ -26,7 +26,7 @@ It integrates **AI-powered recommendation**, **content moderation**, and **real-
 | **Backend** | Spring Boot (Java 21), JPA, MapStruct |
 | **Database** | MySQL, Redis |
 | **Infrastructure** | Docker Compose, Nginx Reverse Proxy |
-| **AI Modules** | Node2Vec + Logistic Regression |
+| **AI Modules** | Node2Vec + KNN, ResNet50V2  |
 | **Deployment** | Ubuntu Server, AWS EC2, Domain |
 
 ---
