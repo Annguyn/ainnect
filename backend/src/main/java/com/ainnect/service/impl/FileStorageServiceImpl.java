@@ -39,8 +39,10 @@ public class FileStorageServiceImpl implements FileStorageService {
         "avatars", "schools", "companies", "interests", "locations", "posts", "general", "messages"
     );
     
-    // Max file size: 100MB
+    // Max file size (images and other): 100MB
     private static final long MAX_FILE_SIZE = 100 * 1024 * 1024;
+    // Max video size: 50MB
+    private static final long MAX_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 
     public FileStorageServiceImpl(@Value("${app.file.upload-dir:uploads}") String uploadDir,
                                 @Value("${app.file.cdn-url:}") String cdnUrl,
@@ -115,6 +117,16 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public void deleteFile(String fileName) {
+        if (cloudflareStorageService.isEnabled()) {
+            try {
+                cloudflareStorageService.deleteFile(fileName);
+                log.info("Deleted file from Cloudflare R2: {}", fileName);
+            } catch (Exception ex) {
+                log.error("Could not delete file {} from R2. Error: {}", fileName, ex.getMessage());
+            }
+            return;
+        }
+
         try {
             String[] parts = fileName.split("/", 2);
             if (parts.length == 2) {
@@ -124,7 +136,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                     return;
                 }
             }
-            
+
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
             Files.deleteIfExists(filePath);
         } catch (IOException ex) {
@@ -142,11 +154,17 @@ public class FileStorageServiceImpl implements FileStorageService {
             return false;
         }
         
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File quá lớn. Kích thước tối đa là 100MB");
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.toLowerCase().startsWith("video/")) {
+            if (file.getSize() > MAX_VIDEO_FILE_SIZE) {
+                throw new IllegalArgumentException("Video quá lớn. Tối đa 50MB");
+            }
+        } else {
+            if (file.getSize() > MAX_FILE_SIZE) {
+                throw new IllegalArgumentException("File quá lớn. Kích thước tối đa là 100MB");
+            }
         }
         
-        String contentType = file.getContentType();
         if (contentType == null || !SUPPORTED_MEDIA_TYPES.contains(contentType.toLowerCase())) {
             throw new IllegalArgumentException("Định dạng file không được hỗ trợ. Chỉ chấp nhận: JPEG, PNG, GIF, WebP, MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP");
         }

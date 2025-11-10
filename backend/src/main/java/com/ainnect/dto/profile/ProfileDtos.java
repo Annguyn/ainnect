@@ -41,23 +41,19 @@ public class ProfileDtos {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RelationshipResponse {
-        // Follow relationship
-        private boolean isFollowing;           // Current user đang follow profile user
-        private boolean isFollowedBy;          // Profile user đang follow current user
-        private boolean isMutualFollow;        // Cả hai đều follow nhau
+        private boolean isFollowing;           
+        private boolean isFollowedBy;          
+        private boolean isMutualFollow;        
         
-        // Friendship relationship
-        private boolean isFriend;              // Đã là bạn bè
-        private boolean canSendFriendRequest;  // Có thể gửi lời mời kết bạn
-        private FriendshipStatus friendshipStatus; // Trạng thái kết bạn chi tiết
+        private boolean isFriend;              
+        private boolean canSendFriendRequest;  
+        private FriendshipStatus friendshipStatus; 
         
-        // Block relationship
-        private boolean isBlocked;             // Current user đã block profile user
-        private boolean isBlockedBy;           // Profile user đã block current user
+        private boolean isBlocked;             
+        private boolean isBlockedBy;           
         
-        // Summary status
-        private String relationshipStatus;     // Tóm tắt mối quan hệ: "friends", "following", "followers", "pending_request", "blocked", "none"
-        private String actionAvailable;        // Hành động có thể thực hiện: "follow", "unfollow", "send_friend_request", "accept_friend_request", "remove_friend", "block", "unblock"
+        private String relationshipStatus;     
+        private String actionAvailable;        
     }
 
     @Data

@@ -11,6 +11,8 @@ import com.ainnect.repository.*;
 import com.ainnect.service.FileStorageService;
 import com.ainnect.service.ProfileService;
 import com.ainnect.service.SocialService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,6 +45,7 @@ public class ProfileServiceImpl implements ProfileService {
     private String baseUrl;
 
     @Override
+    @Cacheable(cacheNames = "profiles:user", key = "#userId + ':' + #currentUserId + ':' + #page + ':' + #size")
     public ProfileDtos.ProfileResponse getUserProfile(Long userId, Long currentUserId, int page, int size) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -83,8 +86,8 @@ public class ProfileServiceImpl implements ProfileService {
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
                 .bio(user.getBio())
-        .avatarUrl(buildFileUrl(user.getAvatarUrl()))
-                .coverUrl(null)
+                .avatarUrl(buildFileUrl(user.getAvatarUrl()))
+                .coverUrl(buildFileUrl(user.getCoverUrl()))
                 .location(user.getLocation())
                 .website(null)
                 .joinedAt(user.getCreatedAt())
@@ -102,6 +105,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:educations", "profiles:work", "profiles:interests", "profiles:locations"}, allEntries = true)
     public ProfileDtos.ProfileUpdateResponse updateProfile(ProfileDtos.ProfileUpdateRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -118,8 +122,8 @@ public class ProfileServiceImpl implements ProfileService {
                 .username(updatedUser.getUsername())
                 .displayName(updatedUser.getDisplayName())
                 .bio(updatedUser.getBio())
-        .avatarUrl(buildFileUrl(updatedUser.getAvatarUrl()))
-                .coverUrl(null)
+                .avatarUrl(buildFileUrl(updatedUser.getAvatarUrl()))
+                .coverUrl(buildFileUrl(updatedUser.getCoverUrl()))
                 .location(updatedUser.getLocation())
                 .website(null)
                 .isVerified(false)
@@ -129,6 +133,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:user-posts", key = "#userId + ':' + #currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + T(java.util.Objects).toString(#pageable.sort)")
     public ProfileDtos.ProfilePostsResponse getUserPosts(Long userId, Long currentUserId, Pageable pageable) {
         if (!canViewPosts(userId, currentUserId)) {
             throw new IllegalArgumentException("Cannot view posts - insufficient permissions");
@@ -151,6 +156,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:followers", key = "#userId + ':' + #currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
     public ProfileDtos.FollowersResponse getUserFollowers(Long userId, Long currentUserId, Pageable pageable) {
         if (!isProfileVisible(userId, currentUserId)) {
             throw new IllegalArgumentException("Cannot view followers - profile is private");
@@ -178,6 +184,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:following", key = "#userId + ':' + #currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
     public ProfileDtos.FollowingResponse getUserFollowing(Long userId, Long currentUserId, Pageable pageable) {
         if (!isProfileVisible(userId, currentUserId)) {
             throw new IllegalArgumentException("Cannot view following - profile is private");
@@ -205,6 +212,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:friends", key = "#userId + ':' + #currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
     public ProfileDtos.FriendsResponse getUserFriends(Long userId, Long currentUserId, Pageable pageable) {
         if (!isProfileVisible(userId, currentUserId)) {
             throw new IllegalArgumentException("Cannot view friends - profile is private");
@@ -232,6 +240,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:social", key = "#userId + ':' + #currentUserId")
     public ProfileDtos.SocialStatsResponse getUserSocialStats(Long userId, Long currentUserId) {
         long followersCount = followRepository.countByFollowee_Id(userId);
         long followingCount = followRepository.countByFollower_Id(userId);
@@ -282,6 +291,7 @@ public class ProfileServiceImpl implements ProfileService {
         return true;
     }
 
+    @SuppressWarnings("unused")
     private List<ProfileDtos.RecentPostResponse> getRecentPosts(Long userId, Long currentUserId, int limit) {
         if (!canViewPosts(userId, currentUserId)) {
             return List.of();
@@ -443,6 +453,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:educations"}, allEntries = true)
     public EducationDtos.Response createEducation(EducationDtos.CreateRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -465,6 +476,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:educations"}, allEntries = true)
     public EducationDtos.Response updateEducation(Long educationId, EducationDtos.UpdateRequest request, Long userId) {
         Education education = educationRepository.findById(educationId)
                 .orElseThrow(() -> new IllegalArgumentException("Education not found"));
@@ -502,6 +514,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:educations"}, allEntries = true)
     public void deleteEducation(Long educationId, Long userId) {
         Education education = educationRepository.findById(educationId)
                 .orElseThrow(() -> new IllegalArgumentException("Education not found"));
@@ -527,6 +540,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:educations", key = "#userId")
     public List<EducationDtos.Response> getUserEducations(Long userId) {
         List<Education> educations = educationRepository.findByUserIdAndDeletedAtIsNullOrderByStartDateDesc(userId);
         return educations.stream()
@@ -536,6 +550,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:work"}, allEntries = true)
     public WorkExperienceDtos.Response createWorkExperience(WorkExperienceDtos.CreateRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -558,6 +573,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:work"}, allEntries = true)
     public WorkExperienceDtos.Response updateWorkExperience(Long workExperienceId, WorkExperienceDtos.UpdateRequest request, Long userId) {
         WorkExperience workExperience = workExperienceRepository.findById(workExperienceId)
                 .orElseThrow(() -> new IllegalArgumentException("Work experience not found"));
@@ -595,6 +611,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:work"}, allEntries = true)
     public void deleteWorkExperience(Long workExperienceId, Long userId) {
         WorkExperience workExperience = workExperienceRepository.findById(workExperienceId)
                 .orElseThrow(() -> new IllegalArgumentException("Work experience not found"));
@@ -620,6 +637,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:work", key = "#userId")
     public List<WorkExperienceDtos.Response> getUserWorkExperiences(Long userId) {
         List<WorkExperience> workExperiences = workExperienceRepository.findByUserIdAndDeletedAtIsNullOrderByStartDateDesc(userId);
         return workExperiences.stream()
@@ -662,6 +680,7 @@ public class ProfileServiceImpl implements ProfileService {
     // Interest management methods
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:interests"}, allEntries = true)
     public InterestDtos.Response createInterest(InterestDtos.CreateRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -680,6 +699,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:interests"}, allEntries = true)
     public InterestDtos.Response updateInterest(Long interestId, InterestDtos.UpdateRequest request, Long userId) {
         Interest interest = interestRepository.findById(interestId)
                 .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
@@ -707,6 +727,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:interests"}, allEntries = true)
     public void deleteInterest(Long interestId, Long userId) {
         Interest interest = interestRepository.findById(interestId)
                 .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
@@ -720,6 +741,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:interests", key = "#userId")
     public List<InterestDtos.Response> getUserInterests(Long userId) {
         List<Interest> interests = interestRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId);
         return interests.stream()
@@ -730,6 +752,7 @@ public class ProfileServiceImpl implements ProfileService {
     // Location management methods
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:locations"}, allEntries = true)
     public LocationDtos.Response createLocation(LocationDtos.CreateRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -752,6 +775,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:locations"}, allEntries = true)
     public LocationDtos.Response updateLocation(Long locationId, LocationDtos.UpdateRequest request, Long userId) {
         UserLocation location = userLocationRepository.findById(locationId)
                 .orElseThrow(() -> new IllegalArgumentException("Location not found"));
@@ -791,6 +815,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"profiles:user", "profiles:user-posts", "profiles:social", "profiles:followers", "profiles:following", "profiles:friends", "profiles:locations"}, allEntries = true)
     public void deleteLocation(Long locationId, Long userId) {
         UserLocation location = userLocationRepository.findById(locationId)
                 .orElseThrow(() -> new IllegalArgumentException("Location not found"));
@@ -804,6 +829,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Cacheable(cacheNames = "profiles:locations", key = "#userId")
     public List<LocationDtos.Response> getUserLocations(Long userId) {
         List<UserLocation> locations = userLocationRepository.findByUserIdAndDeletedAtIsNullOrderByIsCurrentDescCreatedAtDesc(userId);
         return locations.stream()

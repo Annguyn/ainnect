@@ -29,12 +29,10 @@ public class SocialServiceImpl implements SocialService {
     private final ReportRepository reportRepository;
         private final NotificationIntegrationService notificationIntegrationService;
 
-    // Follow operations
     @Override
     @Transactional
     public SocialDtos.SocialActionResponse followUser(Long followerId, Long followeeId) {
         try {
-            // Check if already following
             if (isFollowing(followerId, followeeId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("follow")
@@ -44,7 +42,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
 
-            // Check if trying to follow self
             if (followerId.equals(followeeId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("follow")
@@ -54,7 +51,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
 
-            // Check if blocked - only prevent if current user is blocked by the target user
             if (isBlockedBy(followerId, followeeId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("follow")
@@ -64,7 +60,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
             
-            // Check if current user has blocked the target user
             if (isBlocked(followerId, followeeId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("follow")
@@ -164,12 +159,10 @@ public class SocialServiceImpl implements SocialService {
         return followRepository.existsById(followId);
     }
 
-    // Friendship operations
     @Override
     @Transactional
     public SocialDtos.SocialActionResponse sendFriendRequest(Long requesterId, Long friendId) {
         try {
-            // Check if already friends or pending
             if (isFriend(requesterId, friendId) || hasPendingFriendRequest(requesterId, friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
@@ -179,7 +172,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
 
-            // Check if trying to friend self
             if (requesterId.equals(friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
@@ -189,7 +181,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
 
-            // Check if blocked - only prevent if current user is blocked by the target user
             if (isBlockedBy(requesterId, friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
@@ -199,7 +190,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
             
-            // Check if current user has blocked the target user
             if (isBlocked(requesterId, friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
@@ -214,7 +204,6 @@ public class SocialServiceImpl implements SocialService {
             User friend = userRepository.findById(friendId)
                     .orElseThrow(() -> new IllegalArgumentException("Friend not found"));
 
-            // Ensure consistent ordering (low ID first)
             Long userIdLow = Math.min(requesterId, friendId);
             Long userIdHigh = Math.max(requesterId, friendId);
 
@@ -231,7 +220,6 @@ public class SocialServiceImpl implements SocialService {
 
             friendshipRepository.save(friendship);
 
-                        // notify recipient about friend request
                         try {
                                 notificationIntegrationService.handleFriendRequest(requesterId, friendId);
                         } catch (Exception ignored) {}
@@ -258,7 +246,6 @@ public class SocialServiceImpl implements SocialService {
     @Transactional
     public SocialDtos.SocialActionResponse acceptFriendRequest(Long userId, Long friendshipId) {
         try {
-            // Find the friendship by ID
             Long userIdLowForAccept = Math.min(userId, friendshipId);
             Long userIdHighForAccept = Math.max(userId, friendshipId);
             FriendshipId compositeIdForAccept = new FriendshipId(userIdLowForAccept, userIdHighForAccept);
@@ -275,7 +262,6 @@ public class SocialServiceImpl implements SocialService {
             
             Friendship friendship = friendshipOpt.get();
             
-            // Check if the user is authorized to accept this request
             if (!friendship.getUserHigh().getId().equals(userId) && !friendship.getUserLow().getId().equals(userId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("accept_friend")
@@ -285,7 +271,6 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
             
-            // Check if the request is still pending
             if (friendship.getStatus() != FriendshipStatus.pending) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("accept_friend")
@@ -295,12 +280,10 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
             
-            // Accept the friend request
             friendship.setStatus(FriendshipStatus.accepted);
             friendship.setUpdatedAt(LocalDateTime.now());
             friendshipRepository.save(friendship);
 
-                        // notify requester that friend request was accepted
                         try {
                                 if (friendship.getRequestedBy() != null) {
                                         Long requesterId = friendship.getRequestedBy().getId();
@@ -330,7 +313,6 @@ public class SocialServiceImpl implements SocialService {
     @Transactional
     public SocialDtos.SocialActionResponse rejectFriendRequest(Long userId, Long friendshipId) {
         try {
-            // Find the friendship by ID
             Long userIdLowForReject = Math.min(userId, friendshipId);
             Long userIdHighForReject = Math.max(userId, friendshipId);
             FriendshipId compositeIdForReject = new FriendshipId(userIdLowForReject, userIdHighForReject);

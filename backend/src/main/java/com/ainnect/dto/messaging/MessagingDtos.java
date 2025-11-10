@@ -93,7 +93,6 @@ public class MessagingDtos {
         private boolean isMember;
         private ConversationMemberRole userRole;
 
-        // For direct conversations - information about the other participant
         private Long otherParticipantId;
         private String otherParticipantUsername;
         private String otherParticipantDisplayName;
@@ -101,7 +100,6 @@ public class MessagingDtos {
         private boolean otherParticipantIsOnline;
         private LocalDateTime otherParticipantLastSeenAt;
         
-        // For group conversations - list of all members
         private List<ConversationMemberResponse> members;
     }
 

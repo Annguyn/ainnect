@@ -37,6 +37,7 @@ public class CommentDtos {
 		private Long parentId;
 		private String content;
 		private Integer reactionCount;
+		private boolean hasChild;
 		private LocalDateTime createdAt;
 		private LocalDateTime updatedAt;
 	}

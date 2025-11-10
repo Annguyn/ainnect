@@ -1,6 +1,7 @@
 package com.ainnect.controller;
 
 import com.ainnect.common.ApiResponse;
+import com.ainnect.config.JwtUtil;
 import com.ainnect.dto.profile.EducationDtos;
 import com.ainnect.dto.profile.InterestDtos;
 import com.ainnect.dto.profile.LocationDtos;
@@ -25,6 +26,7 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final FileStorageService fileStorageService;
+    private final JwtUtil jwtUtil;
 
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<ProfileDtos.ProfileResponse>> getUserProfile(
@@ -185,7 +187,6 @@ public class ProfileController {
         }
     }
 
-    // Education endpoints
     @PostMapping(value = "/education", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<EducationDtos.Response>> createEducation(
             @RequestParam("schoolName") String schoolName,
@@ -213,12 +214,10 @@ public class ProfileController {
             request.setIsCurrent(isCurrent);
             request.setDescription(description);
             
-            // Handle image upload if provided
             if (image != null && !image.isEmpty()) {
                 String imageUrl = fileStorageService.storeFile(image, "schools");
                 request.setImageUrl(imageUrl);
             }
-            // Note: If no image file is provided, imageUrl will remain null
             
             EducationDtos.Response response = profileService.createEducation(request, userId);
             return ResponseEntity.ok(ApiResponse.<EducationDtos.Response>builder()
@@ -264,12 +263,10 @@ public class ProfileController {
             request.setIsCurrent(isCurrent);
             request.setDescription(description);
             
-            // Handle image upload if provided
             if (image != null && !image.isEmpty()) {
                 String imageUrl = fileStorageService.storeFile(image, "schools");
                 request.setImageUrl(imageUrl);
             }
-            // Note: If no image file is provided, imageUrl will remain null and won't update existing image
             
             EducationDtos.Response response = profileService.updateEducation(educationId, request, userId);
             return ResponseEntity.ok(ApiResponse.<EducationDtos.Response>builder()
@@ -818,6 +815,10 @@ public class ProfileController {
     }
 
     private Long extractUserIdFromToken(String authHeader) {
-        return 1L;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return jwtUtil.extractUserId(token);
+        }
+        throw new RuntimeException("Token không hợp lệ");
     }
 }

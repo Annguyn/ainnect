@@ -26,7 +26,7 @@ public class CommentServiceImpl implements CommentService {
 	@Override
 	@Transactional(readOnly = true)
 	public Page<CommentDtos.Response> listByPost(Long postId, Pageable pageable) {
-		List<Comment> comments = commentRepository.findByPost_Id(postId);
+		List<Comment> comments = commentRepository.findByPost_IdAndParentIsNullOrderByCreatedAtDesc(postId);
 		int start = (int) pageable.getOffset();
 		int end = Math.min(start + pageable.getPageSize(), comments.size());
 		List<CommentDtos.Response> responseList = comments.subList(start, end).stream()
@@ -38,7 +38,7 @@ public class CommentServiceImpl implements CommentService {
 	@Override
 	@Transactional(readOnly = true)
 	public CommentDtos.PaginatedResponse listByPostWithPagination(Long postId, int page, int size) {
-		List<Comment> allComments = commentRepository.findByPost_Id(postId);
+		List<Comment> allComments = commentRepository.findByPost_IdAndParentIsNullOrderByCreatedAtDesc(postId);
 		long totalElements = allComments.size();
 		int totalPages = (int) Math.ceil((double) totalElements / size);
 		
@@ -245,6 +245,8 @@ public class CommentServiceImpl implements CommentService {
 			parentId = null;
 		}
 
+		boolean hasChild = commentRepository.existsByParent_Id(comment.getId());
+
 		return CommentDtos.Response.builder()
 				.id(comment.getId())
 				.postId(postId)
@@ -255,6 +257,7 @@ public class CommentServiceImpl implements CommentService {
 				.parentId(parentId)
 				.content(comment.getContent())
 				.reactionCount(comment.getReactionCount())
+				.hasChild(hasChild)
 				.createdAt(comment.getCreatedAt())
 				.updatedAt(comment.getUpdatedAt())
 				.build();

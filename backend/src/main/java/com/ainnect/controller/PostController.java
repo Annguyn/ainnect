@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -44,13 +43,11 @@ public class PostController {
 				.build();
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
-				List<String> mediaUrls = new ArrayList<>();
-				for (MultipartFile file : mediaFiles) {
-					if (!file.isEmpty()) {
-						String mediaUrl = fileStorageService.storeFile(file, "posts");
-						mediaUrls.add(mediaUrl);
-					}
-				}
+				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
+					.parallel()
+					.filter(f -> f != null && !f.isEmpty())
+					.map(f -> fileStorageService.storeFile(f, "posts"))
+					.toList();
 				request.setMediaUrls(mediaUrls);
 			}
 			
@@ -77,13 +74,11 @@ public class PostController {
 				.visibility(PostVisibility.valueOf(visibility))
 				.build();
 			if (mediaFiles != null && mediaFiles.length > 0) {
-				List<String> mediaUrls = new ArrayList<>();
-				for (MultipartFile file : mediaFiles) {
-					if (!file.isEmpty()) {
-						String mediaUrl = fileStorageService.storeFile(file, "posts");
-						mediaUrls.add(mediaUrl);
-					}
-				}
+				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
+					.parallel()
+					.filter(f -> f != null && !f.isEmpty())
+					.map(f -> fileStorageService.storeFile(f, "posts"))
+					.toList();
 				request.setMediaUrls(mediaUrls);
 			}
 			
@@ -109,13 +104,11 @@ public class PostController {
 			request.setVisibility(PostVisibility.valueOf(visibility));
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
-				List<String> mediaUrls = new ArrayList<>();
-				for (MultipartFile file : mediaFiles) {
-					if (!file.isEmpty()) {
-						String mediaUrl = fileStorageService.storeFile(file, "posts");
-						mediaUrls.add(mediaUrl);
-					}
-				}
+				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
+					.parallel()
+					.filter(f -> f != null && !f.isEmpty())
+					.map(f -> fileStorageService.storeFile(f, "posts"))
+					.toList();
 				request.setMediaUrls(mediaUrls);
 			}
 			
@@ -141,13 +134,11 @@ public class PostController {
 			request.setVisibility(PostVisibility.valueOf(visibility));
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
-				List<String> mediaUrls = new ArrayList<>();
-				for (MultipartFile file : mediaFiles) {
-					if (!file.isEmpty()) {
-						String mediaUrl = fileStorageService.storeFile(file, "posts");
-						mediaUrls.add(mediaUrl);
-					}
-				}
+				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
+					.parallel()
+					.filter(f -> f != null && !f.isEmpty())
+					.map(f -> fileStorageService.storeFile(f, "posts"))
+					.toList();
 				request.setMediaUrls(mediaUrls);
 			}
 			

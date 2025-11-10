@@ -25,7 +25,6 @@ spring:
       file-size-threshold: ${SPRING_SERVLET_MULTIPART_FILE_SIZE_THRESHOLD:2KB}
       location: ${SPRING_SERVLET_MULTIPART_LOCATION:${java.io.tmpdir}}
 
-  # Redis (bật nếu ứng dụng có dùng cache/session)
   data:
     redis:
       host: ${SPRING_REDIS_HOST:redis}
