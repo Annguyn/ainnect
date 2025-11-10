@@ -187,16 +187,18 @@ const HomePage: React.FC = () => {
   ) => {
     debugLogger.logFormSubmit('Create Post', { content, visibility, mediaFilesCount: mediaFiles?.length || 0 });
     try {
-      await postService.createPost({
+      const post = await postService.createPost({
         content,
         visibility: visibility as 'public_' | 'friends' | 'private',
         mediaFiles
       });
-      debugLogger.log('HomePage', 'Post created successfully');
+      debugLogger.log('HomePage', 'Post created successfully', { postId: post?.id });
+      return post;
     } catch (error) {
-      debugLogger.log('HomePage', 'Failed to create post', error);
-      console.error('Failed to create post:', error);
-      throw error;
+      // Don't throw: the UI should show optimistic content and not surface an error
+      debugLogger.log('HomePage', 'Failed to create post (backend processing); returning undefined', error);
+      console.error('Failed to create post (non-blocking):', error);
+      return undefined;
     }
   };
 

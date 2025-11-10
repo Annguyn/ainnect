@@ -123,6 +123,65 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     }
   }, [isAuthenticated, initialLoadDone, isLoading, externalPosts, loadPosts]);
 
+  // Listen for optimistic post events (dispatched by CreatePost)
+  React.useEffect(() => {
+    const onOptimistic = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail;
+        if (detail) {
+          setInternalPosts(prev => [detail, ...prev]);
+        }
+      } catch (err) {
+        console.error('optimistic-post handler error', err);
+      }
+    };
+
+    const onReplace = (e: Event) => {
+      try {
+        const { tempId, post } = (e as CustomEvent).detail || {};
+        if (tempId && post) {
+          setInternalPosts(prev => prev.map(p => (p.id === tempId ? post : p)));
+        }
+      } catch (err) {
+        console.error('replace-post handler error', err);
+      }
+    };
+
+    const onPending = (e: Event) => {
+      try {
+        const { tempId } = (e as CustomEvent).detail || {};
+        if (tempId) {
+          setInternalPosts(prev => prev.map(p => (p.id === tempId ? { ...p, isPending: true } : p)));
+        }
+      } catch (err) {
+        console.error('post-create-pending handler error', err);
+      }
+    };
+
+    const onFailed = (e: Event) => {
+      try {
+        const { tempId } = (e as CustomEvent).detail || {};
+        if (tempId) {
+          setInternalPosts(prev => prev.map(p => (p.id === tempId ? { ...p, isPending: false, createFailed: true } : p)));
+        }
+      } catch (err) {
+        console.error('post-create-failed handler error', err);
+      }
+    };
+
+    window.addEventListener('optimistic-post', onOptimistic as EventListener);
+    window.addEventListener('replace-post', onReplace as EventListener);
+    window.addEventListener('post-create-pending', onPending as EventListener);
+    window.addEventListener('post-create-failed', onFailed as EventListener);
+
+    return () => {
+      window.removeEventListener('optimistic-post', onOptimistic as EventListener);
+      window.removeEventListener('replace-post', onReplace as EventListener);
+      window.removeEventListener('post-create-pending', onPending as EventListener);
+      window.removeEventListener('post-create-failed', onFailed as EventListener);
+    };
+  }, []);
+
   // Mark as loaded if using external posts
   React.useEffect(() => {
     if (externalPosts) {

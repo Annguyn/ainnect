@@ -160,7 +160,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     <div className="w-full max-w-md mx-auto animate-fadeIn">
       <div className="text-center mb-4 sm:mb-6 md:mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 animate-slideInDown">Đăng ký</h2>
-        <p className="text-sm sm:text-base text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Tạo tài khoản mới để tham gia Ainnect</p>
+        <p className="text-sm sm:text-base text-gray-600 animate-slideInUp" style={{ animationDelay: '0.1s' }}>Tạo tài khoản mới để tham gia ainnect</p>
       </div>
 
       {(showAlert || error) && (

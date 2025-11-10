@@ -265,7 +265,6 @@ class CommentService {
     }
   }
 
-  // Delete a comment
   async deleteComment(commentId: number): Promise<void> {
     const endpoint = `${this.baseUrl}/${commentId}`;
     debugLogger.logApiCall('DELETE', endpoint, { commentId });
@@ -288,7 +287,6 @@ class CommentService {
     }
   }
 
-  // Get reactions for a comment
   async getCommentReactions(commentId: number, page = 0, size = 20): Promise<any[]> {
     const endpoint = `${this.baseUrl}/${commentId}/reactions`;
     debugLogger.logApiCall('GET', endpoint, { commentId, page, size });
@@ -316,13 +314,10 @@ class CommentService {
     }
   }
 
-  // Toggle like on comment (convenience method)
   async toggleLike(commentId: number): Promise<void> {
     try {
-      // Try to react first
       await this.reactToComment(commentId, { type: 'like' });
     } catch (error: any) {
-      // If already reacted, remove the reaction
       if (error.response?.status === 409) {
         await this.unreactComment(commentId);
       } else {

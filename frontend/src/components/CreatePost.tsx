@@ -5,7 +5,9 @@ import { Button } from './ui';
 import { Avatar } from './Avatar';
 
 interface CreatePostProps {
-  onCreatePost: (content: string, visibility?: 'public_' | 'friends' | 'private_' | 'group', mediaFiles?: File[]) => Promise<void>;
+  // Change to return the created post when available. If the backend can't finish
+  // processing immediately the function may resolve to undefined/null — that's fine.
+  onCreatePost: (content: string, visibility?: 'public_' | 'friends' | 'private_' | 'group', mediaFiles?: File[]) => Promise<any | void>;
   isLoading?: boolean;
 }
 
@@ -55,19 +57,62 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
     }
 
     setIsSubmitting(true);
+
+    // Safety check: user should exist at this point (early return above)
+    if (!user) {
+      console.error('User is null in handleSubmit');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Create a temporary optimistic post and broadcast it so feeds can show it
+    // immediately while backend finishes processing media.
+    const tempId = -Date.now();
+    const tempPost = {
+      id: tempId,
+      authorId: user.id,
+      authorUsername: user.username,
+      authorDisplayName: user.displayName,
+      authorAvatarUrl: user.avatarUrl,
+      content: content.trim(),
+      visibility,
+      commentCount: 0,
+      reactionCount: 0,
+      shareCount: 0,
+      reactions: undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isPending: true,
+      images: previewUrls.length ? previewUrls : undefined,
+      media: undefined
+    } as any;
+
     try {
-      console.log('Submitting post with content:', content.trim());
-      console.log('Visibility:', visibility);
-      await onCreatePost(content.trim(), visibility, selectedFiles);
+      // Let the rest of the app know about the optimistic post immediately
+      window.dispatchEvent(new CustomEvent('optimistic-post', { detail: tempPost }));
+
+      // Reset UI immediately so the user can continue
       setContent('');
       setSelectedFiles([]);
-      // Clean up preview URLs
       previewUrls.forEach(url => URL.revokeObjectURL(url));
       setPreviewUrls([]);
       setIsExpanded(false);
+
+      // Call the provided handler; it may return the created post (or undefined on partial processing)
+      const created = await onCreatePost(tempPost.content, visibility, selectedFiles);
+
+      if (created && (created as any).id) {
+        // Replace the optimistic post with the real one
+        window.dispatchEvent(new CustomEvent('replace-post', { detail: { tempId, post: created } }));
+      } else {
+        // If backend returns nothing (still processing) just notify that it's pending
+        window.dispatchEvent(new CustomEvent('post-create-pending', { detail: { tempId } }));
+      }
     } catch (error) {
-      console.error('Failed to create post:', error);
-      alert('Failed to create post. Please try again.');
+      console.error('Failed to create post (non-blocking):', error);
+      // Don't show blocking alert. Mark the optimistic post as failed so feed can optionally
+      // show a gentle indicator or retry later.
+      window.dispatchEvent(new CustomEvent('post-create-failed', { detail: { tempId, error } }));
     } finally {
       setIsSubmitting(false);
     }

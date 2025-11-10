@@ -89,7 +89,23 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [expandedContent, setExpandedContent] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const contentRef = useRef<HTMLParagraphElement | null>(null);
   const userAvatarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (!contentRef.current) return;
+      const el = contentRef.current;
+      const isOverflowing = el.scrollHeight > el.clientHeight;
+      setHasOverflow(isOverflowing);
+    };
+
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [post.content]);
 
   const actualCommentCount = post.commentCount ?? 0;
 
@@ -321,6 +337,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const isCurrentUserPost = post.authorId === currentUserId; // Check if the post belongs to the current user
+  const isPending = (post as any).isPending === true;
+  const createFailed = (post as any).createFailed === true;
 
   const handleDelete = async () => {
     try {
@@ -355,6 +373,12 @@ export const PostCard: React.FC<PostCardProps> = ({
               onClick={handleUserClick}
             >
               {getPostAuthorName(post)}
+              {isPending && (
+                <span className="ml-2 inline-block text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Đang tạo</span>
+              )}
+              {createFailed && (
+                <span className="ml-2 inline-block text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Lỗi đăng</span>
+              )}
             </h3>
             {(post.author?.isVerified || post.authorUsername) && (
               <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -444,22 +468,20 @@ export const PostCard: React.FC<PostCardProps> = ({
         {post.content && (
           <>
             <p
-              className="text-gray-900 leading-relaxed break-words whitespace-pre-wrap line-clamp-3"
-              ref={(el) => {
-                if (el) {
-                  const isOverflowing = el.scrollHeight > el.clientHeight;
-                  el.nextElementSibling?.classList.toggle('hidden', !isOverflowing);
-                }
-              }}
+              ref={(el) => { contentRef.current = el; }}
+              className={`text-gray-900 leading-relaxed break-words whitespace-pre-wrap ${expandedContent ? '' : 'line-clamp-3'}`}
             >
               {renderHighlighted(post.content, highlight)}
             </p>
-            <details className="hidden">
-              <summary className="text-sm text-blue-600 mt-1 cursor-pointer select-none">Xem thêm</summary>
-              <div className="mt-1 text-gray-900 leading-relaxed break-words whitespace-pre-wrap">
-                {renderHighlighted(post.content, highlight)}
+            {hasOverflow && (
+              <div className="mt-1">
+                {!expandedContent ? (
+                  <button onClick={() => setExpandedContent(true)} className="text-sm text-blue-600 mt-1 cursor-pointer select-none">Xem thêm</button>
+                ) : (
+                  <button onClick={() => setExpandedContent(false)} className="text-sm text-blue-600 mt-1 cursor-pointer select-none">Thu gọn</button>
+                )}
               </div>
-            </details>
+            )}
           </>
         )}
         {extractFirstUrl(post.content) && (
@@ -529,7 +551,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       <div className="px-4 py-2 flex items-center justify-between text-sm text-gray-500 border-b border-gray-100">
-        <div className="flex items-center space-x-4">
+        <div className={`flex items-center space-x-4 ${isPending ? 'opacity-70 pointer-events-none' : ''}`}>
           <button
             onClick={() => {
               if (getReactionCount(post) > 0) {
@@ -547,10 +569,11 @@ export const PostCard: React.FC<PostCardProps> = ({
         </span>
       </div>
       <span>{getShareCount(post) > 0 ? `${getShareCount(post)} lượt chia sẻ` : 'Chưa có chia sẻ'}</span>
-    </div>      <div className="px-4 py-3 flex items-center justify-between">
+    </div>
+      <div className="px-4 py-3 flex items-center justify-between">
         <div
-          className="relative"
-          onMouseEnter={(e) => handleReactionEnter(e, post.id)}
+          className={`relative ${isPending ? 'pointer-events-none opacity-70' : ''}`}
+          onMouseEnter={(e) => !isPending && handleReactionEnter(e, post.id)}
           onMouseMove={handleReactionMove}
         >
           <ReactionButton
