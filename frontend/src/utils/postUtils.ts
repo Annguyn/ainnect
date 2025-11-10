@@ -237,13 +237,16 @@ export const getPostAuthorAvatar = (post: Post): string | null => {
 };
 
 /**
- * Create author object for Avatar component
+ * Create author object for Avatar component with proper fallback
  */
 export const getPostAuthorForAvatar = (post: Post) => {
+  const authorName = getPostAuthorName(post);
+  const avatarUrl = getPostAuthorAvatar(post);
+  
   return {
-    id: post.authorId,
-    displayName: getPostAuthorName(post),
-    username: post.authorUsername || post.author?.username || '',
-    avatarUrl: getPostAuthorAvatar(post)
+    userId: post.authorId,
+    displayName: authorName,
+    username: post.authorUsername || post.author?.username || `user${post.authorId}`,
+    avatarUrl: avatarUrl || undefined // Avatar component handles undefined properly
   };
 };

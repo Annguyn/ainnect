@@ -13,6 +13,7 @@ import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteIn
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
+import { downloadImageFromUrl } from '../../utils/imageUtils';
 
 interface EducationSectionProps {
   userId?: number;
@@ -86,11 +87,19 @@ export const EducationSection: React.FC<EducationSectionProps> = ({
     }
   };
 
-  const handleSchoolSelect = (item: SuggestionItem) => {
+  const handleSchoolSelect = async (item: SuggestionItem) => {
+    const newFormData: any = {
+      schoolName: item.label
+    };
+
+    // If suggestion has an image URL, download it and convert to File
+    if (item.imageUrl) {
+      newFormData.image = await downloadImageFromUrl(item.imageUrl, 'school-logo.jpg');
+    }
+
     setFormData(prev => ({
       ...prev,
-      schoolName: item.label,
-      image: item.imageUrl ? item.imageUrl : prev.image
+      ...newFormData
     }));
   };
 

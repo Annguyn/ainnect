@@ -26,6 +26,7 @@ export interface UpdateProfileRequest {
   birthday?: string | null;
   location?: string | null;
   avatar?: File;
+  cover?: File;
 }
 
 // Change Password Request Interface
@@ -107,6 +108,7 @@ class UserService {
       if (data.birthday) formData.append('birthday', data.birthday);
       if (data.location) formData.append('location', data.location);
       if (data.avatar) formData.append('avatar', data.avatar);
+      if (data.cover) formData.append('cover', data.cover);
 
       const response = await apiClient.put<UserProfile>(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

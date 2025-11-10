@@ -90,6 +90,33 @@ export const useMessaging = ({
             : msg
         ))
         break
+      case 'MESSAGE_REACTION':
+        // Handle message reaction updates
+        const reactionData = message.data as {
+          messageId: number
+          reactionCounts: {
+            like: number
+            love: number
+            wow: number
+            sad: number
+            angry: number
+            haha: number
+          }
+          userId: number
+          currentUserReaction: 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha' | null
+        }
+        setMessages(prev => (prev || []).map(msg => 
+          msg.id === reactionData.messageId 
+            ? { 
+                ...msg, 
+                reactionCounts: reactionData.reactionCounts,
+                currentUserReaction: reactionData.userId === (user?.id || currentUserId) 
+                  ? reactionData.currentUserReaction 
+                  : msg.currentUserReaction
+              }
+            : msg
+        ))
+        break
       case 'ERROR':
         setError(message.data as string)
         break

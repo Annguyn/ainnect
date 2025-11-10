@@ -19,7 +19,17 @@ interface MessageBubbleProps {
   onEdit?: (message: Message) => void
   onDelete?: (message: Message) => void
   onReply?: (message: Message) => void
-  onReact?: (message: Message, emoji: string) => void
+  onReact?: (message: Message, reactionType: 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha') => void
+  reactionCounts?: {
+    like: number
+    love: number
+    wow: number
+    sad: number
+    angry: number
+    haha: number
+  }
+  currentUserReaction?: string | null
+  isReacting?: boolean
   className?: string
 }
 
@@ -31,6 +41,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onDelete,
   onReply,
   onReact,
+  reactionCounts: propReactionCounts,
+  currentUserReaction: propCurrentUserReaction,
+  isReacting: propIsReacting,
   className
 }) => {
   const [showActions, setShowActions] = useState(false)
@@ -88,10 +101,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       '😀': 'like'
     }
     const type = map[emoji]
-    if (type) {
-      messagingService.reactToMessage(message.id, type).catch(() => {})
+    if (type && onReact) {
+      onReact(message, type)
     }
-    onReact?.(message, emoji)
     setShowReactions(false)
   }
 
@@ -187,23 +199,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
 
                 {/* Reactions */}
-                {(message.reactionCounts && Object.values(message.reactionCounts).some(c => c > 0)) && (
-                  <div className={cn(
-                    "absolute -bottom-3",
-                    isOwnMessage ? "right-2" : "left-2"
-                  )}>
+                {(() => {
+                  const reactions = propReactionCounts || message.reactionCounts
+                  const hasReactions = reactions && Object.values(reactions).some(c => c > 0)
+                  return hasReactions && (
                     <div className={cn(
-                      "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs shadow bg-white text-gray-700"
+                      "absolute -bottom-3",
+                      isOwnMessage ? "right-2" : "left-2"
                     )}>
-                      {message.reactionCounts.like > 0 && <span>👍 {message.reactionCounts.like}</span>}
-                      {message.reactionCounts.love > 0 && <span>❤️ {message.reactionCounts.love}</span>}
-                      {message.reactionCounts.haha > 0 && <span>😂 {message.reactionCounts.haha}</span>}
-                      {message.reactionCounts.wow > 0 && <span>😮 {message.reactionCounts.wow}</span>}
-                      {message.reactionCounts.sad > 0 && <span>😢 {message.reactionCounts.sad}</span>}
-                      {message.reactionCounts.angry > 0 && <span>😡 {message.reactionCounts.angry}</span>}
+                      <div className={cn(
+                        "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs shadow bg-white text-gray-700"
+                      )}>
+                        {reactions.like > 0 && <span>👍 {reactions.like}</span>}
+                        {reactions.love > 0 && <span>❤️ {reactions.love}</span>}
+                        {reactions.haha > 0 && <span>😂 {reactions.haha}</span>}
+                        {reactions.wow > 0 && <span>😮 {reactions.wow}</span>}
+                        {reactions.sad > 0 && <span>😢 {reactions.sad}</span>}
+                        {reactions.angry > 0 && <span>😡 {reactions.angry}</span>}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
               </>
             )}
 

@@ -16,9 +16,9 @@ export interface RawCommentResponse {
   reactionCount?: number;
   repliesCount?: number;
   userReaction?: string | null;
+  hasChild?: boolean;
 }
 
-// Transform raw API response to Comment interface
 export const transformComment = (rawComment: RawCommentResponse): Comment => {
   debugLogger.log('CommentUtils', 'Transforming comment', {
     id: rawComment.id,
@@ -49,6 +49,7 @@ export const transformComment = (rawComment: RawCommentResponse): Comment => {
     },
     repliesCount: rawComment.repliesCount || 0,
     userReaction: rawComment.userReaction,
+    hasChild: rawComment.hasChild || false,
     replies: []
   };
 

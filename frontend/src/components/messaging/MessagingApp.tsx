@@ -5,7 +5,6 @@ import { useMessaging } from '../../hooks/useMessaging'
 import { ConversationList } from './ConversationList'
 import { ChatInterface } from './ChatInterface'
 import { CreateConversationModal } from './CreateConversationModal'
-import { WebSocketStatus } from './WebSocketStatus'
 import { socialService } from '../../services/socialService'
 import { cn } from '../../lib/utils'
 
@@ -125,17 +124,6 @@ export const MessagingApp: React.FC<MessagingAppProps> = ({
           </button>
         </div>
       )}
-      
-      {/* WebSocket Status Indicator */}
-      <div className="absolute top-4 right-4 z-50">
-        <WebSocketStatus
-          isConnected={wsConnected}
-          error={wsError}
-          reconnectAttempts={0}
-        />
-      </div>
-
-      {/* WebSocket Test Button removed */}
 
       {/* Conversation List - Hidden on mobile when chat is open */}
       <div className={cn(

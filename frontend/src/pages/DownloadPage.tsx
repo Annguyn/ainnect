@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, CheckCircle, Star, Users, MessageCircle, Shield, Zap } from 'lucide-react';
+import { Download, Smartphone, CheckCircle, Star, Users, MessageCircle, Shield, Zap, ChevronDown, ChevronUp, Calendar, Package } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { apkVersionService } from '../services/apkVersionService';
+import { apkVersionService, ApkVersion } from '../services/apkVersionService';
 
 const DownloadPage: React.FC = () => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -11,7 +11,10 @@ const DownloadPage: React.FC = () => {
     versionName: string;
     fileSize: number;
     description: string;
+    releaseDate: string;
+    versionCode: number;
   } | null>(null);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   useEffect(() => {
     const loadActiveVersion = async () => {
@@ -21,7 +24,9 @@ const DownloadPage: React.FC = () => {
         setVersionInfo({
           versionName: activeVersion.versionName,
           fileSize: activeVersion.fileSize,
-          description: activeVersion.description
+          description: activeVersion.description,
+          releaseDate: activeVersion.releaseDate,
+          versionCode: activeVersion.versionCode
         });
       } catch (err) {
         console.error('Failed to load active APK version:', err);
@@ -40,6 +45,59 @@ const DownloadPage: React.FC = () => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const parseChangelog = (description: string) => {
+    // Parse description to extract changelog items
+    const lines = description.split('\n').filter(line => line.trim());
+    const items: { category: string; items: string[] }[] = [];
+    let currentCategory = '';
+    let currentItems: string[] = [];
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      // Check if it's a category header (e.g., "New Features:", "Bug Fixes:")
+      if (trimmed.endsWith(':') && !trimmed.startsWith('-') && !trimmed.startsWith('•')) {
+        if (currentCategory && currentItems.length > 0) {
+          items.push({ category: currentCategory, items: [...currentItems] });
+          currentItems = [];
+        }
+        currentCategory = trimmed.slice(0, -1);
+      } else if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+        // It's a list item
+        currentItems.push(trimmed.substring(1).trim());
+      } else if (trimmed && currentCategory) {
+        // Regular text under a category
+        currentItems.push(trimmed);
+      }
+    });
+
+    // Add last category
+    if (currentCategory && currentItems.length > 0) {
+      items.push({ category: currentCategory, items: currentItems });
+    }
+
+    // If no structured changelog, return description as single item
+    if (items.length === 0 && description.trim()) {
+      return [{ category: 'Thông tin phiên bản', items: [description.trim()] }];
+    }
+
+    return items;
+  };
+
   const handleDownload = () => {
     setIsDownloading(true);
     const link = document.createElement('a');
@@ -54,49 +112,6 @@ const DownloadPage: React.FC = () => {
     }, 2000);
   };
 
-  const features = [
-    {
-      icon: <MessageCircle className="w-6 h-6" />,
-      title: 'Nhắn tin nhanh chóng',
-      description: 'Trò chuyện với bạn bè một cách mượt mà và tiện lợi'
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: 'Kết nối cộng đồng',
-      description: 'Tham gia các nhóm và mở rộng mạng lưới quan hệ'
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: 'Bảo mật cao',
-      description: 'Dữ liệu của bạn được mã hóa và bảo vệ tối đa'
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: 'Hiệu suất cao',
-      description: 'Ứng dụng chạy mượt mà, tải nhanh, tiết kiệm pin'
-    }
-  ];
-
-  const reviews = [
-    {
-      name: 'Nguyễn Văn A',
-      rating: 5,
-      comment: 'Ứng dụng tuyệt vời! Giao diện đẹp và dễ sử dụng.',
-      avatar: '/default-avatar.png'
-    },
-    {
-      name: 'Trần Thị B',
-      rating: 5,
-      comment: 'Kết nối với bạn bè rất nhanh chóng và tiện lợi.',
-      avatar: '/default-avatar.png'
-    },
-    {
-      name: 'Lê Văn C',
-      rating: 5,
-      comment: 'Tính năng nhắn tin rất tốt, không bị lag.',
-      avatar: '/default-avatar.png'
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
@@ -235,92 +250,93 @@ const DownloadPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Tại sao chọn Ainnect?
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Trải nghiệm mạng xã hội hoàn toàn mới với những tính năng độc đáo
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 hover:shadow-xl transition-shadow duration-300 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl text-white mb-4">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600">
-                {feature.description}
-              </p>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl font-bold mb-2">10K+</div>
-              <div className="text-blue-100">Người dùng</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl font-bold mb-2">50K+</div>
-              <div className="text-blue-100">Bài viết</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl font-bold mb-2">100K+</div>
-              <div className="text-blue-100">Tin nhắn</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl font-bold mb-2">4.8★</div>
-              <div className="text-blue-100">Đánh giá</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Reviews Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Người dùng nói gì về chúng tôi
-          </h2>
-          <p className="text-lg text-gray-600">
-            Hàng nghìn đánh giá 5 sao từ người dùng hài lòng
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {reviews.map((review, index) => (
-            <Card key={index} className="p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center mb-4">
-                <img
-                  src={review.avatar}
-                  alt={review.name}
-                  className="w-12 h-12 rounded-full mr-3"
-                />
+      {/* Version Info & Changelog Section */}
+      {versionInfo && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <Card className="overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-white">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900">{review.name}</h4>
-                  <div className="flex text-yellow-400">
-                    {[...Array(review.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-current" />
-                    ))}
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Package className="w-6 h-6" />
+                    <h3 className="text-2xl font-bold">Phiên bản {versionInfo.versionName}</h3>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-blue-100">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{formatDate(versionInfo.releaseDate)}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Download className="w-4 h-4" />
+                      <span>{formatFileSize(versionInfo.fileSize)}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="font-mono">Build {versionInfo.versionCode}</span>
+                    </div>
                   </div>
                 </div>
+                <Button
+                  onClick={() => setShowChangelog(!showChangelog)}
+                  className="!bg-white/20 hover:!bg-white/30 !text-white border-2 border-white/50"
+                >
+                  {showChangelog ? (
+                    <>
+                      <ChevronUp className="w-5 h-5 mr-2" />
+                      Ẩn chi tiết
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-5 h-5 mr-2" />
+                      Xem chi tiết
+                    </>
+                  )}
+                </Button>
               </div>
-              <p className="text-gray-600 italic">"{review.comment}"</p>
-            </Card>
-          ))}
+            </div>
+
+            {/* Changelog Content */}
+            {showChangelog && (
+              <div className="p-6 bg-gray-50 border-t-4 border-blue-500 animate-fadeIn">
+                <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <MessageCircle className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Ghi chú phát hành
+                </h4>
+
+                {parseChangelog(versionInfo.description).map((section, idx) => (
+                  <div key={idx} className="mb-6 last:mb-0">
+                    <h5 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                      {section.category}
+                    </h5>
+                    <ul className="space-y-2 ml-4">
+                      {section.items.map((item, itemIdx) => (
+                        <li key={itemIdx} className="flex items-start text-gray-700">
+                          <CheckCircle className="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <Button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="w-full sm:w-auto !bg-gradient-to-r !from-blue-600 !to-blue-500 hover:!from-blue-700 hover:!to-blue-600"
+                    size="lg"
+                  >
+                    <Download className={`w-5 h-5 mr-2 ${isDownloading ? 'animate-bounce' : ''}`} />
+                    {isDownloading ? 'Đang tải xuống...' : 'Tải xuống phiên bản này'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
+      )}
 
       {/* CTA Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white py-16">

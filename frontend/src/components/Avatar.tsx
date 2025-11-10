@@ -25,43 +25,28 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   const avatarProps = getAvatarProps(user);
   const sizeClass = sizeClasses[size];
+  const [imageError, setImageError] = React.useState(false);
   
-  if (avatarProps.type === 'image') {
+  // If image failed or no image, show initials
+  if (avatarProps.type === 'initials' || imageError) {
     return (
-      <img
-        src={avatarProps.src}
-        alt={avatarProps.alt}
-        className={`${sizeClass} rounded-full object-cover flex-shrink-0 ${className}`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          const parent = target.parentElement;
-          if (parent) {
-            const fallbackProps = getAvatarProps({
-              displayName: user?.displayName,
-              userId: user?.userId
-            });
-            
-            if (fallbackProps.type === 'initials') {
-              parent.innerHTML = `
-                <div class="${sizeClass} rounded-full flex items-center justify-center font-medium text-white flex-shrink-0 ${className}" 
-                     style="background-color: ${fallbackProps.backgroundColor}">
-                  ${fallbackProps.initials}
-                </div>
-              `;
-            }
-          }
-        }}
-      />
+      <div
+        className={`${sizeClass} rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 shadow-md ${className}`}
+        style={{ background: avatarProps.backgroundColor }}
+        title={avatarProps.alt}
+      >
+        {avatarProps.initials}
+      </div>
     );
   }
   
+  // Try to load image first
   return (
-    <div
-      className={`${sizeClass} rounded-full flex items-center justify-center font-medium text-white flex-shrink-0 ${className}`}
-      style={{ backgroundColor: avatarProps.backgroundColor }}
-      title={avatarProps.alt}
-    >
-      {avatarProps.initials}
-    </div>
+    <img
+      src={avatarProps.src}
+      alt={avatarProps.alt}
+      className={`${sizeClass} rounded-full object-cover flex-shrink-0 shadow-md ${className}`}
+      onError={() => setImageError(true)}
+    />
   );
 };

@@ -187,7 +187,7 @@ export const QRLoginModal: React.FC<QRLoginModalProps> = ({ isOpen, onClose, onS
     >
       <div className="relative overflow-y-auto max-h-[80vh] -m-6 p-6">
         {/* Decorative Background */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 opacity-10"></div>
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 opacity-10"></div>
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-8 animate-fadeIn">
@@ -223,7 +223,7 @@ export const QRLoginModal: React.FC<QRLoginModalProps> = ({ isOpen, onClose, onS
           <div className="flex flex-col items-center animate-fadeIn">
             {/* Status Icon & Title */}
             <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-3 animate-pulse">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full mb-3 animate-pulse">
                 <div className="text-4xl">{statusUI.icon}</div>
               </div>
               <h3 className={`text-xl font-bold mb-1 bg-gradient-to-r ${statusUI.gradientClass} bg-clip-text text-transparent`}>
@@ -237,7 +237,7 @@ export const QRLoginModal: React.FC<QRLoginModalProps> = ({ isOpen, onClose, onS
               <>
                 {/* QR Code with fancy border */}
                 <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
                   <div className="relative bg-white p-4 rounded-2xl shadow-2xl border-2 border-gray-100">
                     <img
                       src={qrSession.qrCodeImage}
@@ -256,7 +256,7 @@ export const QRLoginModal: React.FC<QRLoginModalProps> = ({ isOpen, onClose, onS
                 <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full mb-3 ${
                   timeLeft < 60 
                     ? 'bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200' 
-                    : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200'
+                    : 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200'
                 }`}>
                   <svg className={`w-4 h-4 ${timeLeft < 60 ? 'text-red-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -270,7 +270,7 @@ export const QRLoginModal: React.FC<QRLoginModalProps> = ({ isOpen, onClose, onS
                 </div>
 
                 {/* Instructions with gradient */}
-                <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-3 w-full max-w-md shadow-lg">
+                <div className="bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-3 w-full max-w-md shadow-lg">
                   <h4 className="font-bold text-blue-900 mb-3 flex items-center text-sm">
                     <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center mr-2">
                       <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

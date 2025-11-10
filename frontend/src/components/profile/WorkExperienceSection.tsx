@@ -11,6 +11,7 @@ import { Input } from '../ui/Input';
 import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteInputWithImage';
 import { Textarea } from '../ui/Textarea';
 import { debugLogger } from '../../utils/debugLogger';
+import { downloadImageFromUrl } from '../../utils/imageUtils';
 
 interface WorkExperienceSectionProps {
   userId?: number;
@@ -96,11 +97,19 @@ export const WorkExperienceSection: React.FC<WorkExperienceSectionProps> = ({
     }
   };
 
-  const handleCompanySelect = (item: SuggestionItem) => {
+  const handleCompanySelect = async (item: SuggestionItem) => {
+    const newFormData: any = {
+      companyName: item.label
+    };
+
+    // If suggestion has an image URL, download it and convert to File
+    if (item.imageUrl) {
+      newFormData.image = await downloadImageFromUrl(item.imageUrl, 'company-logo.jpg');
+    }
+
     setFormData(prev => ({
       ...prev,
-      companyName: item.label,
-      image: item.imageUrl ? item.imageUrl : prev.image
+      ...newFormData
     }));
   };
 

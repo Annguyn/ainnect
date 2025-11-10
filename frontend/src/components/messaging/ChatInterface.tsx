@@ -4,6 +4,7 @@ import { messagingService } from '../../services/messagingService'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { TypingIndicator } from './TypingIndicator'
+import { useMessageReactions } from '../../hooks/useMessageReactions'
 import { cn } from '../../lib/utils'
 import { 
   ArrowLeft, 
@@ -49,14 +50,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
+  // Initialize message reactions hook
+  const {
+    reactionCounts,
+    currentUserReactions,
+    isReacting,
+    reactToMessage: handleReactToMessage,
+    removeReaction: handleRemoveReaction,
+    setInitialReactionsBatch
+  } = useMessageReactions()
+
   useEffect(() => {
     if (propMessages) {
       setMessages(propMessages)
       setLoading(false)
+      // Initialize reactions from messages
+      const reactionsData: Record<number, any> = {}
+      const userReactionsData: Record<number, 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha' | null> = {}
+      propMessages.forEach(msg => {
+        if (msg.reactionCounts) {
+          reactionsData[msg.id] = msg.reactionCounts
+        }
+        if (msg.currentUserReaction !== undefined) {
+          userReactionsData[msg.id] = msg.currentUserReaction
+        }
+      })
+      setInitialReactionsBatch(reactionsData, userReactionsData)
     } else {
       loadMessages()
     }
-  }, [conversation.id, propMessages])
+  }, [conversation.id, propMessages, setInitialReactionsBatch])
 
   useEffect(() => {
     scrollToBottom()
@@ -84,11 +107,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         { page: pageNum, size: 50 }
       )
       
+      const reversedMessages = (response.messages || []).reverse()
+      
       if (pageNum === 0) {
-        setMessages((response.messages || []).reverse())
+        setMessages(reversedMessages)
       } else {
-        setMessages(prev => [...(response.messages || []).reverse(), ...prev])
+        setMessages(prev => [...reversedMessages, ...prev])
       }
+      
+      // Initialize reactions from loaded messages
+      const reactionsData: Record<number, any> = {}
+      const userReactionsData: Record<number, 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha' | null> = {}
+      reversedMessages.forEach(msg => {
+        if (msg.reactionCounts) {
+          reactionsData[msg.id] = msg.reactionCounts
+        }
+        if (msg.currentUserReaction !== undefined) {
+          userReactionsData[msg.id] = msg.currentUserReaction
+        }
+      })
+      setInitialReactionsBatch(reactionsData, userReactionsData)
       
       setHasMore(response.hasNext)
       setPage(pageNum)
@@ -181,9 +219,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     window.dispatchEvent(event)
   }
 
-  const handleReactMessage = (message: Message, emoji: string) => {
-    // TODO: Implement reaction functionality
-    console.log('React to message:', message, emoji)
+  const handleReactMessage = async (message: Message, reactionType: 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha') => {
+    try {
+      // Check if user already reacted with this type
+      const currentReaction = currentUserReactions[message.id]
+      
+      if (currentReaction === reactionType) {
+        // Remove reaction if clicking same type
+        await handleRemoveReaction(message.id)
+      } else {
+        // Add or change reaction
+        await handleReactToMessage(message.id, reactionType)
+      }
+    } catch (error) {
+      console.error('Failed to react to message:', error)
+    }
   }
 
   const getConversationTitle = () => {
@@ -325,6 +375,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   onDelete={handleDeleteMessage}
                   onReply={handleReplyMessage}
                   onReact={handleReactMessage}
+                  reactionCounts={reactionCounts[message.id]}
+                  currentUserReaction={currentUserReactions[message.id]}
+                  isReacting={isReacting[message.id]}
                 />
               </div>
             )

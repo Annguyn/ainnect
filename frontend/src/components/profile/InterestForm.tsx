@@ -6,6 +6,7 @@ import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteIn
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
+import { downloadImageFromUrl, fileToDataUrl } from '../../utils/imageUtils';
 
 interface InterestFormProps {
   interest?: Interest;
@@ -64,11 +65,33 @@ export const InterestForm: React.FC<InterestFormProps> = ({
     }
   };
 
-  const handleInterestSelect = (item: SuggestionItem) => {
+  const handleInterestSelect = async (item: SuggestionItem) => {
+    const newFormData: any = {
+      name: item.label
+    };
+
+    // If suggestion has an image URL, download it and convert to File
+    if (item.imageUrl) {
+      const imageFile = await downloadImageFromUrl(item.imageUrl, 'interest-image.jpg');
+      newFormData.image = imageFile;
+      
+      // Update preview URL
+      if (imageFile instanceof File) {
+        try {
+          const dataUrl = await fileToDataUrl(imageFile);
+          setPreviewUrl(dataUrl);
+        } catch (error) {
+          debugLogger.log('InterestForm', 'Failed to create preview', { error });
+          setPreviewUrl(item.imageUrl);
+        }
+      } else {
+        setPreviewUrl(item.imageUrl);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      name: item.label,
-      image: item.imageUrl ? item.imageUrl : prev.image
+      ...newFormData
     }));
   };
 

@@ -166,11 +166,25 @@ export interface TypingRequest {
 
 // WebSocket message types
 export interface WebSocketMessage {
-  type: 'NEW_MESSAGE' | 'TYPING' | 'ERROR' | 'MESSAGE_READ' | 'MESSAGE_UPDATED' | 'MESSAGE_DELETED' | 'USER_JOINED' | 'USER_LEFT' | 'NOTIFICATION_NEW'; // Added NOTIFICATION_NEW
+  type: 'NEW_MESSAGE' | 'TYPING' | 'ERROR' | 'MESSAGE_READ' | 'MESSAGE_UPDATED' | 'MESSAGE_DELETED' | 'MESSAGE_REACTION' | 'USER_JOINED' | 'USER_LEFT' | 'NOTIFICATION_NEW' | 'NEW_CONVERSATION' | 'MEMBER_ADDED';
   data: any;
   conversationId: number;
   senderId: number;
   timestamp: string;
+}
+
+export interface MessageReactionData {
+  messageId: number;
+  reactionCounts: {
+    like: number;
+    love: number;
+    wow: number;
+    sad: number;
+    angry: number;
+    haha: number;
+  };
+  userId: number;
+  currentUserReaction: string | null;
 }
 
 export interface NotificationResponse {

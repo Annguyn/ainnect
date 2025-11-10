@@ -23,6 +23,9 @@ export { MessagingLink } from './MessagingLink';
 export { ConversationLink } from './ConversationLink';
 export { MessagingNavigation } from './MessagingNavigation';
 export { MessagingBreadcrumb } from './MessagingBreadcrumb';
+export { FloatingChatBubble } from './FloatingChatBubble';
+export { MessageNotificationPopup } from './MessageNotificationPopup';
+export { MessageNotificationContainer } from './MessageNotificationContainer';
 
 // Auth components
 export * from './auth';

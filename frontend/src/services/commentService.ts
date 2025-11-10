@@ -26,6 +26,7 @@ export interface Comment {
   };
   repliesCount: number;
   userReaction?: string | null;
+  hasChild?: boolean;
   replies?: Comment[];
 }
 
@@ -141,15 +142,77 @@ class CommentService {
 
 
   // List replies of a comment
-  async getReplies(commentId: number, page = 0, size = 10): Promise<CommentsResponse> {
-    return await apiClient.get<CommentsResponse>(`${this.baseUrl}/${commentId}/replies`, {
-      params: { page, size }
-    });
+  async getReplies(commentId: number, page = 0, size = 5): Promise<{ content: Comment[]; totalElements: number; totalPages: number; hasNext: boolean; hasPrevious: boolean }> {
+    const endpoint = `${this.baseUrl}/${commentId}/replies`;
+    debugLogger.logApiCall('GET', endpoint, { commentId, page, size });
+    try {
+      const response = await apiClient.get<CommentsResponse>(endpoint, {
+        params: { page, size }
+      });
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      // Transform raw comments to Comment interface
+      const transformedReplies = transformComments(response.comments || []);
+      
+      debugLogger.log('CommentService', `💬 Get Replies API Success`, {
+        endpoint,
+        commentId,
+        page,
+        size,
+        totalReplies: response.totalElements,
+        repliesCount: transformedReplies.length,
+        totalPages: response.totalPages,
+        currentPage: response.currentPage,
+        hasNext: response.hasNext,
+        hasPrevious: response.hasPrevious
+      });
+      
+      return {
+        content: transformedReplies,
+        totalElements: response.totalElements,
+        totalPages: response.totalPages,
+        hasNext: response.hasNext,
+        hasPrevious: response.hasPrevious
+      };
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      debugLogger.log('CommentService', `❌ Get Replies API Error`, {
+        endpoint,
+        commentId,
+        page,
+        size,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
+    }
   }
 
   // Reply to a comment
   async replyToComment(commentId: number, replyData: { content: string }): Promise<number> {
-    return await apiClient.post<number>(`${this.baseUrl}/${commentId}/replies`, replyData);
+    const endpoint = `${this.baseUrl}/${commentId}/replies`;
+    debugLogger.logApiCall('POST', endpoint, { commentId, replyData });
+    try {
+      const response = await apiClient.post<number>(endpoint, replyData);
+      debugLogger.logApiResponse('POST', endpoint, response);
+      
+      debugLogger.log('CommentService', `💬 Reply to Comment API Success`, {
+        endpoint,
+        commentId,
+        replyId: response,
+        content: replyData.content?.substring(0, 50) + '...'
+      });
+      
+      return response;
+    } catch (error) {
+      debugLogger.logApiResponse('POST', endpoint, null, error);
+      debugLogger.log('CommentService', `❌ Reply to Comment API Error`, {
+        endpoint,
+        commentId,
+        replyData,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
+    }
   }
 
   // React to a comment
@@ -217,6 +280,34 @@ class CommentService {
     } catch (error) {
       debugLogger.logApiResponse('DELETE', endpoint, null, error);
       debugLogger.log('CommentService', `❌ Delete Comment API Error`, {
+        endpoint,
+        commentId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
+    }
+  }
+
+  // Get reactions for a comment
+  async getCommentReactions(commentId: number, page = 0, size = 20): Promise<any[]> {
+    const endpoint = `${this.baseUrl}/${commentId}/reactions`;
+    debugLogger.logApiCall('GET', endpoint, { commentId, page, size });
+    try {
+      const response = await apiClient.get<any[]>(endpoint, {
+        params: { page, size }
+      });
+      debugLogger.logApiResponse('GET', endpoint, response);
+      
+      debugLogger.log('CommentService', `👥 Get Comment Reactions API Success`, {
+        endpoint,
+        commentId,
+        reactionsCount: response.length
+      });
+      
+      return response;
+    } catch (error) {
+      debugLogger.logApiResponse('GET', endpoint, null, error);
+      debugLogger.log('CommentService', `❌ Get Comment Reactions API Error`, {
         endpoint,
         commentId,
         error: error instanceof Error ? error.message : 'Unknown error'

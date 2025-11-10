@@ -91,7 +91,7 @@ const ProfilePage: React.FC = () => {
     const loadProfileData = async () => {
       if (!targetUserId) return;
       
-      console.log('ProfilePage: Loading profile data', {
+      console.log('ProfilePage: Loading essential profile data', {
         userId,
         targetUserId,
         isCurrentUserProfile,
@@ -100,8 +100,8 @@ const ProfilePage: React.FC = () => {
       
       setIsLoadingProfile(true);
       try {
-          // Use new endpoint for both current user and other users
-          console.log('ProfilePage: Loading profile data for userId:', targetUserId);
+          // PRIORITY 1: Load essential profile data first
+          console.log('ProfilePage: Loading complete profile for userId:', targetUserId);
           const completeProfileData = await profileService.getCompleteProfile(targetUserId);
             setCompleteProfile(completeProfileData);
           
@@ -119,56 +119,59 @@ const ProfilePage: React.FC = () => {
           };
           setProfileUser(userData as any);
           
-          // Prefer live stats endpoint for dynamic flags
-          try {
-            const stats = await getUserSocialStats(completeProfileData.userId)
-            setSocialStats(stats)
-            if (!isCurrentUserProfile) {
+          // Load social stats for action buttons
+          if (!isCurrentUserProfile) {
+            try {
+              const stats = await getUserSocialStats(completeProfileData.userId)
+              setSocialStats(stats)
               setIsFollowing(!!stats.following)
               setIsFriend(!!stats.friend)
               setIsBlocked(!!stats.blocked)
               setCanSendFriendReq(!!stats.canSendFriendRequest)
+              setFriendshipStatus((completeProfileData as any).friendshipStatus || null)
+            } catch (err) {
+              console.error('Failed to load social stats:', err);
             }
-          } catch {}
-
-          if (!isCurrentUserProfile) {
-            setFriendshipStatus((completeProfileData as any).friendshipStatus || null)
-            // Ensure friend status is consistent with dedicated endpoint
-            try {
-              const friendNow = await checkFriendStatus(completeProfileData.userId)
-              setIsFriend(!!friendNow)
-            } catch {}
           }
-        
+          
+        // Hide main loading screen - profile essentials are ready
+        setIsLoadingProfile(false);
+
+        // PRIORITY 2: Load posts immediately after profile
         debugLogger.log('ProfilePage', 'Loading user posts', { userId: targetUserId });
         refreshPosts();
 
-        // Load friends list
-        try {
-          setFriendsLoading(true);
-          const friendsData = await socialService.getFriends(targetUserId, 0, 9);
-          setFriends(friendsData.content || []);
-        } catch (err) {
-          console.error('Failed to load friends:', err);
-          setFriends([]);
-        } finally {
-          setFriendsLoading(false);
-        }
-
-        // Load common friends when viewing someone else
-        if (!isCurrentUserProfile) {
+        // PRIORITY 3: Load secondary data in background (won't block UI)
+        // Friends list
+        setTimeout(async () => {
           try {
-            const [cf, cfCount] = await Promise.all([
-              socialService.getCommonFriends(targetUserId, 0, 10),
-              socialService.getCommonFriendsCount(targetUserId)
-            ])
-            setCommonFriends(cf.content || [])
-            setCommonFriendsCount(cfCount)
+            setFriendsLoading(true);
+            const friendsData = await socialService.getFriends(targetUserId, 0, 9);
+            setFriends(friendsData.content || []);
           } catch (err) {
-            console.error('Failed to load common friends:', err)
-            setCommonFriends([])
-            setCommonFriendsCount(0)
+            console.error('Failed to load friends:', err);
+            setFriends([]);
+          } finally {
+            setFriendsLoading(false);
           }
+        }, 100);
+
+        // Common friends (only for other profiles)
+        if (!isCurrentUserProfile) {
+          setTimeout(async () => {
+            try {
+              const [cf, cfCount] = await Promise.all([
+                socialService.getCommonFriends(targetUserId, 0, 10),
+                socialService.getCommonFriendsCount(targetUserId)
+              ])
+              setCommonFriends(cf.content || [])
+              setCommonFriendsCount(cfCount)
+            } catch (err) {
+              console.error('Failed to load common friends:', err)
+              setCommonFriends([])
+              setCommonFriendsCount(0)
+            }
+          }, 200);
         }
       } catch (error) {
         debugLogger.log('ProfilePage', 'Failed to load profile data', { userId: targetUserId, error });
@@ -185,7 +188,6 @@ const ProfilePage: React.FC = () => {
           } catch (fallbackError) {
             console.error('Failed to load fallback user data:', fallbackError);
           }
-      } finally {
         setIsLoadingProfile(false);
       }
     };
@@ -199,32 +201,138 @@ const ProfilePage: React.FC = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading profile...</h2>
-          <p className="text-gray-500">Please wait while we fetch the profile information</p>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <Header showSearch={false} showUserMenu={true} onLogout={logout} />
+
+        <main className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+          {/* Profile Header Skeleton */}
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 mb-6 overflow-hidden animate-pulse">
+            {/* Cover Skeleton */}
+            <div className="h-64 bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]" />
+            
+            {/* Profile Info Skeleton */}
+            <div className="px-6 pb-6">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:space-x-8">
+                <div className="relative -mt-24 mb-4 lg:mb-0">
+                  <div className="w-40 h-40 rounded-3xl bg-gradient-to-br from-gray-300 via-gray-400 to-gray-300 shadow-2xl bg-[length:200%_100%]" />
+                </div>
+                
+                <div className="flex-1 space-y-4">
+                  <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/3 bg-[length:200%_100%]" />
+                  <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/4 bg-[length:200%_100%]" />
+                  <div className="h-20 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-xl w-3/4 bg-[length:200%_100%]" />
+                  
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-16 mx-auto mb-2 bg-[length:200%_100%]" />
+                        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-20 mx-auto bg-[length:200%_100%]" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Sidebar Skeleton */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* About Card */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 animate-pulse">
+                <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/2 mb-4 bg-[length:200%_100%]" />
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-lg bg-[length:200%_100%]" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Photos Card */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 animate-pulse">
+                <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/2 mb-4 bg-[length:200%_100%]" />
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <div key={i} className="aspect-square bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 rounded-lg bg-[length:200%_100%]" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Friends Card */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 animate-pulse">
+                <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/2 mb-4 bg-[length:200%_100%]" />
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <div key={i} className="aspect-square bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 rounded-lg bg-[length:200%_100%]" />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content Skeleton */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Tabs Skeleton */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-pulse">
+                <div className="flex border-b border-gray-200 p-4 space-x-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-10 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-24 bg-[length:200%_100%]" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Post Skeletons */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 animate-pulse">
+                  {/* Post Header */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/3 bg-[length:200%_100%]" />
+                      <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-1/4 bg-[length:200%_100%]" />
+                    </div>
+                  </div>
+                  
+                  {/* Post Content */}
+                  <div className="space-y-2 mb-4">
+                    <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-full bg-[length:200%_100%]" />
+                    <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-5/6 bg-[length:200%_100%]" />
+                    <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-4/6 bg-[length:200%_100%]" />
+                  </div>
+                  
+                  {/* Post Image */}
+                  <div className="h-64 bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 rounded-lg mb-4 bg-[length:200%_100%]" />
+                  
+                  {/* Post Actions */}
+                  <div className="flex items-center space-x-4 pt-3 border-t border-gray-100">
+                    <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-20 bg-[length:200%_100%]" />
+                    <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-20 bg-[length:200%_100%]" />
+                    <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded w-20 bg-[length:200%_100%]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!profileUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <svg className="w-12 h-12 text-red-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Profile not found</h1>
-          <p className="text-gray-600 mb-8">The profile you're looking for doesn't exist or may have been removed.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Không tìm thấy hồ sơ</h1>
+          <p className="text-gray-600 mb-8">Hồ sơ bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
           <Button 
             onClick={() => window.history.back()}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            className="!bg-gradient-to-r !from-blue-600 !to-blue-500 hover:!from-blue-700 hover:!to-blue-600 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            Go Back
+            Quay lại
           </Button>
         </div>
       </div>
@@ -859,9 +967,13 @@ const ProfilePage: React.FC = () => {
                     <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                   </svg>
                   <h2 className="text-xl font-bold text-gray-900">Ảnh</h2>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                    {userPhotos.length}
-                  </span>
+                  {completeProfile?.posts?.posts ? (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                      {userPhotos.length}
+                    </span>
+                  ) : (
+                    <div className="w-8 h-5 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-full animate-pulse bg-[length:200%_100%]" />
+                  )}
                 </div>
                 {userPhotos.length > 0 && (
                   <button className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline transition-colors">
@@ -870,7 +982,15 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
               
-              {userPhotos.length > 0 ? (
+              {!completeProfile?.posts?.posts ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden animate-pulse">
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]" />
+                    </div>
+                  ))}
+                </div>
+              ) : userPhotos.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
                   {userPhotos.slice(0, 9).map((photo, i) => (
                     <div 
@@ -921,8 +1041,10 @@ const ProfilePage: React.FC = () => {
               
               {friendsLoading ? (
                 <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden animate-pulse">
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]" />
+                    </div>
                   ))}
                 </div>
               ) : friends.length > 0 ? (

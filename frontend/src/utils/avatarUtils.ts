@@ -19,31 +19,30 @@ export const getInitials = (displayName?: string): string => {
 };
 
 /**
- * Generate a color based on user's name for consistent avatar colors
+ * Generate a gradient color based on user's name for consistent avatar colors
  * @param displayName - User's display name
- * @returns Hex color code
+ * @returns CSS gradient string
  */
 export const getAvatarColor = (displayName?: string): string => {
-  if (!displayName) return '#6B7280'; // gray-500
+  if (!displayName) return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // default gradient
   
-  const colors = [
-    '#EF4444', // red-500
-    '#F97316', // orange-500
-    '#F59E0B', // amber-500
-    '#EAB308', // yellow-500
-    '#84CC16', // lime-500
-    '#22C55E', // green-500
-    '#10B981', // emerald-500
-    '#14B8A6', // teal-500
-    '#06B6D4', // cyan-500
-    '#0EA5E9', // sky-500
-    '#3B82F6', // blue-500
-    '#6366F1', // indigo-500
-    '#8B5CF6', // violet-500
-    '#A855F7', // purple-500
-    '#D946EF', // fuchsia-500
-    '#EC4899', // pink-500
-    '#F43F5E', // rose-500
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // purple
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // pink
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // blue
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', // green
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', // orange
+    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', // teal
+    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', // mint
+    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', // rose
+    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', // peach
+    'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)', // coral
+    'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', // lavender
+    'linear-gradient(135deg, #f77062 0%, #fe5196 100%)', // red
+    'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)', // sunset
+    'linear-gradient(135deg, #e9defa 0%, #fbfcdb 100%)', // pastel
+    'linear-gradient(135deg, #17ead9 0%, #6078ea 100%)', // ocean
+    'linear-gradient(135deg, #a9c9ff 0%, #ffbbec 100%)', // candy
   ];
   
   // Generate hash from display name
@@ -54,9 +53,9 @@ export const getAvatarColor = (displayName?: string): string => {
     hash = hash & hash; // Convert to 32bit integer
   }
   
-  // Use hash to select color
-  const colorIndex = Math.abs(hash) % colors.length;
-  return colors[colorIndex];
+  // Use hash to select gradient
+  const gradientIndex = Math.abs(hash) % gradients.length;
+  return gradients[gradientIndex];
 };
 
 /**

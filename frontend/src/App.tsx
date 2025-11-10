@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -20,6 +20,8 @@ import ConversationPage from './pages/ConversationPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { FloatingChatBubble } from './components/FloatingChatBubble';
+import { MessageNotificationContainer } from './components/MessageNotificationContainer';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -28,13 +30,24 @@ import { AdminPostsPage } from './pages/admin/AdminPostsPage';
 import { AdminLogsPage } from './pages/admin/AdminLogsPage';
 import { AdminApkVersionsPage } from './pages/admin/AdminApkVersionsPage';
 import { AdminProtectedRoute } from './components/admin';
+import { useAuth } from './hooks/useAuth';
 import './App.css';
 
-function App() {
+function AppContent() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleOpenConversation = (conversationId: number) => {
+    navigate(`/messages/${conversationId}`);
+  };
+
+  // Check if we're on the messaging pages
+  const isMessagingPage = location.pathname.startsWith('/messages') || location.pathname.startsWith('/messaging');
+
   return (
-    <ErrorBoundary>
-      <Router>
-        <Routes>
+    <>
+      <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
@@ -122,7 +135,25 @@ function App() {
         />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
-    </Router>
+
+      {/* Global Components - Only show when user is logged in */}
+      {user && (
+        <>
+          {/* Hide FloatingChatBubble on messaging pages */}
+          {!isMessagingPage && <FloatingChatBubble />}
+          <MessageNotificationContainer onOpenConversation={handleOpenConversation} />
+        </>
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <Router>
+        <AppContent />
+      </Router>
     </ErrorBoundary>
   );
 }

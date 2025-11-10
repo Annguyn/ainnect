@@ -7,6 +7,7 @@ import { AutocompleteInputWithImage, SuggestionItem } from '../ui/AutocompleteIn
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { debugLogger } from '../../utils/debugLogger';
+import { downloadImageFromUrl, fileToDataUrl } from '../../utils/imageUtils';
 
 interface LocationFormProps {
   location?: Location;
@@ -71,11 +72,33 @@ export const LocationForm: React.FC<LocationFormProps> = ({
     }
   };
 
-  const handleLocationSelect = (item: SuggestionItem) => {
+  const handleLocationSelect = async (item: SuggestionItem) => {
+    const newFormData: any = {
+      locationName: item.label
+    };
+
+    // If suggestion has an image URL, download it and convert to File
+    if (item.imageUrl) {
+      const imageFile = await downloadImageFromUrl(item.imageUrl, 'location-image.jpg');
+      newFormData.image = imageFile;
+      
+      // Update preview URL
+      if (imageFile instanceof File) {
+        try {
+          const dataUrl = await fileToDataUrl(imageFile);
+          setPreviewUrl(dataUrl);
+        } catch (error) {
+          debugLogger.log('LocationForm', 'Failed to create preview', { error });
+          setPreviewUrl(item.imageUrl);
+        }
+      } else {
+        setPreviewUrl(item.imageUrl);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      locationName: item.label,
-      image: item.imageUrl ? item.imageUrl : prev.image
+      ...newFormData
     }));
   };
 

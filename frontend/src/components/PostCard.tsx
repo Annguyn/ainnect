@@ -19,7 +19,7 @@ import {
   getReactionCount, 
   getCommentCount, 
   getShareCount, 
-  getPostAuthorForAvatar 
+  getPostAuthorForAvatar
 } from '../utils/postUtils';
 
 interface PostCardProps {
@@ -684,8 +684,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* User Profile Card */}
       <UserProfileCard
         user={{
-          ...getPostAuthorForAvatar(post),
-          avatarUrl: getPostAuthorForAvatar(post).avatarUrl || undefined
+          id: post.authorId,
+          username: post.authorUsername || post.author?.username || `user${post.authorId}`,
+          displayName: getPostAuthorName(post),
+          avatarUrl: post.authorAvatarUrl || post.author?.avatarUrl || undefined
         }}
         isVisible={showUserProfile}
         onClose={() => setShowUserProfile(false)}

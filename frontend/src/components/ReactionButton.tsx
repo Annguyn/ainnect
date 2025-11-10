@@ -16,6 +16,7 @@ interface ReactionButtonProps {
     currentUserReactionType?: ReactionType | null;
   };
   disabled?: boolean;
+  onShowReactions?: () => void; // Callback to show reactions modal
 }
 
 const reactionEmojis: Record<ReactionType, string> = {
@@ -53,11 +54,13 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   className = '',
   reactionCount = 0,
   reactions,
-  disabled = false
+  disabled = false,
+  onShowReactions
 }) => {
   // Use reactions data if available, otherwise fallback to props
   const userReaction = reactions?.currentUserReactionType || currentReaction;
-  const totalCount = reactions?.totalCount || 0;
+  // Prefer the summary from `reactions`, fall back to the explicit `reactionCount` prop
+  const totalCount = reactions?.totalCount ?? reactionCount ?? 0;
   const hasReacted = reactions?.currentUserReacted || !!userReaction;
   
   // Debug logging for reaction state
@@ -262,9 +265,15 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
         <span className={`transition-all duration-200 ${isReacted ? 'font-semibold text-blue-700' : 'font-medium'}`}>
           {buttonText}
           {totalCount > 0 && (
-            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
-              isReacted ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-            }`}>
+            <span 
+              onClick={onShowReactions ? (e) => {
+                e.stopPropagation();
+                onShowReactions();
+              } : undefined}
+              className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                isReacted ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+              } ${onShowReactions ? 'cursor-pointer hover:bg-blue-200 transition-colors' : ''}`}
+            >
               {totalCount}
             </span>
           )}
