@@ -45,7 +45,7 @@ public class PostServiceImpl implements PostService {
 	private final NotificationIntegrationService notificationIntegrationService;
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public PostDtos.Response create(PostDtos.CreateRequest request, Long authorId) {
 		User author = userRepository.findById(authorId)
 				.orElseThrow(() -> new IllegalArgumentException("Author not found"));
@@ -92,7 +92,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public PostDtos.Response update(Long postId, PostDtos.UpdateRequest request) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
@@ -139,7 +139,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public void delete(Long postId) {
 		// Check if post exists
 		if (!postRepository.existsById(postId)) {
@@ -196,7 +196,6 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "posts:feed", key = "#pageable.pageNumber + ':' + #pageable.pageSize + ':' + T(java.util.Objects).toString(#pageable.sort)")
 	public Page<PostDtos.Response> getFeed(Pageable pageable) {
 		Page<Post> posts = postRepository.findAllActivePosts(pageable);
 		return posts.map(this::toResponse);
@@ -204,7 +203,6 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "posts:author", key = "#authorId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + T(java.util.Objects).toString(#pageable.sort)")
 	public Page<PostDtos.Response> listByAuthor(Long authorId, Pageable pageable) {
 		Page<Post> posts = postRepository.findByAuthor_IdAndDeletedAtIsNull(authorId, pageable);
 		return posts.map(this::toResponse);
@@ -212,7 +210,6 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "posts:user-feed", key = "#currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + T(java.util.Objects).toString(#pageable.sort)")
 	public Page<PostDtos.Response> getFeedForUser(Long currentUserId, Pageable pageable) {
 		Page<Post> posts = postRepository.findVisiblePostsForUser(currentUserId, pageable);
 		return posts.map(post -> toResponse(post, currentUserId));
@@ -220,14 +217,13 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = "posts:author", key = "#authorId + ':' + #currentUserId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + T(java.util.Objects).toString(#pageable.sort)")
 	public Page<PostDtos.Response> listByAuthorForUser(Long authorId, Long currentUserId, Pageable pageable) {
 		Page<Post> posts = postRepository.findVisiblePostsByAuthor(authorId, currentUserId, pageable);
 		return posts.map(post -> toResponse(post, currentUserId));
 	}
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public Long addComment(Long postId, PostDtos.CommentCreateRequest request, Long authorId) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
@@ -297,7 +293,7 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public void reactToPost(Long postId, PostDtos.ReactionRequest request, Long userId) {
 		try {
 			Post post = postRepository.findById(postId)
@@ -369,17 +365,14 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	@Transactional
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public void unreactToPost(Long postId, Long userId) {
-		// Get all reactions from this user to this post (in case there are duplicates)
 		List<Reaction> existingReactions = reactionRepository.findAllByTargetTypeAndTargetIdAndUser_Id(
 				ReactionTargetType.post, postId, userId);
 		
 		if (!existingReactions.isEmpty()) {
-			// Delete all reactions from this user to this post
 			reactionRepository.deleteAll(existingReactions);
 			
-			// Update reaction count - subtract the number of reactions deleted
 			postRepository.findById(postId).ifPresent(post -> {
 				post.setReactionCount(Math.max(0, post.getReactionCount() - existingReactions.size()));
 				postRepository.save(post);
@@ -419,7 +412,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public Long sharePost(Long postId, PostDtos.ShareRequest request, Long userId) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new IllegalArgumentException("Post not found"));
@@ -617,7 +610,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	@CacheEvict(cacheNames = {"posts:feed", "posts:user-feed", "posts:detail", "posts:author", "posts:group"}, allEntries = true)
+	@CacheEvict(cacheNames = {"posts:detail"}, allEntries = true)
 	public PostDtos.Response createGroupPost(Long groupId, PostDtos.CreateRequest request, Long authorId) {
 		Community group = communityRepository.findById(groupId)
 				.orElseThrow(() -> new IllegalArgumentException("Group not found"));

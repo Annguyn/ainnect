@@ -27,8 +27,11 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:redis}
+      host: ${SPRING_REDIS_HOST:localhost}
       port: ${SPRING_REDIS_PORT:6379}
+      timeout: ${SPRING_REDIS_TIMEOUT:2000ms}
+  cache:
+    type: ${SPRING_CACHE_TYPE:redis}
 
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
