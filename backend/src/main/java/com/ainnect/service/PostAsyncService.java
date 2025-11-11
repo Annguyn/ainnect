@@ -46,16 +46,16 @@ public class PostAsyncService {
                             "postId", postId,
                             "data", updated
                     ));
-            return AsyncResult.forValue(null);
-        } catch (Exception ex) {
+                    return new AsyncResult<>(null);
+                } catch (Exception ex) {
             messagingTemplate.convertAndSend("/topic/users/" + authorId + "/posts",
                     java.util.Map.of(
                             "type", "POST_UPDATE_FAILED",
                             "postId", postId,
                             "error", ex.getMessage()
                     ));
-            return AsyncResult.forExecutionException(ex);
-        }
+                    return new AsyncResult<>(null);
+                }
     }
 }
 
