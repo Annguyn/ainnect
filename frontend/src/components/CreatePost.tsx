@@ -65,54 +65,24 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
       return;
     }
 
-    // Create a temporary optimistic post and broadcast it so feeds can show it
-    // immediately while backend finishes processing media.
-    const tempId = -Date.now();
-    const tempPost = {
-      id: tempId,
-      authorId: user.id,
-      authorUsername: user.username,
-      authorDisplayName: user.displayName,
-      authorAvatarUrl: user.avatarUrl,
-      content: content.trim(),
-      visibility,
-      commentCount: 0,
-      reactionCount: 0,
-      shareCount: 0,
-      reactions: undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isPending: true,
-      images: previewUrls.length ? previewUrls : undefined,
-      media: undefined
-    } as any;
-
     try {
-      // Let the rest of the app know about the optimistic post immediately
-      window.dispatchEvent(new CustomEvent('optimistic-post', { detail: tempPost }));
+      // Call API to create post - backend will handle media async and notify via WebSocket
+      const created = await onCreatePost(content.trim(), visibility, selectedFiles);
 
-      // Reset UI immediately so the user can continue
+      // Reset UI immediately after successful API call
       setContent('');
       setSelectedFiles([]);
       previewUrls.forEach(url => URL.revokeObjectURL(url));
       setPreviewUrls([]);
       setIsExpanded(false);
+      setErrorMsg(null);
 
-      // Call the provided handler; it may return the created post (or undefined on partial processing)
-      const created = await onCreatePost(tempPost.content, visibility, selectedFiles);
-
-      if (created && (created as any).id) {
-        // Replace the optimistic post with the real one
-        window.dispatchEvent(new CustomEvent('replace-post', { detail: { tempId, post: created } }));
-      } else {
-        // If backend returns nothing (still processing) just notify that it's pending
-        window.dispatchEvent(new CustomEvent('post-create-pending', { detail: { tempId } }));
-      }
+      // The post will be added to feed via WebSocket notification when media processing completes
+      console.log('Post created, waiting for WebSocket update:', created);
     } catch (error) {
-      console.error('Failed to create post (non-blocking):', error);
-      // Don't show blocking alert. Mark the optimistic post as failed so feed can optionally
-      // show a gentle indicator or retry later.
-      window.dispatchEvent(new CustomEvent('post-create-failed', { detail: { tempId, error } }));
+      console.error('Failed to create post:', error);
+      // Show error message but don't block - user can retry
+      setErrorMsg('Không thể đăng bài viết. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }

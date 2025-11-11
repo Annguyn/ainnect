@@ -204,16 +204,28 @@ class PostService {
     const endpoint = `${this.baseUrl}/feed/user`;
     debugLogger.logApiCall('GET', endpoint, { page, size });
     try {
-      const response = await apiClient.get<PostsResponse>(endpoint, {
+      const response = await apiClient.get<any>(endpoint, {
         params: { page, size }
       });
       debugLogger.logApiResponse('GET', endpoint, response);
+      
+      // Transform response to match PostsResponse interface
+      const transformedResponse: PostsResponse = {
+        content: response.content || [],
+        page: {
+          number: response.number || response.pageable?.pageNumber || 0,
+          size: response.size || response.pageable?.pageSize || size,
+          totalElements: response.totalElements || 0,
+          totalPages: response.totalPages || 0
+        }
+      };
+      
       debugLogger.log('PostService', 'Personalized feed loaded', {
-        postsCount: response.content?.length || 0,
-        totalElements: response.page.totalElements,
-        totalPages: response.page.totalPages
+        postsCount: transformedResponse.content?.length || 0,
+        totalElements: transformedResponse.page.totalElements,
+        totalPages: transformedResponse.page.totalPages
       });
-      return response;
+      return transformedResponse;
     } catch (error) {
       debugLogger.logApiResponse('GET', endpoint, null, error);
       throw error;

@@ -337,7 +337,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const isCurrentUserPost = post.authorId === currentUserId; // Check if the post belongs to the current user
-  const isPending = (post as any).isPending === true;
   const createFailed = (post as any).createFailed === true;
 
   const handleDelete = async () => {
@@ -373,9 +372,6 @@ export const PostCard: React.FC<PostCardProps> = ({
               onClick={handleUserClick}
             >
               {getPostAuthorName(post)}
-              {isPending && (
-                <span className="ml-2 inline-block text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Đang tạo</span>
-              )}
               {createFailed && (
                 <span className="ml-2 inline-block text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Lỗi đăng</span>
               )}
@@ -551,7 +547,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
 
       <div className="px-4 py-2 flex items-center justify-between text-sm text-gray-500 border-b border-gray-100">
-        <div className={`flex items-center space-x-4 ${isPending ? 'opacity-70 pointer-events-none' : ''}`}>
+        <div className="flex items-center space-x-4">
           <button
             onClick={() => {
               if (getReactionCount(post) > 0) {
@@ -572,8 +568,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     </div>
       <div className="px-4 py-3 flex items-center justify-between">
         <div
-          className={`relative ${isPending ? 'pointer-events-none opacity-70' : ''}`}
-          onMouseEnter={(e) => !isPending && handleReactionEnter(e, post.id)}
+          className="relative"
+          onMouseEnter={(e) => handleReactionEnter(e, post.id)}
           onMouseMove={handleReactionMove}
         >
           <ReactionButton

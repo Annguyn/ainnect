@@ -503,6 +503,74 @@ class WebSocketService {
       debugLogger.log('WebSocket', 'Unsubscribed from user notifications');
     }
   }
+
+  // Subscribe to post updates for a specific user
+  subscribeToUserPosts(userId: number, callback: (message: any) => void) {
+    const postUpdatesPath = `/topic/users/${userId}/posts`;
+    const subscriptionKey = `user_posts_${userId}`;
+    
+    const doSubscribe = () => {
+      if (!this.client || !this.isConnected) {
+        debugLogger.log('WebSocket', 'WebSocket not connected, cannot subscribe to post updates');
+        return;
+      }
+
+      // Check if already subscribed
+      if (this.subscriptions.has(subscriptionKey)) {
+        debugLogger.log('WebSocket', `Already subscribed to post updates for user ${userId}`);
+        return;
+      }
+
+      try {
+        const subscription = this.client.subscribe(postUpdatesPath, (message: IMessage) => {
+          try {
+            const postUpdate = JSON.parse(message.body);
+            debugLogger.log('WebSocket', 'Received post update:', postUpdate);
+            callback(postUpdate);
+          } catch (error) {
+            debugLogger.log('WebSocket', 'Error parsing post update:', error);
+          }
+        });
+
+        this.subscriptions.set(subscriptionKey, subscription);
+        debugLogger.log('WebSocket', `Subscribed to post updates for user ${userId} at ${postUpdatesPath}`);
+      } catch (error) {
+        debugLogger.log('WebSocket', 'Error subscribing to post updates:', error);
+      }
+    };
+
+    // If already connected, subscribe immediately
+    if (this.isConnected) {
+      doSubscribe();
+    } else {
+      // Otherwise, wait for connection
+      debugLogger.log('WebSocket', 'WebSocket not connected, waiting for connection...');
+      const checkConnection = setInterval(() => {
+        if (this.isConnected) {
+          clearInterval(checkConnection);
+          doSubscribe();
+        }
+      }, 100);
+      
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkConnection);
+        if (!this.isConnected) {
+          debugLogger.log('WebSocket', 'Failed to connect WebSocket within timeout for post updates');
+        }
+      }, 10000);
+    }
+  }
+
+  unsubscribeFromUserPosts(userId: number) {
+    const subscriptionKey = `user_posts_${userId}`;
+    const subscription = this.subscriptions.get(subscriptionKey);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(subscriptionKey);
+      debugLogger.log('WebSocket', `Unsubscribed from post updates for user ${userId}`);
+    }
+  }
 }
 
 export const websocketService = new WebSocketService();

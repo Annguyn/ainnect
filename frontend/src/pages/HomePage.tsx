@@ -192,13 +192,13 @@ const HomePage: React.FC = () => {
         visibility: visibility as 'public_' | 'friends' | 'private',
         mediaFiles
       });
-      debugLogger.log('HomePage', 'Post created successfully', { postId: post?.id });
+      debugLogger.log('HomePage', 'Post created, media will be processed async', { postId: post?.id });
+      // Return the post - media will be updated via WebSocket
       return post;
     } catch (error) {
-      // Don't throw: the UI should show optimistic content and not surface an error
-      debugLogger.log('HomePage', 'Failed to create post (backend processing); returning undefined', error);
-      console.error('Failed to create post (non-blocking):', error);
-      return undefined;
+      debugLogger.log('HomePage', 'Failed to create post', error);
+      console.error('Failed to create post:', error);
+      throw error; // Re-throw so CreatePost can show error
     }
   };
 

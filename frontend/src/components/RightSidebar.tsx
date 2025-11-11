@@ -31,7 +31,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ className = '', sugg
   const safeGroups = Array.isArray(suggestedGroups) ? suggestedGroups : [];
 
   const loadFriendRequests = async () => {
-    // Only load if authenticated
     if (!isAuthenticated) {
       setFriendRequests([]);
       return;

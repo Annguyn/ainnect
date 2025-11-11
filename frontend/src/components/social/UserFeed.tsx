@@ -6,6 +6,8 @@ import { Post, postService } from '../../services/postService';
 import { PostSkeleton } from '../PostSkeleton';
 import { EmptyState } from '../EmptyState';
 import type { ReactionType } from '../ReactionPicker';
+import { websocketService } from '../../services/websocketService';
+import { debugLogger } from '../../utils/debugLogger';
 
 interface UserFeedProps {
   className?: string;
@@ -18,9 +20,8 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   posts: externalPosts,
   onDeletePost
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [internalPosts, setInternalPosts] = useState<Post[]>([]);
-  // Use external posts if provided AND it's a valid array, otherwise use internal
   const posts = (externalPosts && Array.isArray(externalPosts)) ? externalPosts : internalPosts;
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -29,32 +30,26 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [pendingPosts, setPendingPosts] = useState<Set<number>>(new Set());
+  
+  const isLoadingRef = React.useRef(false);
+  const hasInitialLoadedRef = React.useRef(false);
 
   const loadPosts = useCallback(async (pageToLoad: number, isRetry = false) => {
-    if (!isAuthenticated) {
-      return;
-    }
-    console.log('loadPosts called:', { isLoading, hasMore, page: pageToLoad, isRetry });
-    
-    if (isLoading) {
-      console.log('Skipping loadPosts - isLoading:', isLoading);
+    // Guard against multiple simultaneous loads
+    if (!isAuthenticated || isLoadingRef.current || externalPosts) {
       return;
     }
 
-    console.log('Loading posts for page:', pageToLoad, isRetry ? `(retry ${retryCount + 1}/3)` : '');
+    isLoadingRef.current = true;
     setIsLoading(true);
+    
     if (!isRetry) {
       setError(null);
     }
 
     try {
       const response = await postService.getFeedPosts(pageToLoad, 5);
-      console.log('Got response:', {
-        content: response.content?.length || 0,
-        totalPages: response.page?.totalPages || 0,
-        currentPage: response.page?.number || 0,
-        fullResponse: response
-      });
       
       // Validate response structure
       if (!response || !response.content || !Array.isArray(response.content)) {
@@ -74,113 +69,94 @@ export const UserFeed: React.FC<UserFeedProps> = ({
       });
       
       const newHasMore = response.page?.number < response.page?.totalPages - 1;
-      console.log('Pagination debug:', {
-        currentPage: response.page?.number || 0,
-        totalPages: response.page?.totalPages || 0,
-        hasMore: newHasMore,
-        nextPage: pageToLoad + 1
-      });
       setPage(pageToLoad);
       setHasMore(newHasMore);
       setInitialLoadDone(true);
+      hasInitialLoadedRef.current = true;
       
       setRetryCount(0);
+      setIsRetrying(false);
     } catch (err) {
       console.error('Error loading posts:', err);
-      
-      if (retryCount < 2) {
-        const newRetryCount = retryCount + 1;
-        setRetryCount(newRetryCount);
-        setIsRetrying(true);
-        
-        console.log(`Retrying load posts (attempt ${newRetryCount + 1}/3) in 2 seconds...`);
-        
-        setTimeout(() => {
-          setIsRetrying(false);
-          loadPosts(pageToLoad, true);
-        }, 2000);
-      } else {
-        setError('Không thể tải bài viết. Vui lòng thử lại sau.');
-        setRetryCount(0);
-        setInitialLoadDone(true);
-      }
+      setError('Không thể tải bài viết. Vui lòng thử lại sau.');
+      setRetryCount(0);
+      setInitialLoadDone(true);
+      hasInitialLoadedRef.current = true;
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [isLoading, retryCount, isAuthenticated]);
+  }, [isAuthenticated, externalPosts]);
 
   const loadMorePosts = useCallback(() => {
-    console.log('loadMorePosts called:', { isLoading, hasMore, page });
-    if (!isLoading && hasMore) {
+    if (!isLoadingRef.current && hasMore && !externalPosts) {
       loadPosts(page + 1);
     }
-  }, [isLoading, hasMore, page, loadPosts]);
+  }, [hasMore, page, externalPosts, loadPosts]);
 
   React.useEffect(() => {
-    // Only load posts if we're not using external posts
-    if (isAuthenticated && !initialLoadDone && !isLoading && !externalPosts) {
+    if (isAuthenticated && !hasInitialLoadedRef.current && !externalPosts) {
       loadPosts(0);
     }
-  }, [isAuthenticated, initialLoadDone, isLoading, externalPosts, loadPosts]);
+  }, [isAuthenticated, externalPosts]);
 
-  // Listen for optimistic post events (dispatched by CreatePost)
   React.useEffect(() => {
-    const onOptimistic = (e: Event) => {
-      try {
-        const detail = (e as CustomEvent).detail;
-        if (detail) {
-          setInternalPosts(prev => [detail, ...prev]);
-        }
-      } catch (err) {
-        console.error('optimistic-post handler error', err);
+    if (!user || !isAuthenticated) {
+      return;
+    }
+
+    const handlePostUpdate = (message: any) => {
+      debugLogger.log('UserFeed', 'Received post update via WebSocket:', message);
+
+      if (message.type === 'POST_UPDATED') {
+        const updatedPost = message.data;
+        debugLogger.log('UserFeed', 'Post updated successfully:', updatedPost);
+
+        setInternalPosts(prev => {
+          // Check if post already exists
+          const existingIndex = prev.findIndex(p => p.id === updatedPost.id);
+          
+          if (existingIndex >= 0) {
+            // Update existing post
+            const newPosts = [...prev];
+            newPosts[existingIndex] = updatedPost;
+            return newPosts;
+          } else {
+            // Add new post to the top
+            return [updatedPost, ...prev];
+          }
+        });
+
+        // Remove from pending
+        setPendingPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(message.postId);
+          return newSet;
+        });
+      } else if (message.type === 'POST_UPDATE_FAILED') {
+        debugLogger.log('UserFeed', 'Post update failed:', message);
+        
+        // Mark post as failed
+        setInternalPosts(prev => prev.map(p => 
+          p.id === message.postId ? { ...p, createFailed: true, isPending: false } : p
+        ));
+
+        // Remove from pending
+        setPendingPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(message.postId);
+          return newSet;
+        });
       }
     };
 
-    const onReplace = (e: Event) => {
-      try {
-        const { tempId, post } = (e as CustomEvent).detail || {};
-        if (tempId && post) {
-          setInternalPosts(prev => prev.map(p => (p.id === tempId ? post : p)));
-        }
-      } catch (err) {
-        console.error('replace-post handler error', err);
-      }
-    };
-
-    const onPending = (e: Event) => {
-      try {
-        const { tempId } = (e as CustomEvent).detail || {};
-        if (tempId) {
-          setInternalPosts(prev => prev.map(p => (p.id === tempId ? { ...p, isPending: true } : p)));
-        }
-      } catch (err) {
-        console.error('post-create-pending handler error', err);
-      }
-    };
-
-    const onFailed = (e: Event) => {
-      try {
-        const { tempId } = (e as CustomEvent).detail || {};
-        if (tempId) {
-          setInternalPosts(prev => prev.map(p => (p.id === tempId ? { ...p, isPending: false, createFailed: true } : p)));
-        }
-      } catch (err) {
-        console.error('post-create-failed handler error', err);
-      }
-    };
-
-    window.addEventListener('optimistic-post', onOptimistic as EventListener);
-    window.addEventListener('replace-post', onReplace as EventListener);
-    window.addEventListener('post-create-pending', onPending as EventListener);
-    window.addEventListener('post-create-failed', onFailed as EventListener);
+    // Subscribe to user's post updates
+    websocketService.subscribeToUserPosts(user.id, handlePostUpdate);
 
     return () => {
-      window.removeEventListener('optimistic-post', onOptimistic as EventListener);
-      window.removeEventListener('replace-post', onReplace as EventListener);
-      window.removeEventListener('post-create-pending', onPending as EventListener);
-      window.removeEventListener('post-create-failed', onFailed as EventListener);
+      websocketService.unsubscribeFromUserPosts(user.id);
     };
-  }, []);
+  }, [user, isAuthenticated]);
 
   // Mark as loaded if using external posts
   React.useEffect(() => {
@@ -189,27 +165,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     }
   }, [externalPosts]);
 
-  React.useEffect(() => {
-    const logScrollPosition = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const isNearBottom = scrollTop + windowHeight >= documentHeight - 200;
-      
-      console.log('Scroll debug:', {
-        scrollTop,
-        windowHeight,
-        documentHeight,
-        isNearBottom,
-        hasMore,
-        isLoading,
-        threshold: 200
-      });
-    };
 
-    window.addEventListener('scroll', logScrollPosition);
-    return () => window.removeEventListener('scroll', logScrollPosition);
-  }, [hasMore, isLoading]);
 
   useInfiniteScroll({
     hasMore,
@@ -312,6 +268,8 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     setInternalPosts([]);
     setHasMore(true);
     setInitialLoadDone(false);
+    hasInitialLoadedRef.current = false;
+    isLoadingRef.current = false;
     loadPosts(0);
   };
 
