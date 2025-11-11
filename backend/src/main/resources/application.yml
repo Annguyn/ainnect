@@ -29,7 +29,21 @@ spring:
     redis:
       host: ${SPRING_REDIS_HOST:localhost}
       port: ${SPRING_REDIS_PORT:6379}
-      timeout: ${SPRING_REDIS_TIMEOUT:2000ms}
+      username: ${SPRING_REDIS_USERNAME:}
+      password: ${SPRING_REDIS_PASSWORD:}
+      database: ${SPRING_REDIS_DATABASE:0}
+      timeout: ${SPRING_REDIS_TIMEOUT:5000ms}
+      ssl:
+        enabled: ${SPRING_REDIS_SSL_ENABLED:false}
+        trust-store: ${SPRING_REDIS_SSL_TRUST_STORE:}
+        trust-store-password: ${SPRING_REDIS_SSL_TRUST_STORE_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: ${SPRING_REDIS_POOL_MAX_ACTIVE:8}
+          max-idle: ${SPRING_REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${SPRING_REDIS_POOL_MIN_IDLE:2}
+          max-wait: ${SPRING_REDIS_POOL_MAX_WAIT:5000ms}
+        shutdown-timeout: ${SPRING_REDIS_SHUTDOWN_TIMEOUT:100ms}
   cache:
     type: ${SPRING_CACHE_TYPE:redis}
 
