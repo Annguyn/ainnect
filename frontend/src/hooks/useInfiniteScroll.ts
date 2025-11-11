@@ -30,6 +30,7 @@ export const useInfiniteScroll = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
+  // Initial check - only run once on mount or when hasMore/isLoading change
   useEffect(() => {
     if (hasMore && !isLoading) {
       const timer = setTimeout(() => {
@@ -37,6 +38,7 @@ export const useInfiniteScroll = ({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [hasMore, isLoading, handleScroll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, isLoading]); // handleScroll excluded to prevent loop
 };
 

@@ -92,13 +92,15 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     if (!isLoadingRef.current && hasMore && !externalPosts) {
       loadPosts(page + 1);
     }
-  }, [hasMore, page, externalPosts, loadPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, page, externalPosts]); // loadPosts intentionally excluded to prevent infinite loop
 
   React.useEffect(() => {
     if (isAuthenticated && !hasInitialLoadedRef.current && !externalPosts) {
       loadPosts(0);
     }
-  }, [isAuthenticated, externalPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, externalPosts]); // loadPosts intentionally excluded
 
   React.useEffect(() => {
     if (!user || !isAuthenticated) {

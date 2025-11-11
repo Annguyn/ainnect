@@ -21,8 +21,6 @@ interface FriendRequestResponse {
   data?: any;
 }
 
-/**
- */
 export const fetchFriendRequests = async (): Promise<FriendRequest[]> => {
   const endpoint = '/api/friend-requests ';
   debugLogger.logApiCall('GET', endpoint);
@@ -35,7 +33,6 @@ export const fetchFriendRequests = async (): Promise<FriendRequest[]> => {
       throw new Error(response.message);
     }
     
-    // Handle different response formats
     if (Array.isArray(response.data)) {
       return response.data;
     } else if (response.data && Array.isArray(response.data.content)) {
