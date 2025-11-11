@@ -53,20 +53,17 @@ public class ProfileServiceImpl implements ProfileService {
         boolean isBlocked = socialService.isBlocked(currentUserId, userId);
         boolean isBlockedBy = socialService.isBlockedBy(currentUserId, userId);
 
-        // If current user is blocked by the profile owner, they cannot view the profile
         if (isBlockedBy) {
             throw new IllegalArgumentException("Cannot view profile - user is blocked");
         }
 
         ProfileDtos.SocialStatsResponse socialStats = getUserSocialStats(userId, currentUserId);
 
-        // Get all user data
         List<EducationDtos.Response> educations = getUserEducations(userId);
         List<WorkExperienceDtos.Response> workExperiences = getUserWorkExperiences(userId);
         List<InterestDtos.Response> interests = getUserInterests(userId);
         List<LocationDtos.Response> locations = getUserLocations(userId);
         
-        // Get paginated posts
         Pageable pageable = PageRequest.of(page, size);
         ProfileDtos.ProfilePostsResponse posts = getUserPosts(userId, currentUserId, pageable);
 
@@ -76,7 +73,6 @@ public class ProfileServiceImpl implements ProfileService {
         boolean canSendFriendRequest = socialService.canSendFriendRequest(currentUserId, userId);
         FriendshipStatus friendshipStatus = getFriendshipStatus(currentUserId, userId);
 
-        // Build relationship response
         ProfileDtos.RelationshipResponse relationship = buildRelationshipResponse(
                 isFollowing, isFollowedBy, isFriend, canSendFriendRequest, 
                 friendshipStatus, isBlocked, isBlockedBy);

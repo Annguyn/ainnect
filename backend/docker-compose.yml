@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ainnect-backend
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      
+      - SPRING_REDIS_HOST=${SPRING_REDIS_HOST:-redis-18662.crce194.ap-seast-1-1.ec2.redns.redis-cloud.com}
+      - SPRING_REDIS_PORT=${SPRING_REDIS_PORT:-18662}
+      - SPRING_REDIS_USERNAME=${SPRING_REDIS_USERNAME:-default}
+      - SPRING_REDIS_PASSWORD=${SPRING_REDIS_PASSWORD}
+      - SPRING_REDIS_SSL_ENABLED=${SPRING_REDIS_SSL_ENABLED:-true}
+      - SPRING_REDIS_DATABASE=${SPRING_REDIS_DATABASE:-0}
+      - SPRING_REDIS_TIMEOUT=${SPRING_REDIS_TIMEOUT:-5000ms}
+      
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
+      
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400000}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-604800000}
+      - CLOUDFLARE_R2_ENABLED=${CLOUDFLARE_R2_ENABLED:-true}
+      - CLOUDFLARE_R2_ACCOUNT_ID=${CLOUDFLARE_R2_ACCOUNT_ID}
+      - CLOUDFLARE_R2_ACCESS_KEY_ID=${CLOUDFLARE_R2_ACCESS_KEY_ID}
+      - CLOUDFLARE_R2_SECRET_ACCESS_KEY=${CLOUDFLARE_R2_SECRET_ACCESS_KEY}
+      - CLOUDFLARE_R2_BUCKET_NAME=${CLOUDFLARE_R2_BUCKET_NAME}
+      - CLOUDFLARE_R2_PUBLIC_URL=${CLOUDFLARE_R2_PUBLIC_URL}
+      
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - CDN_URL=${CDN_URL:-https://cdn.ainnect.me}
+      - USE_CDN=${USE_CDN:-true}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - ainnect-network
+
+networks:
+  ainnect-network:
+    driver: bridge
+

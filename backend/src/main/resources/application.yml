@@ -27,12 +27,11 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
-      username: ${SPRING_REDIS_USERNAME:}
+      url: ${SPRING_REDIS_URL:}
+      username: ${SPRING_REDIS_USERNAME:default}
       password: ${SPRING_REDIS_PASSWORD:}
       database: ${SPRING_REDIS_DATABASE:0}
-      timeout: ${SPRING_REDIS_TIMEOUT:5000ms}
+      timeout: ${SPRING_REDIS_TIMEOUT:10000ms}
       ssl:
         enabled: ${SPRING_REDIS_SSL_ENABLED:false}
         trust-store: ${SPRING_REDIS_SSL_TRUST_STORE:}
@@ -44,9 +43,10 @@ spring:
           min-idle: ${SPRING_REDIS_POOL_MIN_IDLE:2}
           max-wait: ${SPRING_REDIS_POOL_MAX_WAIT:5000ms}
         shutdown-timeout: ${SPRING_REDIS_SHUTDOWN_TIMEOUT:100ms}
+      repositories:
+        enabled: false
   cache:
-    type: ${SPRING_CACHE_TYPE:redis}
-
+    type: ${SPRING_CACHE_TYPE:none}
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
   port: ${SERVER_PORT:8080}
@@ -57,7 +57,8 @@ logging:
     org.hibernate.orm.jdbc.bind: ${LOGGING_LEVEL_ORG_HIBERNATE_ORM_JDBC_BIND:info}
     com.ainnect.service.impl.CloudflareStorageServiceImpl: DEBUG
     software.amazon.awssdk: DEBUG
-
+    org.springframework.data.redis: OFF
+    io.lettuce.core: OFF
 # JWT
 jwt:
   expiration: ${JWT_EXPIRATION:86400000}
@@ -72,6 +73,8 @@ app:
     use-cdn: ${USE_CDN:true}
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+  cache:
+    flush-on-startup: ${APP_CACHE_FLUSH_ON_STARTUP:false}
 
 # Cloudflare R2 Configuration
 cloudflare:

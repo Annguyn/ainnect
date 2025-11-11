@@ -25,6 +25,20 @@ public class PostController {
 	private final PostService postService;
 	private final JwtUtil jwtUtil;
 	private final FileStorageService fileStorageService;
+	private final com.ainnect.service.PostAsyncService postAsyncService;
+
+	private PostVisibility parseVisibility(String value) {
+		if (value == null || value.isBlank()) return PostVisibility.public_;
+		String v = value.trim().toLowerCase();
+		if (v.equals("public") || v.equals("public_")) return PostVisibility.public_;
+		if (v.equals("friends") || v.equals("friends_")) return PostVisibility.friends;
+		if (v.equals("private") || v.equals("private_")) return PostVisibility.private_;
+		try {
+			return PostVisibility.valueOf(value);
+		} catch (Exception ignored) {
+			return PostVisibility.public_;
+		}
+	}
 
 	@PostMapping(consumes = "multipart/form-data")
 	public ResponseEntity<PostDtos.Response> create(
@@ -39,18 +53,16 @@ public class PostController {
 			PostDtos.CreateRequest request = PostDtos.CreateRequest.builder()
 				.content(content)
 				.groupId(groupId)
-				.visibility(PostVisibility.valueOf(visibility))
+				.visibility(parseVisibility(visibility))
 				.build();
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
-					.parallel()
-					.filter(f -> f != null && !f.isEmpty())
-					.map(f -> fileStorageService.storeFile(f, "posts"))
-					.toList();
+						.filter(f -> f != null && !f.isEmpty())
+						.map(f -> fileStorageService.storeFile(f, "posts"))
+						.toList();
 				request.setMediaUrls(mediaUrls);
 			}
-			
 			PostDtos.Response response = postService.create(request, authorId);
 			return new ResponseEntity<>(response, HttpStatus.CREATED);
 		} catch (Exception e) {
@@ -71,17 +83,15 @@ public class PostController {
 			PostDtos.CreateRequest request = PostDtos.CreateRequest.builder()
 				.content(content)
 				.groupId(groupId)
-				.visibility(PostVisibility.valueOf(visibility))
+				.visibility(parseVisibility(visibility))
 				.build();
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
-					.parallel()
-					.filter(f -> f != null && !f.isEmpty())
-					.map(f -> fileStorageService.storeFile(f, "posts"))
-					.toList();
+						.filter(f -> f != null && !f.isEmpty())
+						.map(f -> fileStorageService.storeFile(f, "posts"))
+						.toList();
 				request.setMediaUrls(mediaUrls);
 			}
-			
 			PostDtos.Response response = postService.create(request, authorId);
 			return new ResponseEntity<>(response, HttpStatus.CREATED);
 		} catch (Exception e) {
@@ -101,17 +111,15 @@ public class PostController {
 			
 			PostDtos.UpdateRequest request = new PostDtos.UpdateRequest();
 			request.setContent(content);
-			request.setVisibility(PostVisibility.valueOf(visibility));
+			request.setVisibility(parseVisibility(visibility));
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
-					.parallel()
-					.filter(f -> f != null && !f.isEmpty())
-					.map(f -> fileStorageService.storeFile(f, "posts"))
-					.toList();
+						.filter(f -> f != null && !f.isEmpty())
+						.map(f -> fileStorageService.storeFile(f, "posts"))
+						.toList();
 				request.setMediaUrls(mediaUrls);
 			}
-			
 			PostDtos.Response response = postService.update(postId, request);
 			return ResponseEntity.ok(response);
 		} catch (Exception e) {
@@ -131,7 +139,7 @@ public class PostController {
 			
 			PostDtos.UpdateRequest request = new PostDtos.UpdateRequest();
 			request.setContent(content);
-			request.setVisibility(PostVisibility.valueOf(visibility));
+			request.setVisibility(parseVisibility(visibility));
 			
 			if (mediaFiles != null && mediaFiles.length > 0) {
 				List<String> mediaUrls = java.util.Arrays.stream(mediaFiles)
