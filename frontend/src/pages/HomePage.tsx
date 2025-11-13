@@ -20,6 +20,7 @@ const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [shouldShowPublicPosts, setShouldShowPublicPosts] = useState(false);
   
   const [publicPosts, setPublicPosts] = useState<Post[]>([]);
   const [publicPostsLoading, setPublicPostsLoading] = useState(false);
@@ -165,10 +166,23 @@ const HomePage: React.FC = () => {
     }
   }, [hasMorePublicPosts, publicPostsLoading, publicPostsPage, loadPublicPosts]);
 
+  const handleRetryPublicPosts = () => {
+    setPublicPostsError(null);
+    setPublicPostsRetryCount(0);
+    setPublicPostsPage(0);
+    setPublicPosts([]);
+    setHasMorePublicPosts(true);
+    setHasInitialLoadAttempted(false);
+    loadPublicPosts(0, true);
+  };
+
   useEffect(() => {
     // Only load once when component mounts for non-authenticated users
     if (!isAuthenticated) {
       loadPublicPosts(0, true);
+    } else {
+      // Reset public posts state when user authenticates
+      setShouldShowPublicPosts(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]); // Load when authentication status changes
@@ -427,7 +441,82 @@ const HomePage: React.FC = () => {
                 // This will be handled internally by UserFeed for authenticated users
                 console.log('Post deleted:', postId);
               }}
+              onTokenValidationFailed={() => {
+                debugLogger.log('HomePage', 'Token validation failed, switching to public posts');
+                setShouldShowPublicPosts(true);
+                loadPublicPosts(0, true);
+              }}
             />
+            
+            {/* Show public posts if token validation failed */}
+            {shouldShowPublicPosts && (
+              <div className="space-y-4 mt-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <p className="text-sm text-yellow-800">Phiên đăng nhập đã hết hạn. Hiển thị bài viết công khai.</p>
+                  </div>
+                </div>
+                
+                {publicPostsError ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Lỗi tải bài viết</h3>
+                    <p className="text-gray-500 mb-4">{publicPostsError}</p>
+                    <button
+                      onClick={handleRetryPublicPosts}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {publicPosts.map((post, index) => (
+                      <div key={`public-post-${post.id}-${index}`} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <img
+                            src={post.authorAvatarUrl || '/default-avatar.png'}
+                            alt={post.authorDisplayName}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          <div>
+                            <h3 className="font-medium text-gray-900">{post.authorDisplayName}</h3>
+                            <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <p className="text-gray-800">{post.content}</p>
+                        {post.media && Array.isArray(post.media) && post.media.length > 0 && (
+                          <div className="mt-4">
+                            {post.media.map((media, idx) => (
+                              <img
+                                key={idx}
+                                src={media.mediaUrl}
+                                alt=""
+                                className="rounded-lg max-h-96 w-full object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {publicPostsLoading && (
+                      <>
+                        <PostSkeleton />
+                        <PostSkeleton />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="hidden lg:block lg:col-span-3">

@@ -8,17 +8,20 @@ import { EmptyState } from '../EmptyState';
 import type { ReactionType } from '../ReactionPicker';
 import { websocketService } from '../../services/websocketService';
 import { debugLogger } from '../../utils/debugLogger';
+import { authService as apiAuthService } from '../../services/api';
 
 interface UserFeedProps {
   className?: string;
   posts?: Post[]; // Allow external posts
   onDeletePost?: (postId: number) => void; // Callback for post deletion
+  onTokenValidationFailed?: () => void; // Callback when token validation fails
 }
 
 export const UserFeed: React.FC<UserFeedProps> = ({
   className = '',
   posts: externalPosts,
-  onDeletePost
+  onDeletePost,
+  onTokenValidationFailed
 }) => {
   const { isAuthenticated, user } = useAuth();
   const [internalPosts, setInternalPosts] = useState<Post[]>([]);
@@ -31,13 +34,16 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   const [isRetrying, setIsRetrying] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pendingPosts, setPendingPosts] = useState<Set<number>>(new Set());
+  const [tokenValidated, setTokenValidated] = useState<boolean | null>(null);
   
   const isLoadingRef = React.useRef(false);
   const hasInitialLoadedRef = React.useRef(false);
+  const tokenValidationRef = React.useRef(false);
 
   const loadPosts = useCallback(async (pageToLoad: number, isRetry = false) => {
     // Guard against multiple simultaneous loads
-    if (!isAuthenticated || isLoadingRef.current || externalPosts) {
+    // Only load if token is validated as true
+    if (!isAuthenticated || isLoadingRef.current || externalPosts || tokenValidated !== true) {
       return;
     }
 
@@ -95,12 +101,47 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, page, externalPosts]); // loadPosts intentionally excluded to prevent infinite loop
 
+  // Validate token before loading posts
   React.useEffect(() => {
-    if (isAuthenticated && !hasInitialLoadedRef.current && !externalPosts) {
+    const validateToken = async () => {
+      if (tokenValidationRef.current || externalPosts || !isAuthenticated) {
+        return;
+      }
+
+      tokenValidationRef.current = true;
+      
+      try {
+        debugLogger.log('UserFeed', 'Validating token before loading user feed...');
+        const isValid = await apiAuthService.validateToken();
+        debugLogger.log('UserFeed', 'Token validation result:', isValid);
+        setTokenValidated(isValid);
+        
+        if (!isValid) {
+          debugLogger.log('UserFeed', 'Token invalid - will not load user feed');
+          // Notify parent component that token validation failed
+          if (onTokenValidationFailed) {
+            onTokenValidationFailed();
+          }
+        }
+      } catch (error) {
+        debugLogger.log('UserFeed', 'Token validation error:', error);
+        setTokenValidated(false);
+        // Notify parent component that token validation failed
+        if (onTokenValidationFailed) {
+          onTokenValidationFailed();
+        }
+      }
+    };
+
+    validateToken();
+  }, [isAuthenticated, externalPosts, onTokenValidationFailed]);
+
+  React.useEffect(() => {
+    if (isAuthenticated && tokenValidated === true && !hasInitialLoadedRef.current && !externalPosts) {
       loadPosts(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, externalPosts]); // loadPosts intentionally excluded
+  }, [isAuthenticated, tokenValidated, externalPosts]); // loadPosts intentionally excluded
 
   React.useEffect(() => {
     if (!user || !isAuthenticated) {
@@ -303,6 +344,11 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     );
   }
 
+  // If token validation failed, return null to let parent component handle (show public posts)
+  if (tokenValidated === false) {
+    return null;
+  }
+
   if (!isLoading && !initialLoadDone) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -311,7 +357,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     );
   }
 
-  if (!isLoading && (!posts || posts.length === 0) && initialLoadDone) {
+  if (!isLoading && (!posts || posts.length === 0) && initialLoadDone && tokenValidated === true) {
     return (
       <EmptyState
         type="empty"
