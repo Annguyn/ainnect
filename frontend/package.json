@@ -32,7 +32,9 @@
   },
   "scripts": {
     "start": "craco start",
+    "start:staging": "env-cmd -f .env.staging craco start",
     "build": "CI=false craco build",
+    "build:staging": "env-cmd -f .env.staging craco build",
     "build:ci": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject"
@@ -58,6 +60,7 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@types/react-router-dom": "^5.3.3",
-    "@types/sockjs-client": "^1.5.4"
+    "@types/sockjs-client": "^1.5.4",
+    "env-cmd": "^11.0.0"
   }
 }
