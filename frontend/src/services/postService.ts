@@ -322,22 +322,33 @@ class PostService {
     const endpoint = `${this.baseUrl}/feed`;
     debugLogger.logApiCall('GET', endpoint, { page, size, sort });
     try {
-      const response = await apiClient.get<PostsResponse>(endpoint, {
+      const response = await apiClient.get<any>(endpoint, {
         params: { page, size, sort }
       });
       debugLogger.logApiResponse('GET', endpoint, response);
+      
+      // Transform response to match PostsResponse interface (same as getFeedPosts)
+      const transformedResponse: PostsResponse = {
+        content: response.content || [],
+        page: {
+          number: response.number || response.pageable?.pageNumber || 0,
+          size: response.size || response.pageable?.pageSize || size,
+          totalElements: response.totalElements || 0,
+          totalPages: response.totalPages || 0
+        }
+      };
       
       debugLogger.log('PostService', `🌍 Public Posts API Response`, {
         endpoint,
         page,
         size,
         sort,
-        totalPosts: response.content?.length || 0,
-        totalElements: response.page.totalElements,
-        totalPages: response.page.totalPages,
-        currentPage: response.page.number,
-        hasNext: response.page.number < response.page.totalPages - 1,
-        posts: response.content?.map(p => ({
+        totalPosts: transformedResponse.content?.length || 0,
+        totalElements: transformedResponse.page.totalElements,
+        totalPages: transformedResponse.page.totalPages,
+        currentPage: transformedResponse.page.number,
+        hasNext: transformedResponse.page.number < transformedResponse.page.totalPages - 1,
+        posts: transformedResponse.content?.map(p => ({
           id: p.id,
           author: p.authorUsername,
           displayName: p.authorDisplayName,
@@ -350,7 +361,7 @@ class PostService {
         }))
       });
       
-      return response;
+      return transformedResponse;
     } catch (error) {
       debugLogger.logApiResponse('GET', endpoint, null, error);
       debugLogger.log('PostService', `❌ Public Posts API Error`, {

@@ -9,6 +9,7 @@ import type { ReactionType } from '../ReactionPicker';
 import { websocketService } from '../../services/websocketService';
 import { debugLogger } from '../../utils/debugLogger';
 import { authService as apiAuthService } from '../../services/api';
+import { apiClient } from '../../services/apiClient';
 
 interface UserFeedProps {
   className?: string;
@@ -117,7 +118,10 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         setTokenValidated(isValid);
         
         if (!isValid) {
-          debugLogger.log('UserFeed', 'Token invalid - will not load user feed');
+          debugLogger.log('UserFeed', 'Token invalid - clearing tokens and switching to public feed');
+          // Clear invalid token from both memory and localStorage
+          apiClient.clearTokens();
+          
           // Notify parent component that token validation failed
           if (onTokenValidationFailed) {
             onTokenValidationFailed();
@@ -126,6 +130,10 @@ export const UserFeed: React.FC<UserFeedProps> = ({
       } catch (error) {
         debugLogger.log('UserFeed', 'Token validation error:', error);
         setTokenValidated(false);
+        
+        // Clear tokens on validation error from both memory and localStorage
+        apiClient.clearTokens();
+        
         // Notify parent component that token validation failed
         if (onTokenValidationFailed) {
           onTokenValidationFailed();
