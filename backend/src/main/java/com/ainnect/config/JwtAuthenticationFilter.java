@@ -22,7 +22,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     
-    // Lưu trữ blacklist token (trong thực tế nên dùng Redis hoặc database)
     private static final Set<String> tokenBlacklist = new HashSet<>();
     
     public static void addToBlacklist(String token) {
@@ -42,17 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String username;
 
-        // Kiểm tra header Authorization
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract token
         jwt = authHeader.substring(7);
         
         try {
-            // Kiểm tra token có trong blacklist không
             if (isBlacklisted(jwt)) {
                 filterChain.doFilter(request, response);
                 return;
@@ -60,23 +56,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             username = jwtUtil.extractUsername(jwt);
 
-            // Nếu username tồn tại và chưa có authentication trong context
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 
-                // Validate token
                 if (jwtUtil.validateToken(jwt, username)) {
-                    // Tạo authentication token
                     UsernamePasswordAuthenticationToken authToken = 
                         new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
                     
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     
-                    // Set authentication vào SecurityContext
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
-            // Token không hợp lệ, không làm gì cả
             logger.debug("JWT Token validation failed: " + e.getMessage());
         }
 

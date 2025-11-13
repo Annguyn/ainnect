@@ -28,7 +28,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
         String[] allowedOrigins = {
             "https://*.ainnect.me",
+            "https://www.ainnect.me",
+            "https://api.ainnect.me",
             "https://ainnect.me",
+            "https://*.stg.ainnect.me",
+            "https://api-stg.ainnect.me",
+            "https://www.stg.ainnect.me",
+            "https://cdn-stg.ainnect.me",
+            "https://stg.ainnect.me",
             "http://192.168.*.*",
             "http://192.168.*.*:*",
             "http://10.0.2.2",

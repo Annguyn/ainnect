@@ -40,7 +40,7 @@ public class AuthIdentityDtos {
 		private String password;
 
 		@NotBlank(message = "Tên hiển thị không được để trống")
-		@Size(max = 65, message = "Tên hiển thị không được quá 65 ký tự")
+		@Size(min = 3, max = 65, message = "Tên hiển thị phải từ 3-65 ký tự")
 		private String displayName;
 	}
 

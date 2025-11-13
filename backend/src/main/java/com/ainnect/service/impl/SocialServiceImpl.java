@@ -163,19 +163,20 @@ public class SocialServiceImpl implements SocialService {
     @Transactional
     public SocialDtos.SocialActionResponse sendFriendRequest(Long requesterId, Long friendId) {
         try {
-            if (isFriend(requesterId, friendId) || hasPendingFriendRequest(requesterId, friendId)) {
+            // Check self-reference first - cannot send friend request to yourself
+            if (requesterId.equals(friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
-                        .message("Friend request already exists or already friends")
+                        .message("Cannot send friend request to yourself")
                         .success(false)
                         .data(null)
                         .build();
             }
 
-            if (requesterId.equals(friendId)) {
+            if (isFriend(requesterId, friendId)) {
                 return SocialDtos.SocialActionResponse.builder()
                         .action("friend_request")
-                        .message("Cannot send friend request to yourself")
+                        .message("Friend request already exists or already friends")
                         .success(false)
                         .data(null)
                         .build();
@@ -199,15 +200,71 @@ public class SocialServiceImpl implements SocialService {
                         .build();
             }
 
+            // Check requester status first - deactivated users cannot send friend requests
             User requester = userRepository.findById(requesterId)
                     .orElseThrow(() -> new IllegalArgumentException("Requester not found"));
+            
+            if (requester.getIsActive() == null || !requester.getIsActive() || requester.getDeletedAt() != null) {
+                return SocialDtos.SocialActionResponse.builder()
+                        .action("friend_request")
+                        .message("Cannot send friend request - user is deactivated")
+                        .success(false)
+                        .data(null)
+                        .build();
+            }
+
+            // Check friend status - cannot send friend request to deactivated users
             User friend = userRepository.findById(friendId)
                     .orElseThrow(() -> new IllegalArgumentException("Friend not found"));
+            
+            if (friend.getIsActive() == null || !friend.getIsActive() || friend.getDeletedAt() != null) {
+                return SocialDtos.SocialActionResponse.builder()
+                        .action("friend_request")
+                        .message("Cannot send friend request - user is deactivated")
+                        .success(false)
+                        .data(null)
+                        .build();
+            }
 
             Long userIdLow = Math.min(requesterId, friendId);
             Long userIdHigh = Math.max(requesterId, friendId);
 
             FriendshipId friendshipId = new FriendshipId(userIdLow, userIdHigh);
+            Optional<Friendship> existingFriendshipOpt = friendshipRepository.findById(friendshipId);
+            
+            if (existingFriendshipOpt.isPresent()) {
+                Friendship existingFriendship = existingFriendshipOpt.get();
+                
+                if (existingFriendship.getStatus() == FriendshipStatus.pending 
+                        && existingFriendship.getRequestedBy().getId().equals(friendId)) {
+                    existingFriendship.setStatus(FriendshipStatus.accepted);
+                    existingFriendship.setUpdatedAt(LocalDateTime.now());
+                    existingFriendship.setRespondedAt(LocalDateTime.now());
+                    friendshipRepository.save(existingFriendship);
+
+                    try {
+                        notificationIntegrationService.handleFriendAccept(requesterId, friendId);
+                    } catch (Exception ignored) {}
+
+                    return SocialDtos.SocialActionResponse.builder()
+                            .action("friend_request")
+                            .message("Friend request sent successfully")
+                            .success(true)
+                            .data(toFriendshipResponse(existingFriendship, requesterId))
+                            .build();
+                } else if (existingFriendship.getStatus() == FriendshipStatus.pending 
+                        && existingFriendship.getRequestedBy().getId().equals(requesterId)) {
+                    // Same direction request already exists
+                    return SocialDtos.SocialActionResponse.builder()
+                            .action("friend_request")
+                            .message("Friend request already exists or already friends")
+                            .success(false)
+                            .data(null)
+                            .build();
+                }
+            }
+
+            // Create new friend request
             Friendship friendship = Friendship.builder()
                     .id(friendshipId)
                     .userLow(userIdLow.equals(requesterId) ? requester : friend)
@@ -220,9 +277,9 @@ public class SocialServiceImpl implements SocialService {
 
             friendshipRepository.save(friendship);
 
-                        try {
-                                notificationIntegrationService.handleFriendRequest(requesterId, friendId);
-                        } catch (Exception ignored) {}
+            try {
+                notificationIntegrationService.handleFriendRequest(requesterId, friendId);
+            } catch (Exception ignored) {}
 
             return SocialDtos.SocialActionResponse.builder()
                     .action("friend_request")
@@ -231,6 +288,14 @@ public class SocialServiceImpl implements SocialService {
                     .data(toFriendshipResponse(friendship, requesterId))
                     .build();
 
+        } catch (IllegalArgumentException e) {
+            log.error("Error sending friend request: {}", e.getMessage());
+            return SocialDtos.SocialActionResponse.builder()
+                    .action("friend_request")
+                    .message("Requester not found or Friend not found")
+                    .success(false)
+                    .data(null)
+                    .build();
         } catch (Exception e) {
             log.error("Error sending friend request: {}", e.getMessage());
             return SocialDtos.SocialActionResponse.builder()

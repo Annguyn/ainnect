@@ -36,7 +36,6 @@ public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer
                 
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String authHeader = accessor.getFirstNativeHeader("Authorization");
-                    // Debug incoming native headers (mask Authorization)
                     try {
                         java.util.Map<String, java.util.List<String>> nativeHeaders = accessor.toNativeHeaderMap();
                         if (nativeHeaders != null) {

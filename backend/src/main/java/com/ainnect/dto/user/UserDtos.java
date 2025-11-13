@@ -32,7 +32,7 @@ public class UserDtos {
 		private String password;
 
 		@NotBlank
-		@Size(max = 65)
+		@Size(min = 3, max = 65, message = "Tên hiển thị phải từ 3-65 ký tự")
 		private String displayName;
 
 		@Size(max = 500)

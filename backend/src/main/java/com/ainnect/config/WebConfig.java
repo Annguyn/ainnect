@@ -1,6 +1,7 @@
 package com.ainnect.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -20,13 +21,18 @@ public class WebConfig implements WebMvcConfigurer {
     private String uploadDir;
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
+    public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOriginPatterns(
                     "https://*.ainnect.me",
                     "https://www.ainnect.me",
                     "https://api.ainnect.me",
                     "https://ainnect.me",
+                    "https://*.stg.ainnect.me",
+                    "https://api-stg.ainnect.me",
+                    "https://www.stg.ainnect.me",
+                    "https://cdn-stg.ainnect.me",
+                    "https://stg.ainnect.me",
                     "http://192.168.*.*",
                     "http://192.168.*.*:*",
                     "http://10.0.2.2",
@@ -42,7 +48,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         String absolute = Paths.get(uploadDir).toAbsolutePath().toString().replace("\\", "/");
         if (!absolute.endsWith("/")) {
             absolute = absolute + "/";
@@ -57,7 +63,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
+    public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(requestLoggingInterceptor);
     }
 }
