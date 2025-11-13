@@ -21,6 +21,11 @@ class AuthService {
     const accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
 
+    debugLogger.log('AuthService', '🔄 Initializing auth from localStorage', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken 
+    });
+
     if (accessToken && refreshToken) {
       this.setState({
         ...this.state,
@@ -30,8 +35,11 @@ class AuthService {
       });
 
       try {
+        debugLogger.log('AuthService', '🔐 Validating stored token on app init');
         const isValid = await apiAuthService.validateToken();
+        
         if (isValid) {
+          debugLogger.log('AuthService', '✅ Stored token is valid, fetching user info');
           const user = await apiAuthService.getCurrentUser();
           this.setState({
             ...this.state,
@@ -40,12 +48,17 @@ class AuthService {
             isLoading: false,
             error: null,
           });
+          debugLogger.log('AuthService', '🎉 Auth initialized successfully', { userId: user.id, username: user.username });
         } else {
+          debugLogger.log('AuthService', '❌ Stored token is invalid, clearing auth');
           this.clearAuth();
         }
       } catch (error) {
+        debugLogger.log('AuthService', '💥 Error during auth initialization:', error);
         this.clearAuth();
       }
+    } else {
+      debugLogger.log('AuthService', 'ℹ️ No stored tokens found, user not authenticated');
     }
   }
 

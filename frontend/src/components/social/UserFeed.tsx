@@ -43,13 +43,20 @@ export const UserFeed: React.FC<UserFeedProps> = ({
 
   const loadPosts = useCallback(async (pageToLoad: number, isRetry = false) => {
     // Guard against multiple simultaneous loads
-    // Only load if token is validated as true
+    // Only load if token is validated as true (strict check)
     if (!isAuthenticated || isLoadingRef.current || externalPosts || tokenValidated !== true) {
+      debugLogger.log('UserFeed', '⏭️ Skipping loadPosts', { 
+        isAuthenticated, 
+        isLoading: isLoadingRef.current, 
+        hasExternalPosts: !!externalPosts, 
+        tokenValidated 
+      });
       return;
     }
 
     isLoadingRef.current = true;
     setIsLoading(true);
+    debugLogger.log('UserFeed', '📥 Loading user feed posts from /api/posts/feed/user', { page: pageToLoad, tokenValidated });
     
     if (!isRetry) {
       setError(null);
@@ -106,29 +113,37 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   React.useEffect(() => {
     const validateToken = async () => {
       if (tokenValidationRef.current || externalPosts || !isAuthenticated) {
+        debugLogger.log('UserFeed', 'Skipping token validation', { 
+          alreadyValidated: tokenValidationRef.current, 
+          hasExternalPosts: !!externalPosts, 
+          isAuthenticated 
+        });
         return;
       }
 
       tokenValidationRef.current = true;
+      debugLogger.log('UserFeed', '🔐 Starting token validation: POST /api/auth/validate');
       
       try {
-        debugLogger.log('UserFeed', 'Validating token before loading user feed...');
         const isValid = await apiAuthService.validateToken();
-        debugLogger.log('UserFeed', 'Token validation result:', isValid);
+        debugLogger.log('UserFeed', isValid ? '✅ Token validation SUCCESS' : '❌ Token validation FAILED', { isValid });
         setTokenValidated(isValid);
         
         if (!isValid) {
-          debugLogger.log('UserFeed', 'Token invalid - clearing tokens and switching to public feed');
+          debugLogger.log('UserFeed', '⚠️ Token invalid - clearing tokens and switching to public feed');
           // Clear invalid token from both memory and localStorage
           apiClient.clearTokens();
           
           // Notify parent component that token validation failed
           if (onTokenValidationFailed) {
+            debugLogger.log('UserFeed', '📢 Notifying parent: token validation failed');
             onTokenValidationFailed();
           }
+        } else {
+          debugLogger.log('UserFeed', '🎉 Token validated successfully - ready to load user feed');
         }
       } catch (error) {
-        debugLogger.log('UserFeed', 'Token validation error:', error);
+        debugLogger.log('UserFeed', '💥 Token validation error (network/API issue):', error);
         setTokenValidated(false);
         
         // Clear tokens on validation error from both memory and localStorage
@@ -136,6 +151,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         
         // Notify parent component that token validation failed
         if (onTokenValidationFailed) {
+          debugLogger.log('UserFeed', '📢 Notifying parent: token validation error');
           onTokenValidationFailed();
         }
       }
@@ -146,7 +162,15 @@ export const UserFeed: React.FC<UserFeedProps> = ({
 
   React.useEffect(() => {
     if (isAuthenticated && tokenValidated === true && !hasInitialLoadedRef.current && !externalPosts) {
+      debugLogger.log('UserFeed', '🚀 Triggering initial load: GET /api/posts/feed/user (after token validation success)');
       loadPosts(0);
+    } else {
+      debugLogger.log('UserFeed', 'Waiting for conditions before loading posts', { 
+        isAuthenticated, 
+        tokenValidated, 
+        hasInitialLoaded: hasInitialLoadedRef.current, 
+        hasExternalPosts: !!externalPosts 
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, tokenValidated, externalPosts]); // loadPosts intentionally excluded
