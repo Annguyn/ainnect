@@ -22,7 +22,7 @@ interface FriendRequestResponse {
 }
 
 export const fetchFriendRequests = async (): Promise<FriendRequest[]> => {
-  const endpoint = '/api/friend-requests ';
+  const endpoint = '/api/friend-requests';
   debugLogger.logApiCall('GET', endpoint);
   
   try {

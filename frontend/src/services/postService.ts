@@ -331,12 +331,24 @@ class PostService {
       const transformedResponse: PostsResponse = {
         content: response.content || [],
         page: {
-          number: response.number || response.pageable?.pageNumber || 0,
-          size: response.size || response.pageable?.pageSize || size,
-          totalElements: response.totalElements || 0,
-          totalPages: response.totalPages || 0
+          number: response.number ?? response.pageable?.pageNumber ?? 0,
+          size: response.size ?? response.pageable?.pageSize ?? size,
+          totalElements: response.totalElements ?? 0,
+          totalPages: response.totalPages ?? 0
         }
       };
+      
+      // Verify transformation
+      if (!transformedResponse.page || typeof transformedResponse.page.totalPages !== 'number') {
+        console.error('Invalid page structure after transformation:', { response, transformedResponse });
+        // Ensure we always have a valid page object
+        transformedResponse.page = {
+          number: 0,
+          size: size,
+          totalElements: response.content?.length || 0,
+          totalPages: 1
+        };
+      }
       
       debugLogger.log('PostService', `🌍 Public Posts API Response`, {
         endpoint,

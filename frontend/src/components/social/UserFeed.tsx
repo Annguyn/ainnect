@@ -42,21 +42,18 @@ export const UserFeed: React.FC<UserFeedProps> = ({
   const tokenValidationRef = React.useRef(false);
 
   const loadPosts = useCallback(async (pageToLoad: number, isRetry = false) => {
-    // Guard against multiple simultaneous loads
-    // Only load if token is validated as true (strict check)
-    if (!isAuthenticated || isLoadingRef.current || externalPosts || tokenValidated !== true) {
+    if (!isAuthenticated || isLoadingRef.current || externalPosts) {
       debugLogger.log('UserFeed', '⏭️ Skipping loadPosts', { 
         isAuthenticated, 
         isLoading: isLoadingRef.current, 
-        hasExternalPosts: !!externalPosts, 
-        tokenValidated 
+        hasExternalPosts: !!externalPosts
       });
       return;
     }
 
     isLoadingRef.current = true;
     setIsLoading(true);
-    debugLogger.log('UserFeed', '📥 Loading user feed posts from /api/posts/feed/user', { page: pageToLoad, tokenValidated });
+    debugLogger.log('UserFeed', '📥 Loading user feed posts from /api/posts/feed/user', { page: pageToLoad });
     
     if (!isRetry) {
       setError(null);
@@ -140,7 +137,11 @@ export const UserFeed: React.FC<UserFeedProps> = ({
             onTokenValidationFailed();
           }
         } else {
-          debugLogger.log('UserFeed', '🎉 Token validated successfully - ready to load user feed');
+          debugLogger.log('UserFeed', '🎉 Token validated successfully - triggering initial load immediately');
+          // Call loadPosts immediately after validation to avoid race condition
+          if (!hasInitialLoadedRef.current) {
+            loadPosts(0);
+          }
         }
       } catch (error) {
         debugLogger.log('UserFeed', '💥 Token validation error (network/API issue):', error);
@@ -158,22 +159,7 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     };
 
     validateToken();
-  }, [isAuthenticated, externalPosts, onTokenValidationFailed]);
-
-  React.useEffect(() => {
-    if (isAuthenticated && tokenValidated === true && !hasInitialLoadedRef.current && !externalPosts) {
-      debugLogger.log('UserFeed', '🚀 Triggering initial load: GET /api/posts/feed/user (after token validation success)');
-      loadPosts(0);
-    } else {
-      debugLogger.log('UserFeed', 'Waiting for conditions before loading posts', { 
-        isAuthenticated, 
-        tokenValidated, 
-        hasInitialLoaded: hasInitialLoadedRef.current, 
-        hasExternalPosts: !!externalPosts 
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, tokenValidated, externalPosts]); // loadPosts intentionally excluded
+  }, [isAuthenticated, externalPosts, onTokenValidationFailed, loadPosts]);
 
   React.useEffect(() => {
     if (!user || !isAuthenticated) {
@@ -381,10 +367,13 @@ export const UserFeed: React.FC<UserFeedProps> = ({
     return null;
   }
 
-  if (!isLoading && !initialLoadDone) {
+  // Show skeleton while waiting for token validation or initial load
+  if ((isLoading || !initialLoadDone) && (!posts || posts.length === 0)) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className={className}>
+        <PostSkeleton />
+        <PostSkeleton />
+        <PostSkeleton />
       </div>
     );
   }
@@ -423,18 +412,22 @@ export const UserFeed: React.FC<UserFeedProps> = ({
         </div>
       )}
       
-      {isLoading && (
+      {/* Loading more posts */}
+      {isLoading && posts && posts.length > 0 && (
         <>
-          {isRetrying && (
+          {isRetrying ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center">
               <div className="flex items-center justify-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
                 <span className="text-yellow-800">Đang thử lại... ({retryCount + 1}/3)</span>
               </div>
             </div>
+          ) : (
+            <>
+              <PostSkeleton />
+              <PostSkeleton />
+            </>
           )}
-          <PostSkeleton />
-          <PostSkeleton />
         </>
       )}
     </div>

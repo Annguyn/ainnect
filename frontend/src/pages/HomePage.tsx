@@ -10,6 +10,7 @@ import { MessagingNavigation } from '../components/MessagingNavigation';
 import { EmptyState } from '../components/EmptyState';
 import { UserFeed } from '../components/social/UserFeed';
 import { PostSkeleton } from '../components/PostSkeleton';
+import { PostCard } from '../components/PostCard';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { debugLogger } from '../utils/debugLogger';
 import { postService, Post } from '../services/postService';
@@ -23,8 +24,25 @@ const HomePage: React.FC = () => {
   const [shouldShowPublicPosts, setShouldShowPublicPosts] = useState(false);
   
   const [publicPosts, setPublicPosts] = useState<Post[]>([]);
-  const [publicPostsLoading, setPublicPostsLoading] = useState(false);
+  const [publicPostsLoading, setPublicPostsLoadingState] = useState(false);
   const [publicPostsError, setPublicPostsError] = useState<string | null>(null);
+  
+  // Wrap setPublicPostsLoading with logging
+  const setPublicPostsLoading = (value: boolean) => {
+    debugLogger.log('HomePage', `⚡ setPublicPostsLoading: ${publicPostsLoading} → ${value}`, { 
+      stackTrace: new Error().stack?.split('\n').slice(2, 4).join('\n')
+    });
+    setPublicPostsLoadingState(value);
+  };
+
+  // Log when publicPostsLoading state actually changes
+  React.useEffect(() => {
+    debugLogger.log('HomePage', `📊 publicPostsLoading state changed: ${publicPostsLoading}`, {
+      postsCount: publicPosts.length,
+      hasError: !!publicPostsError,
+      isAuthenticated
+    });
+  }, [publicPostsLoading, publicPosts.length, publicPostsError, isAuthenticated]);
   const [publicPostsPage, setPublicPostsPage] = useState(0);
   const [hasMorePublicPosts, setHasMorePublicPosts] = useState(true);
   const [publicPostsRetryCount, setPublicPostsRetryCount] = useState(0);
@@ -80,23 +98,35 @@ const HomePage: React.FC = () => {
     }
 
     try {
+      debugLogger.log('HomePage', '📞 Calling getPublicPosts', { page, size: 10 });
       const response = await postService.getPublicPosts(page, 10);
+      
+      debugLogger.log('HomePage', '📦 Received response from getPublicPosts', { 
+        hasResponse: !!response, 
+        hasContent: !!response?.content,
+        contentLength: response?.content?.length,
+        hasPage: !!response?.page,
+        pageStructure: response?.page
+      });
       
       if (!response || !response.content || !Array.isArray(response.content)) {
         console.error('Invalid response structure:', response);
         throw new Error('Phản hồi không hợp lệ từ server');
       }
       
-      debugLogger.log('HomePage', 'Public posts loaded successfully', {
+      debugLogger.log('HomePage', '✅ Public posts loaded successfully', {
         page,
         count: response.content.length,
         totalPages: response.page?.totalPages || 0,
+        totalElements: response.page?.totalElements || 0,
         isRetry: isRetry ? `(retry ${publicPostsRetryCount + 1}/3)` : ''
       });
 
       if (reset || page === 0) {
+        debugLogger.log('HomePage', '🔄 Setting posts (reset/initial)', { count: response.content.length });
         setPublicPosts(response.content);
       } else {
+        debugLogger.log('HomePage', '🔄 Appending posts', { newCount: response.content.length });
         setPublicPosts(prev => {
           const existingIds = new Set(prev.map(post => post.id));
           const newPosts = response.content.filter(post => !existingIds.has(post.id));
@@ -110,12 +140,25 @@ const HomePage: React.FC = () => {
       }
 
       setPublicPostsPage(page);
-      const hasMore = response.page?.number < response.page?.totalPages - 1;
+      
+      // Safe check for hasMore with fallback
+      const pageInfo = response.page || { number: 0, totalPages: 1 };
+      const hasMore = (pageInfo.number || 0) < (pageInfo.totalPages || 1) - 1;
       setHasMorePublicPosts(hasMore);
+
+      debugLogger.log('HomePage', '🔄 Updated state', { 
+        postsCount: response.content.length,
+        currentPage: page,
+        hasMore,
+        pageNumber: pageInfo.number,
+        totalPages: pageInfo.totalPages
+      });
 
       // Reset retry count on success
       setPublicPostsRetryCount(0);
       setIsRetryingPublicPosts(false);
+      
+      debugLogger.log('HomePage', '🎉 Public posts load complete - setting loading to false');
       
     } catch (error: any) {
       console.error('Failed to fetch public posts:', error);
@@ -155,6 +198,7 @@ const HomePage: React.FC = () => {
         debugLogger.log('HomePage', 'Stopped retrying - max attempts reached or non-network error');
       }
     } finally {
+      debugLogger.log('HomePage', '🏁 Finally block - setting publicPostsLoading to FALSE');
       setPublicPostsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,13 +230,6 @@ const HomePage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]); // Load when authentication status changes
-
-  useInfiniteScroll({
-    hasMore: hasMorePublicPosts,
-    isLoading: publicPostsLoading,
-    onLoadMore: loadMorePublicPosts,
-    threshold: 200
-  });
 
   const handleCreatePost = async (
     content: string,
@@ -264,6 +301,14 @@ const HomePage: React.FC = () => {
     fetchSuggestedGroups();
   }, [isAuthenticated]);
 
+  // Infinite scroll for public posts (only for unauthenticated users)
+  useInfiniteScroll({
+    hasMore: !isAuthenticated ? hasMorePublicPosts : false,
+    isLoading: !isAuthenticated ? publicPostsLoading : false,
+    onLoadMore: !isAuthenticated ? loadMorePublicPosts : () => {},
+    threshold: 200
+  });
+
   // Notifications are now handled in Header component, no need for duplicate logic here
 
   if (!isAuthenticated) {
@@ -333,7 +378,13 @@ const HomePage: React.FC = () => {
                       Thử lại
                     </Button>
                   </div>
-                ) : (!publicPosts || publicPosts.length === 0) && !publicPostsLoading ? (
+                ) : publicPostsLoading && (!publicPosts || publicPosts.length === 0) ? (
+                  <>
+                    <PostSkeleton />
+                    <PostSkeleton />
+                    <PostSkeleton />
+                  </>
+                ) : (!publicPosts || publicPosts.length === 0) ? (
                   <EmptyState
                     type="empty"
                     title="Chưa có bài viết công khai"
@@ -343,7 +394,7 @@ const HomePage: React.FC = () => {
                   />
                 ) : (
                   <>
-                    {publicPosts && Array.isArray(publicPosts) && publicPosts.map((post, index) => (
+                    {publicPosts.map((post, index) => (
                       <div
                         key={`public-post-${post.id}-${index}`}
                         className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 max-w-2xl mx-auto p-4 cursor-pointer hover:shadow-md transition-shadow"
@@ -381,9 +432,10 @@ const HomePage: React.FC = () => {
                       </div>
                     ))}
                     
-                    {publicPostsLoading && (
+                    {/* Loading more posts */}
+                    {publicPostsLoading && publicPosts.length > 0 && (
                       <>
-                        {isRetryingPublicPosts && publicPostsRetryCount > 0 && (
+                        {isRetryingPublicPosts && publicPostsRetryCount > 0 ? (
                           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                             <div className="flex items-center justify-center space-x-3">
                               <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
@@ -393,11 +445,10 @@ const HomePage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                        )}
-                        {!isRetryingPublicPosts && (
+                        ) : (
                           <>
-                        <PostSkeleton />
-                        <PostSkeleton />
+                            <PostSkeleton />
+                            <PostSkeleton />
                           </>
                         )}
                       </>
@@ -435,88 +486,72 @@ const HomePage: React.FC = () => {
           
           <div className="lg:col-span-7">
             <CreatePost onCreatePost={handleCreatePost} />
-            <UserFeed
-              className="space-y-4"
-              onDeletePost={(postId) => {
-                // This will be handled internally by UserFeed for authenticated users
-                console.log('Post deleted:', postId);
-              }}
-              onTokenValidationFailed={() => {
-                debugLogger.log('HomePage', 'Token validation failed, switching to public posts');
-                setShouldShowPublicPosts(true);
-                loadPublicPosts(0, true);
-              }}
-            />
+            
+            {/* Only show UserFeed if token validation hasn't failed */}
+            {!shouldShowPublicPosts && (
+              <UserFeed
+                className="space-y-4"
+                onDeletePost={(postId) => {
+                  // This will be handled internally by UserFeed for authenticated users
+                  console.log('Post deleted:', postId);
+                }}
+                onTokenValidationFailed={() => {
+                  debugLogger.log('HomePage', 'Token validation failed, switching to public posts');
+                  setShouldShowPublicPosts(true);
+                  loadPublicPosts(0, true);
+                }}
+              />
+            )}
             
             {/* Show public posts if token validation failed */}
             {shouldShowPublicPosts && (
               <div className="space-y-4 mt-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <p className="text-sm text-yellow-800">Phiên đăng nhập đã hết hạn. Hiển thị bài viết công khai.</p>
-                  </div>
-                </div>
-                
-                {publicPostsError ? (
-                  <div className="flex flex-col items-center justify-center p-6 text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Lỗi tải bài viết</h3>
-                    <p className="text-gray-500 mb-4">{publicPostsError}</p>
-                    <button
-                      onClick={handleRetryPublicPosts}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                    >
-                      Thử lại
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {publicPosts.map((post, index) => (
-                      <div key={`public-post-${post.id}-${index}`} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                        <div className="flex items-center space-x-3 mb-4">
-                          <img
-                            src={post.authorAvatarUrl || '/default-avatar.png'}
-                            alt={post.authorDisplayName}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div>
-                            <h3 className="font-medium text-gray-900">{post.authorDisplayName}</h3>
-                            <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <p className="text-gray-800">{post.content}</p>
-                        {post.media && Array.isArray(post.media) && post.media.length > 0 && (
-                          <div className="mt-4">
-                            {post.media.map((media, idx) => (
-                              <img
-                                key={idx}
-                                src={media.mediaUrl}
-                                alt=""
-                                className="rounded-lg max-h-96 w-full object-cover"
-                              />
-                            ))}
-                          </div>
-                        )}
+                {publicPostsError && publicPostsRetryCount < 3 && (
+                  <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
+                      <div className="text-sm text-yellow-800">
+                        <p className="font-medium">Kết nối thất bại. Đang thử lại...</p>
+                        <p className="text-xs mt-0.5">Lần thử {publicPostsRetryCount}/3</p>
                       </div>
-                    ))}
-                    
-                    {publicPostsLoading && (
-                      <>
-                        <PostSkeleton />
-                        <PostSkeleton />
-                      </>
-                    )}
+                    </div>
+                  </div>
+                )}
+
+                {publicPostsError && publicPostsRetryCount >= 3 && (
+                  <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                    <p className="text-sm text-red-800">
+                      Không thể tải bài viết. Vui lòng thử lại sau.
+                    </p>
+                  </div>
+                )}
+
+                {publicPosts.length === 0 && publicPostsLoading && (
+                  <>
+                    <PostSkeleton />
+                    <PostSkeleton />
                   </>
+                )}
+
+                {publicPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={undefined}
+                    onReaction={() => {}}
+                    onUnreact={() => {}}
+                    onComment={async () => {}}
+                    onShare={() => {}}
+                    onDelete={() => {}}
+                  />
+                ))}
+
+                {publicPostsLoading && publicPosts.length > 0 && (
+                  <PostSkeleton />
                 )}
               </div>
             )}
+
           </div>
           
           <div className="hidden lg:block lg:col-span-3">
