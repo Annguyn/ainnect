@@ -137,12 +137,20 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
       } else {
         console.log('✅ Post created successfully (text only):', created);
       }
+
+      // Reload page after a short delay to show the new post
+      setTimeout(() => {
+        window.location.reload();
+      }, hasMedia ? 2000 : 1500);
     } catch (error: any) {
       console.error('❌ Failed to create post:', error);
       
       // Handle specific error messages from backend
       const errorMessage = error?.response?.data?.message || error?.message || 'Không thể đăng bài viết';
-      setErrorMsg(`❌ ${errorMessage}. Vui lòng thử lại.`);
+      
+      // Show error notification
+      showErrorNotification(errorMessage);
+      setErrorMsg(`❌ ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -185,6 +193,33 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
         }
       }, 300);
     }, duration);
+  };
+
+  const showErrorNotification = (errorMessage: string) => {
+    // Create temporary error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 animate-fade-in';
+    
+    errorDiv.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+      <div class="flex flex-col">
+        <span class="font-medium">❌ Lỗi đăng bài</span>
+        <span class="text-xs opacity-90">${errorMessage}</span>
+      </div>
+    `;
+    document.body.appendChild(errorDiv);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      errorDiv.classList.add('animate-fade-out');
+      setTimeout(() => {
+        if (document.body.contains(errorDiv)) {
+          document.body.removeChild(errorDiv);
+        }
+      }, 300);
+    }, 5000);
   };
 
   const handleTextareaClick = () => {
@@ -367,9 +402,9 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
                   </button>
                   <button
                     type="submit"
-                    disabled={(!content.trim() && selectedFiles.length === 0) || isSubmitting || content.length > 5000}
+                    disabled={(!content.trim() && selectedFiles.length === 0) || isSubmitting || content.length > 5000 || !!errorMsg}
                     className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors
-                      ${(!content.trim() && selectedFiles.length === 0) || isSubmitting || content.length > 5000
+                      ${(!content.trim() && selectedFiles.length === 0) || isSubmitting || content.length > 5000 || !!errorMsg
                         ? 'bg-primary-400 cursor-not-allowed'
                         : 'bg-primary-600 hover:bg-primary-700'
                       }`}
