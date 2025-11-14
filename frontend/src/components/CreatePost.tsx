@@ -26,16 +26,16 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
     setErrorMsg(null);
     
     const incoming = Array.from(files);
-    const remainingSlots = Math.max(0, 4 - selectedFiles.length);
+    const remainingSlots = Math.max(0, 6 - selectedFiles.length);
     
-    // Check if trying to upload more than 4 images total
-    if (selectedFiles.length >= 4) {
-      setErrorMsg('⚠️ Chỉ cho phép tối đa 4 ảnh/video. Vui lòng xóa bớt để thêm mới.');
+    // Check if trying to upload more than 6 images total
+    if (selectedFiles.length >= 6) {
+      setErrorMsg('⚠️ Chỉ cho phép tối đa 6 ảnh/video. Vui lòng xóa bớt để thêm mới.');
       return;
     }
     
     if (incoming.length > remainingSlots) {
-      setErrorMsg(`⚠️ Chỉ có thể thêm ${remainingSlots} ảnh/video nữa (tối đa 4 ảnh).`);
+      setErrorMsg(`⚠️ Chỉ có thể thêm ${remainingSlots} ảnh/video nữa (tối đa 6 ảnh/video).`);
     }
     
     const allowed = incoming.slice(0, remainingSlots);
@@ -90,9 +90,9 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
       return;
     }
 
-    // Validation: Max 4 images
-    if (selectedFiles.length > 4) {
-      setErrorMsg('⚠️ Chỉ cho phép tối đa 4 ảnh/video. Vui lòng xóa bớt.');
+    // Validation: Max 6 images
+    if (selectedFiles.length > 6) {
+      setErrorMsg('⚠️ Chỉ cho phép tối đa 6 ảnh/video. Vui lòng xóa bớt.');
       return;
     }
 
@@ -281,13 +281,17 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onCreatePost, isLoading 
                 <div className="relative p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center justify-between mb-2 px-1">
                     <span className="text-xs font-medium text-gray-600">
-                      {selectedFiles.length}/4 ảnh/video
+                      {selectedFiles.length}/6 ảnh/video
                     </span>
                     <span className="text-xs text-gray-500">
                       {(selectedFiles.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(2)} MB
                     </span>
                   </div>
-                  <div className={`grid ${previewUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                  <div className={`grid ${
+                    previewUrls.length === 1 ? 'grid-cols-1' : 
+                    previewUrls.length <= 4 ? 'grid-cols-2' : 
+                    'grid-cols-3'
+                  } gap-2`}>
                     {previewUrls.map((url, index) => (
                       <div key={index} className="relative group">
                         <img
