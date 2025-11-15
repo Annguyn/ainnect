@@ -147,33 +147,54 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const handleSendMessage = async (content: string, messageType: MessageType, attachments: string[]) => {
-    if (!content.trim() && attachments.length === 0) return
+  const handleSendMessage = async (content: string, messageType: MessageType, attachments: string[], _replyToMessageId?: number, files?: File[]) => {
+    if (!content.trim() && (!files || files.length === 0) && attachments.length === 0) return
 
     try {
       setSending(true)
-      
-      if (propOnSendMessage) {
-        await propOnSendMessage(conversation.id, content, messageType)
-      } else {
-        const newMessage = await messagingService.sendMessage({
-          conversationId: conversation.id,
-          content,
-          messageType,
-          attachmentUrls: attachments
-        })
-        
-        setMessages(prev => [...prev, newMessage])
-        
-        // Mark as read
-        if (propOnMarkAsRead) {
-          await propOnMarkAsRead(conversation.id, newMessage.id)
+
+      // 1) If media files provided, use upload API for each file
+      if (files && files.length > 0) {
+        for (const file of files) {
+          try {
+            const uploadedMessage = await messagingService.uploadAndSendMessage(conversation.id, file)
+            setMessages(prev => [...prev, uploadedMessage])
+            if (propOnMarkAsRead) {
+              await propOnMarkAsRead(conversation.id, uploadedMessage.id)
+            } else {
+              await messagingService.markMessageAsRead({
+                conversationId: conversation.id,
+                messageId: uploadedMessage.id,
+                userId: currentUserId
+              })
+            }
+          } catch (err) {
+            console.error('Failed to upload/send media message:', err)
+          }
+        }
+      }
+
+      // 2) If there is text content, send it as a separate message
+      if (content.trim()) {
+        if (propOnSendMessage) {
+          await propOnSendMessage(conversation.id, content, MessageType.TEXT)
         } else {
-          await messagingService.markMessageAsRead({
+          const newMessage = await messagingService.sendMessage({
             conversationId: conversation.id,
-            messageId: newMessage.id,
-            userId: currentUserId
+            content,
+            messageType: MessageType.TEXT,
+            attachmentUrls: attachments || []
           })
+          setMessages(prev => [...prev, newMessage])
+          if (propOnMarkAsRead) {
+            await propOnMarkAsRead(conversation.id, newMessage.id)
+          } else {
+            await messagingService.markMessageAsRead({
+              conversationId: conversation.id,
+              messageId: newMessage.id,
+              userId: currentUserId
+            })
+          }
         }
       }
     } catch (error) {

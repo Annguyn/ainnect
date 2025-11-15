@@ -15,6 +15,30 @@ import {
 class AdminService {
   private adminToken: string | null = null;
 
+  // Normalize flat Spring pagination to our { content, page } shape
+  private normalizePageResponse<T = any>(raw: any): { content: T[]; page: { size: number; number: number; totalElements: number; totalPages: number } } {
+    if (!raw) {
+      return { content: [], page: { size: 0, number: 0, totalElements: 0, totalPages: 0 } };
+    }
+
+    // Some APIs may already return in the desired shape
+    if (raw.page && typeof raw.page.totalElements === 'number' && Array.isArray(raw.content)) {
+      return raw as { content: T[]; page: { size: number; number: number; totalElements: number; totalPages: number } };
+    }
+
+    const pageable = raw.pageable || {};
+    const pageInfo = {
+      size: raw.size ?? pageable.pageSize ?? 0,
+      number: raw.number ?? pageable.pageNumber ?? 0,
+      totalElements: raw.totalElements ?? raw.page?.totalElements ?? 0,
+      totalPages: raw.totalPages ?? raw.page?.totalPages ?? 0,
+    };
+
+    const content = Array.isArray(raw.content) ? raw.content : [];
+
+    return { content, page: pageInfo };
+  }
+
   async login(data: AdminLoginRequest): Promise<AdminLoginResponse> {
     const response = await apiClient.post<{ result: string; message: string; data: AdminLoginResponse }>(
       '/api/admin/login',
@@ -45,31 +69,31 @@ class AdminService {
   }
 
   async getAllUsers(page: number = 0, size: number = 20): Promise<PaginatedUsersResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedUsersResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/users?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getActiveUsers(page: number = 0, size: number = 20): Promise<PaginatedUsersResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedUsersResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/users/active?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getInactiveUsers(page: number = 0, size: number = 20): Promise<PaginatedUsersResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedUsersResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/users/inactive?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async searchUsers(keyword: string, page: number = 0, size: number = 20): Promise<PaginatedUsersResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedUsersResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/users/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getUserById(userId: number): Promise<UserDetail> {
@@ -98,17 +122,17 @@ class AdminService {
   }
 
   async getAllCommunities(page: number = 0, size: number = 20): Promise<PaginatedCommunitiesResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedCommunitiesResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/communities?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async searchCommunities(keyword: string, page: number = 0, size: number = 20): Promise<PaginatedCommunitiesResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedCommunitiesResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/communities/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getCommunityById(communityId: number): Promise<CommunityDetail> {
@@ -125,38 +149,38 @@ class AdminService {
   }
 
   async getAllLogs(page: number = 0, size: number = 50): Promise<PaginatedLogsResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedLogsResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/logs?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getUserLogs(userId: number, page: number = 0, size: number = 50): Promise<PaginatedLogsResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedLogsResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/logs/user/${userId}?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getLogsByAction(action: string, page: number = 0, size: number = 50): Promise<PaginatedLogsResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedLogsResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/logs/action/${action}?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getAllPosts(page: number = 0, size: number = 20): Promise<PaginatedPostsResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedPostsResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/posts?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getUserPosts(userId: number, page: number = 0, size: number = 20): Promise<PaginatedPostsResponse> {
-    const response = await apiClient.get<{ result: string; message: string; data: PaginatedPostsResponse }>(
+    const response = await apiClient.get<{ result: string; message: string; data: any }>(
       `/api/admin/posts/user/${userId}?page=${page}&size=${size}`
     );
-    return response.data;
+    return this.normalizePageResponse(response.data);
   }
 
   async getPostById(postId: number): Promise<PostDetail> {

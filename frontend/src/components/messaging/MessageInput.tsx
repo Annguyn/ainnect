@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 interface MessageInputProps {
-  onSendMessage: (content: string, messageType: MessageType, attachments: string[], replyToMessageId?: number) => void
+  onSendMessage: (content: string, messageType: MessageType, attachments: string[], replyToMessageId?: number, files?: File[]) => void
   onStartTyping?: () => void
   onStopTyping?: () => void
   placeholder?: string
@@ -31,6 +31,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const [message, setMessage] = useState('')
   const [attachments, setAttachments] = useState<string[]>([])
+  const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [replyTo, setReplyTo] = useState<{ id: number; preview: string } | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -66,13 +67,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleSendMessage = () => {
     if (!message.trim() && attachments.length === 0) return
 
-    const messageType = attachments.length > 0 ? MessageType.IMAGE : MessageType.TEXT
-    onSendMessage(message.trim(), messageType, attachments, replyTo?.id)
-    
+    const hasMedia = mediaFiles.length > 0
+    const messageType = hasMedia ? MessageType.IMAGE : MessageType.TEXT
+    onSendMessage(message.trim(), messageType, attachments, replyTo?.id, mediaFiles)
+
     setMessage('')
     setAttachments([])
+    setMediaFiles([])
     setReplyTo(null)
-    
+
     if (onStopTyping) {
       onStopTyping()
     }
@@ -93,12 +96,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    const newAttachments = files.map(file => URL.createObjectURL(file))
-    setAttachments(prev => [...prev, ...newAttachments])
+    const media = files.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'))
+    const newPreviews = media.map(file => URL.createObjectURL(file))
+    if (media.length > 0) {
+      setMediaFiles(prev => [...prev, ...media])
+      setAttachments(prev => [...prev, ...newPreviews])
+    }
   }
 
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index))
+    setMediaFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const addEmoji = (emoji: string) => {
@@ -155,11 +163,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <div className="flex flex-wrap gap-2">
             {attachments.map((attachment, index) => (
               <div key={index} className="relative">
-                <img
-                  src={attachment}
-                  alt={`Attachment ${index + 1}`}
-                  className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                />
+                {mediaFiles[index] && mediaFiles[index].type.startsWith('video/') ? (
+                  <video
+                    src={attachment}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                    muted
+                  />
+                ) : (
+                  <img
+                    src={attachment}
+                    alt={`Attachment ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                  />
+                )}
                 <button
                   onClick={() => removeAttachment(index)}
                   className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
@@ -276,7 +292,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         ref={imageInputRef}
         type="file"
         multiple
-        accept="image/*"
+        accept="image/*,video/*"
         onChange={handleImageSelect}
         className="hidden"
       />

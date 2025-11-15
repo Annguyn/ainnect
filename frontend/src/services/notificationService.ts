@@ -22,7 +22,7 @@ export interface UserBasicInfo {
   username: string;
   displayName: string;
   avatarUrl?: string;
-  profilePictureUrl?: string; // Alias for compatibility
+  profilePictureUrl?: string; 
 }
 
 export interface NotificationResponse {
